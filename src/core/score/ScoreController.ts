@@ -6,6 +6,7 @@ import type { Timeline } from './timeline'
 export class ScoreController {
   private osmd: OpenSheetMusicDisplay
   private position = 0
+  private colored: SVGElement[] = []
   timeline: Timeline | null = null
 
   constructor(container: HTMLElement) {
@@ -20,8 +21,9 @@ export class ScoreController {
     })
   }
 
-  async load(url: string): Promise<Timeline> {
-    await this.osmd.load(url)
+  /** Loads a score from a URL or from MusicXML/MXL content already in memory. */
+  async load(source: string): Promise<Timeline> {
+    await this.osmd.load(source)
     this.osmd.render()
     this.osmd.cursor.show()
     this.timeline = extractTimeline(this.osmd)
@@ -50,9 +52,37 @@ export class ScoreController {
     }
   }
 
+  /**
+   * Paints the noteheads under the cursor. Only notes whose MIDI number is listed
+   * are painted, so a chord can turn green note by note.
+   */
+  colorCurrent(midis: readonly number[], color: string): void {
+    for (const gNote of this.osmd.cursor.GNotesUnderCursor()) {
+      const note = gNote.sourceNote
+      if (note.isRest() || !midis.includes(note.halfTone + 12)) continue
+      const heads = (gNote as unknown as { getNoteheadSVGs?: () => HTMLElement[] }).getNoteheadSVGs?.() ?? []
+      for (const head of heads) {
+        for (const el of [head, ...head.querySelectorAll<SVGElement>('path')]) {
+          el.setAttribute('fill', color)
+          el.style.fill = color
+          this.colored.push(el as SVGElement)
+        }
+      }
+    }
+  }
+
+  clearColors(): void {
+    for (const el of this.colored) {
+      el.removeAttribute('fill')
+      el.style.fill = ''
+    }
+    this.colored = []
+  }
+
   setZoom(zoom: number): void {
     this.osmd.Zoom = zoom
     this.osmd.render()
+    this.colored = []
     // render() rebuilds the cursor, so restore its position.
     const step = this.position
     this.osmd.cursor.show()

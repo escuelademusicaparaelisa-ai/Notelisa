@@ -50,6 +50,16 @@ export class ScorePlayer {
     this.sampler?.triggerAttackRelease(midiToNoteName(midi), seconds)
   }
 
+  /** Starts sounding a note played by the student (MIDI controllers make no sound themselves). */
+  async noteOn(midi: number, strength = 0.8): Promise<void> {
+    await this.load()
+    this.sampler?.triggerAttack(midiToNoteName(midi), undefined, Math.max(0.2, strength))
+  }
+
+  noteOff(midi: number): void {
+    this.sampler?.triggerRelease(midiToNoteName(midi))
+  }
+
   async play(timeline: Timeline, options: PlayOptions = {}): Promise<void> {
     await this.load()
     this.stop()

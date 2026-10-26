@@ -1,8 +1,8 @@
-// Common input layer: microphone and MIDI keyboard both emit NoteInputEvents,
-// so practice modes never need to know where a note came from.
-// Implementations arrive in phase 2 (MIDI) and phase 3 (microphone).
+// Common input layer: microphone, MIDI keyboard and the on-screen keyboard all
+// publish NoteInputEvents on the note bus, so practice modes never need to know
+// where a note came from.
 
-export type InputSourceKind = 'midi' | 'microphone'
+export type InputSourceKind = 'midi' | 'microphone' | 'screen'
 
 export interface NoteInputEvent {
   type: 'noteon' | 'noteoff'
@@ -16,9 +16,9 @@ export interface NoteInputEvent {
 
 export type NoteInputListener = (event: NoteInputEvent) => void
 
+/** A device that publishes notes on the note bus while started. */
 export interface InputSource {
   readonly kind: InputSourceKind
   start(): Promise<void>
   stop(): void
-  subscribe(listener: NoteInputListener): () => void
 }
