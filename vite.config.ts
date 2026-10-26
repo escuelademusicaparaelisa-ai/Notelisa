@@ -10,6 +10,8 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      // NO_PWA=1 builds for hosts that do not allow service workers.
+      disable: !!process.env.NO_PWA,
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
