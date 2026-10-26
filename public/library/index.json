@@ -1,0 +1,20 @@
+{
+  "pieces": [
+    {
+      "id": "estrellita",
+      "title": "Estrellita, ¿dónde estás?",
+      "composer": "Popular",
+      "level": 1,
+      "instrument": "piano",
+      "file": "demo/estrellita.musicxml"
+    },
+    {
+      "id": "oda-a-la-alegria",
+      "title": "Oda a la alegría",
+      "composer": "L. van Beethoven (arr.)",
+      "level": 1,
+      "instrument": "piano",
+      "file": "demo/oda-a-la-alegria.musicxml"
+    }
+  ]
+}

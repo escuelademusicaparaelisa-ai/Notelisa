@@ -1,0 +1,77 @@
+:root {
+  --bg: #fffaf3;
+  --surface: #ffffff;
+  --ink: #2b2540;
+  --muted: #6d6680;
+  --accent: #5b4bdb;
+  --accent-ink: #ffffff;
+  --stop: #e2574c;
+  --line: #ece5d8;
+  --radius: 18px;
+  font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-tap-highlight-color: transparent;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; height: 100%; }
+body { background: var(--bg); }
+button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { opacity: 0.45; cursor: default; }
+
+/* Library */
+.library { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+.library-header h1 { font-size: 2.4rem; margin: 0; color: var(--accent); }
+.library-header p { font-size: 1.25rem; margin: 4px 0 24px; color: var(--muted); }
+.piece-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.piece-card { width: 100%; min-height: 140px; border: none; border-radius: var(--radius);
+  padding: 20px; text-align: left; display: flex; flex-direction: column; gap: 6px;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.08); transition: transform 0.1s; }
+.piece-card:active { transform: scale(0.97); }
+.piece-title { font-size: 1.35rem; font-weight: 800; line-height: 1.2; }
+.piece-composer { color: #4a4458; }
+.piece-meta { margin-top: auto; font-size: 0.95rem; color: #4a4458; }
+
+/* Practice */
+.practice { height: 100%; display: flex; flex-direction: column; }
+.practice-header { display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+  border-bottom: 1px solid var(--line); background: var(--surface); }
+.practice-header h1 { flex: 1; font-size: 1.3rem; margin: 0; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+.zoom { display: flex; gap: 8px; }
+
+.score-view { flex: 1; overflow-y: auto; background: #fff; position: relative; }
+.score-canvas { padding: 0 8px; }
+.score-message { text-align: center; font-size: 1.2rem; color: var(--muted); padding: 32px; }
+.score-message.error { color: var(--stop); }
+
+.controls { background: var(--surface); border-top: 1px solid var(--line);
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); display: grid; gap: 10px;
+  grid-template-columns: 1fr auto 1fr; align-items: center; }
+.now-playing { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 1.05rem; color: var(--muted); }
+.note-chip { border: 2px solid var(--line); background: var(--bg); border-radius: 999px;
+  padding: 8px 14px; font-weight: 700; font-size: 1.1rem; color: var(--ink); }
+.transport { display: flex; gap: 10px; justify-content: center; }
+.settings { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.tempo { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.tempo input { width: 160px; accent-color: var(--accent); height: 32px; }
+.hands { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+
+.big-button { min-width: 64px; min-height: 64px; border-radius: var(--radius); border: 2px solid var(--line);
+  background: var(--bg); font-size: 1.5rem; font-weight: 800; padding: 0 16px; }
+.big-button.primary { white-space: nowrap; background: var(--accent); color: var(--accent-ink); border-color: var(--accent); min-width: 180px; font-size: 1.35rem; }
+.big-button.primary.stop { background: var(--stop); border-color: var(--stop); }
+.big-button.ghost { min-height: 48px; font-size: 1.05rem; }
+.round-button { width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--line);
+  background: var(--bg); font-size: 1.5rem; font-weight: 800; }
+.chip { border: 2px solid var(--line); background: var(--bg); border-radius: 999px; padding: 8px 14px; font-weight: 700; }
+.chip.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+@media (max-width: 820px) {
+  .controls { grid-template-columns: 1fr; }
+  .now-playing, .settings { justify-content: center; align-items: center; }
+  .hands { justify-content: center; }
+  .big-button.primary { min-width: 140px; }
+}
