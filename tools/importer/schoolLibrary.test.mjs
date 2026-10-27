@@ -27,4 +27,17 @@ describe('publishSchoolLibrary', () => {
     expect(readFileSync(join(dir, 'school/a.bin')).toString()).not.toContain('score-partwise')
     expect(new TextDecoder().decode(await decryptBytes(key, readFileSync(join(dir, 'school/a.bin'))))).toContain('A</score')
   })
+
+  it('keeps the library key while the password stays the same', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'notelisa-school-'))
+    writeFileSync(join(dir, 'index.local.json'), JSON.stringify({ pieces: [] }))
+    const keyOf = async password => unlockKeyFile(JSON.parse(readFileSync(join(dir, 'school/keys.json'), 'utf8')), password)
+    await publishSchoolLibrary({ escuela: 'uno' }, { libraryDir: dir, iterations: 1000 })
+    const first = await keyOf('uno')
+    await publishSchoolLibrary({ escuela: 'uno' }, { libraryDir: dir, iterations: 1000 })
+    expect(await keyOf('uno')).toEqual(first)
+    await publishSchoolLibrary({ escuela: 'dos' }, { libraryDir: dir, iterations: 1000 })
+    expect(await keyOf('dos')).not.toEqual(first)
+    expect(await keyOf('uno')).toBeNull()
+  })
 })
