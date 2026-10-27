@@ -23,6 +23,10 @@ import { SummaryCard } from '../components/SummaryCard'
 interface Props {
   piece: Piece
   onBack(): void
+  /** Text of the back button. */
+  backLabel?: string
+  /** Shown for generated exercises: replaces the piece with a new one. */
+  onAnother?(): void
 }
 
 type Mode = 'listen' | 'wait' | 'tempo'
@@ -75,7 +79,7 @@ function clicksFor(timeline: Timeline, steps: ScoreStep[], startAt: number, temp
   return clicks
 }
 
-export function PracticeScreen({ piece, onBack }: Props) {
+export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnother }: Props) {
   const scoreRef = useRef<ScoreViewHandle>(null)
   const [timeline, setTimeline] = useState<Timeline | null>(null)
   const [step, setStep] = useState(0)
@@ -408,10 +412,13 @@ export function PracticeScreen({ piece, onBack }: Props) {
   return (
     <main className="practice">
       <header className="practice-header">
-        <button className="big-button ghost" onClick={() => { stopListening(); onBack() }} aria-label="Volver a la biblioteca">
-          ← Biblioteca
+        <button className="big-button ghost" onClick={() => { stopListening(); onBack() }} aria-label={`Volver a ${backLabel.toLowerCase()}`}>
+          ← {backLabel}
         </button>
         <h1>{piece.title}</h1>
+        {onAnother && (
+          <button className="big-button ghost" onClick={() => { stopListening(); stopPractice(); onAnother() }}>🔄 Otro ejercicio</button>
+        )}
         <div className="segmented" role="tablist" aria-label="Modo">
           <button role="tab" aria-selected={mode === 'wait'} className={mode === 'wait' ? 'active' : ''} onClick={() => switchMode('wait')}>
             🎹 Paso a paso

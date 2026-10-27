@@ -217,3 +217,16 @@ button:disabled { opacity: 0.45; cursor: default; }
 .beat.accent { background: #e08a00; }
 @keyframes beat-flash { from { transform: scale(1.35); } to { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { .beat { animation: none; } }
+
+/* Exercises */
+.exercises-link { display: flex; align-items: center; gap: 14px; width: 100%; margin-bottom: 20px; padding: 18px 20px;
+  border: none; border-radius: var(--radius); background: var(--accent); color: var(--accent-ink); text-align: left;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.08); }
+.exercises-link .icon { font-size: 2.2rem; }
+.exercises-link strong { display: block; font-size: 1.35rem; }
+.exercise-options { display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; }
+.exercise-option { border: none; margin: 0; padding: 0; }
+.exercise-option legend { font-weight: 800; color: var(--muted); margin-bottom: 6px; padding: 0; }
+.exercise-choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.exercise-choices .chip { font-size: 1.05rem; padding: 10px 16px; }
+.create-exercise { width: 100%; max-width: 420px; }
