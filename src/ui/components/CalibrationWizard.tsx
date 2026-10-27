@@ -48,11 +48,13 @@ function playClicks(count: number, gapSeconds: number): number[] {
     const gain = context.createGain()
     osc.type = 'square'
     osc.frequency.value = 1000
-    gain.gain.setValueAtTime(0.6, at)
-    gain.gain.exponentialRampToValueAtTime(0.001, at + 0.04)
+    // Long and loud enough to stand out in a whole analysis frame (~45 ms).
+    gain.gain.setValueAtTime(0.9, at)
+    gain.gain.setValueAtTime(0.9, at + 0.06)
+    gain.gain.exponentialRampToValueAtTime(0.001, at + 0.1)
     osc.connect(gain).connect(context.destination)
     osc.start(at)
-    osc.stop(at + 0.05)
+    osc.stop(at + 0.11)
     times.push(performance.now() + (at - context.currentTime) * 1000 + outputDelay)
   }
   return times

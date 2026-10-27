@@ -73,13 +73,27 @@ export function tuningFromA(frames: AudioFrame[], threshold: number): TuningResu
   return { ok: true, a4Hz, cents }
 }
 
-/** Step 4 (clicks through the speakers): median delay between each click and when it was heard. */
+/**
+ * Step 4 (clicks through the speakers): median delay between each click and when it
+ * was heard. Each click is found by how much it stands out from the room noise, not
+ * by the playing threshold: a device can play the clicks quieter than a piano.
+ */
 export function latencyFromClicks(clickTimes: number[], frames: AudioFrame[], threshold: number): number | null {
+  if (frames.length === 0 || clickTimes.length === 0) return null
+  const quiet = frames.filter(f => f.time < clickTimes[0])
+  const baseline = Math.max(0.0005, median((quiet.length >= 3 ? quiet : frames).map(f => f.rms)))
   const delays: number[] = []
-  for (const click of clickTimes) {
-    const heard = frames.find(f => f.time >= click && f.rms >= threshold * 2)
-    if (heard && heard.time - click < 500) delays.push(heard.time - click)
-  }
+  clickTimes.forEach((click, i) => {
+    // Look a little before the expected time (the clock estimate can be early) and
+    // stop before the next click.
+    const end = Math.min(click + 600, clickTimes[i + 1] ?? Infinity)
+    const window = frames.filter(f => f.time >= click - 100 && f.time < end)
+    if (window.length === 0) return
+    const peak = Math.max(...window.map(f => f.rms))
+    if (peak < baseline * 3 || peak < threshold * 0.25) return
+    const heard = window.find(f => f.rms >= baseline + (peak - baseline) * 0.3)
+    if (heard) delays.push(heard.time - click)
+  })
   if (delays.length < Math.ceil(clickTimes.length / 2)) return null
   return Math.round(median(delays))
 }
