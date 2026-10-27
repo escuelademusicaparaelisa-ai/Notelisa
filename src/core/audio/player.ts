@@ -17,6 +17,8 @@ export interface PlayOptions {
   tempoFactor?: number
   /** Staves to play; all when omitted. */
   staves?: readonly number[]
+  /** AudioContext time at which the first step sounds; shortly from now when omitted. */
+  startAt?: number
   onStep?: (index: number) => void
   onEnd?: () => void
 }
@@ -63,7 +65,7 @@ export class ScorePlayer {
   async play(timeline: Timeline, options: PlayOptions = {}): Promise<void> {
     await this.load()
     this.stop()
-    const { fromStep = 0, toStep = timeline.steps.length - 1, tempoFactor = 1, staves, onStep, onEnd } = options
+    const { fromStep = 0, toStep = timeline.steps.length - 1, tempoFactor = 1, staves, startAt, onStep, onEnd } = options
     const steps = timeline.steps.slice(fromStep, toStep + 1)
     if (steps.length === 0) return
 
@@ -92,7 +94,7 @@ export class ScorePlayer {
       }, time)
     }, end))
 
-    transport.start('+0.1')
+    transport.start(startAt ?? '+0.1')
   }
 
   stop(): void {

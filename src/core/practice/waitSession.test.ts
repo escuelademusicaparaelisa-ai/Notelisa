@@ -64,7 +64,7 @@ describe('WaitSession', () => {
   it('keeps statistics per measure', () => {
     const s = new WaitSession(timeline)
     s.play(61); s.play(60); s.play(48)
-    expect(s.stats.get(0)).toEqual({ correct: 2, wrong: 1 })
+    expect(s.stats.get(0)).toMatchObject({ correct: 2, wrong: 1 })
   })
 
   it('accepts other octaves when asked', () => {

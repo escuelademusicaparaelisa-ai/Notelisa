@@ -6,6 +6,7 @@ export interface ScoreViewHandle {
   goTo(step: number): void
   setZoom(zoom: number): void
   colorCurrent(midis: readonly number[], color: string): void
+  colorStep(step: number, midis: readonly number[], color: string): void
   clearColors(): void
 }
 
@@ -23,6 +24,7 @@ export const ScoreView = forwardRef<ScoreViewHandle, Props>(function ScoreView({
     goTo: step => controllerRef.current?.goTo(step),
     setZoom: zoom => controllerRef.current?.setZoom(zoom),
     colorCurrent: (midis, color) => controllerRef.current?.colorCurrent(midis, color),
+    colorStep: (step, midis, color) => controllerRef.current?.colorStep(step, midis, color),
     clearColors: () => controllerRef.current?.clearColors(),
   }), [])
 

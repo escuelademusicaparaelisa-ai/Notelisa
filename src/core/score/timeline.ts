@@ -18,11 +18,15 @@ export interface ScoreStep {
   /** Position from the start of the score, in whole notes. */
   time: number
   measureIndex: number
+  /** Distance from the start of its measure, in whole notes (0 when unknown). */
+  measureOffset?: number
   notes: ScoreNote[]
 }
 
 export interface Timeline {
   steps: ScoreStep[]
+  /** Length of each measure in whole notes, by measure index (used for metronome beats). */
+  measureDurations?: number[]
   /** Tempo written in the score, in quarter notes per minute. */
   bpm: number
   staffCount: number
@@ -84,7 +88,9 @@ export function buildTimeline(raw: RawStep[], measures: MeasureInfo[], bpm: numb
         time += Math.max(0, restOfPrev) + Math.max(0, intoCurrent)
       }
     }
-    steps.push({ index: i, time, measureIndex: step.measureIndex, notes: step.notes })
+    const measure = measures[step.measureIndex]
+    const measureOffset = measure ? Math.max(0, step.scoreTime - measure.start) : 0
+    steps.push({ index: i, time, measureIndex: step.measureIndex, measureOffset, notes: step.notes })
   })
-  return { steps, bpm, staffCount }
+  return { steps, bpm, staffCount, measureDurations: measures.map(m => m.duration) }
 }

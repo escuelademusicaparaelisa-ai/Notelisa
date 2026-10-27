@@ -177,6 +177,26 @@ button:disabled { opacity: 0.45; cursor: default; }
   .review-source { flex-basis: 100%; }
 }
 
+/* Phase 5: tempo mode and summary */
+.summary { align-items: center; text-align: center; }
+.summary .modal-actions { justify-content: center; }
+.summary .big-button.primary { align-self: center; }
+.stars { font-size: 3.2rem; letter-spacing: 6px; line-height: 1; }
+.stars span { color: var(--line); }
+.stars span.on { color: #f5b400; }
+.summary-scores { display: flex; gap: 32px; justify-content: center; }
+.summary-scores div { display: flex; flex-direction: column; }
+.summary-scores b { font-size: 2.2rem; color: var(--accent); }
+.summary-detail { color: var(--muted); }
+.summary-problems { display: flex; flex-direction: column; gap: 8px; }
+.countdown { font-size: 2rem; font-weight: 900; color: var(--accent); }
+.feedback.ontime { color: #1f9d55; font-weight: 800; }
+.feedback.offtime { color: #b86e00; font-weight: 800; }
+.segmented button { white-space: nowrap; }
+@media (max-width: 560px) {
+  .segmented button { padding: 6px 9px; font-size: 0.9rem; }
+}
+
 /* School library password */
 .school-unlock { max-width: 640px; margin: 0 auto 20px; padding: 20px; border-radius: var(--radius);
   background: var(--surface); border: 2px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
