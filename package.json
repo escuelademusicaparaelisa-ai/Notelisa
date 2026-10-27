@@ -9,7 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
-    "import-scores": "node scripts/import-musescore.mjs"
+    "importar": "node tools/importer/cli.mjs"
   },
   "dependencies": {
     "opensheetmusicdisplay": "^2.2.1",
@@ -25,6 +25,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "jsdom": "^29.1.1",
     "oxlint": "^1.88.0",
+    "sharp": "^0.35.5",
     "typescript": "~6.0.3",
     "vite": "^8.3.4",
     "vite-plugin-pwa": "^2.0.0",

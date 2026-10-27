@@ -3,6 +3,17 @@
 // kept out of version control). Later this can come from a server without changing
 // the screens.
 
+export type ReviewStatus = 'pending' | 'approved' | 'rejected' | 'failed'
+
+/** Present on pieces imported with optical recognition, which the teacher must check. */
+export interface PieceReview {
+  status: ReviewStatus
+  /** Images of the original score, relative to public/library/. */
+  originals?: string[]
+  importedFrom?: string
+  importedAt?: string
+}
+
 export interface Piece {
   id: string
   title: string
@@ -10,11 +21,21 @@ export interface Piece {
   /** 1 (easiest) to 5. */
   level?: number
   instrument: string
-  /** MusicXML (.musicxml/.xml) or compressed MusicXML (.mxl), relative to public/library/. */
-  file: string
+  /** MusicXML (.musicxml/.xml) or compressed MusicXML (.mxl), relative to public/library/. Null when recognition failed. */
+  file: string | null
   notes?: string
   /** Score content opened from the device (MusicXML text or MXL binary string). */
   content?: string
+  review?: PieceReview
+}
+
+/** Pieces students can practise: everything except recognised scores not yet approved. */
+export function isPlayable(piece: Piece): boolean {
+  return !!(piece.file || piece.content) && (!piece.review || piece.review.status === 'approved')
+}
+
+export function libraryUrl(path: string): string {
+  return `${import.meta.env.BASE_URL}library/${path}`
 }
 
 async function loadIndex(name: string): Promise<Piece[]> {
@@ -35,7 +56,7 @@ export async function loadLibrary(): Promise<Piece[]> {
 
 /** What to hand to the score renderer: the file's URL or its in-memory content. */
 export function pieceSource(piece: Piece): string {
-  return piece.content ?? `${import.meta.env.BASE_URL}library/${piece.file}`
+  return piece.content ?? libraryUrl(piece.file ?? '')
 }
 
 /** Reads a MusicXML (.musicxml/.xml) or MXL file chosen by the user. */

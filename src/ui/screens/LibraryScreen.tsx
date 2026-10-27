@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { getInstrument } from '../../instruments'
-import { loadLibrary, pieceFromFile, type Piece } from '../../library/catalog'
+import { isPlayable, loadLibrary, pieceFromFile, type Piece } from '../../library/catalog'
 
 interface Props {
   onOpen(piece: Piece): void
+  onReview(): void
 }
 
 const CARD_COLORS = ['#ffd6a5', '#caffbf', '#9bf6ff', '#bdb2ff', '#ffc6ff', '#fdffb6', '#a0c4ff']
 
-export function LibraryScreen({ onOpen }: Props) {
+export function LibraryScreen({ onOpen, onReview }: Props) {
   const [pieces, setPieces] = useState<Piece[] | null>(null)
   const [fileError, setFileError] = useState(false)
 
@@ -22,8 +23,13 @@ export function LibraryScreen({ onOpen }: Props) {
     }
   }
 
+  const [toReview, setToReview] = useState(0)
+
   useEffect(() => {
-    loadLibrary().then(setPieces)
+    loadLibrary().then(all => {
+      setPieces(all.filter(isPlayable))
+      setToReview(all.filter(p => p.review && p.review.status !== 'approved' && p.review.status !== 'rejected').length)
+    })
   }, [])
 
   return (
@@ -36,6 +42,9 @@ export function LibraryScreen({ onOpen }: Props) {
           <input id="open-file" type="file" accept=".musicxml,.xml,.mxl" hidden
             onChange={e => openFile(e.target.files?.[0])} />
         </label>
+        {toReview > 0 && (
+          <button className="chip review-link" onClick={onReview}>📝 Revisar importaciones ({toReview})</button>
+        )}
         {fileError && <p className="notice warn">No se ha podido leer ese archivo. Usa MusicXML (.musicxml, .xml o .mxl).</p>}
       </header>
       {pieces === null && <p className="score-message">Cargando biblioteca…</p>}
