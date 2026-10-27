@@ -62,6 +62,19 @@ describe('TempoSession', () => {
     expect(s.update(0.5).filter(e => e.type === 'missed')).toEqual([])
   })
 
+  it('ignores chord notes the microphone hears in a low octave, but not other notes', () => {
+    const s = new TempoSession(timeline, { onlyHighest: true })
+    expect(s.play(24, 0.1)).toEqual([])
+    expect(s.play(36, 0.9)).toEqual([])
+    expect(s.play(25, 0.1)).toEqual([{ type: 'wrong', midi: 25 }])
+    expect(s.play(60, 0.12)[0]).toMatchObject({ type: 'hit', midi: 60 })
+  })
+
+  it('still counts chord notes as wrong without the microphone', () => {
+    const s = new TempoSession(timeline, { staves: [0] })
+    expect(s.play(36, 0.1)).toEqual([{ type: 'wrong', midi: 36 }])
+  })
+
   it('practises only the chosen measures and finishes after the last note', () => {
     const s = new TempoSession(timeline, { fromMeasure: 1, toMeasure: 1 })
     expect(s.firstStep).toBe(2)

@@ -52,6 +52,8 @@ export class TempoSession {
   readonly stats = new Map<number, MeasureStats>()
   private readonly options: TempoSessionOptions
   private readonly targets: Target[] = []
+  /** Every note of the score with when it sounds, to recognise chord notes the microphone picks up. */
+  private readonly sounding: { pitchClass: number; start: number; end: number }[] = []
   private nextStep = 0
   private done = false
 
@@ -67,6 +69,9 @@ export class TempoSession {
       const notes = playableNotes(step, staves).map(n => n.midi)
       for (const midi of onlyHighest ? [Math.max(...notes)] : [...new Set(notes)]) {
         this.targets.push({ step: step.index, measure: step.measureIndex, midi, time: this.stepTimes[i], state: 'waiting' })
+      }
+      for (const note of step.notes) {
+        this.sounding.push({ pitchClass: note.midi % 12, start: this.stepTimes[i], end: this.stepTimes[i] + seconds(note.duration) })
       }
     })
     const last = this.steps[this.steps.length - 1]
@@ -118,6 +123,9 @@ export class TempoSession {
       if (!best || Math.abs(target.time - at) < Math.abs(best.time - at)) best = target
     }
     if (!best) {
+      // The microphone hears chords as one note, often an octave or two too low:
+      // a note of a chord that is sounding is not a mistake.
+      if (this.options.onlyHighest && this.isChordNote(midi, at)) return []
       this.statsFor(this.nearestMeasure(at)).wrong++
       return [{ type: 'wrong', midi }]
     }
@@ -128,6 +136,11 @@ export class TempoSession {
     stats.correct++
     if (timing !== 'onTime') stats.offTime++
     return [{ type: 'hit', step: best.step, midi: best.midi, timing }]
+  }
+
+  private isChordNote(midi: number, at: number): boolean {
+    const { ok } = this.options.windows
+    return this.sounding.some(n => n.pitchClass === midi % 12 && at >= n.start - ok && at <= n.end + ok)
   }
 
   private nearestMeasure(at: number): number {

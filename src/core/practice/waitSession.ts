@@ -47,6 +47,8 @@ export class WaitSession {
   private position = 0
   private matcher: StepMatcher | null = null
   private mistakesOnStep = 0
+  /** Pitch classes of every note of this step and the previous one (both hands). */
+  private chordClasses = new Set<number>()
   private done = false
   readonly stats = new Map<number, MeasureStats>()
 
@@ -84,6 +86,9 @@ export class WaitSession {
     const stats = this.statsFor(step.measureIndex)
     if (result.kind === 'repeat') return []
     if (result.kind === 'wrong') {
+      // The microphone hears chords as one note, often an octave or two too low:
+      // a note of the chord (or of the one still ringing) is not a mistake.
+      if (this.options.onlyHighest && this.chordClasses.has(midi % 12)) return []
       stats.wrong++
       this.mistakesOnStep++
       return [{ type: 'wrong', step: step.index, midi }]
@@ -120,6 +125,8 @@ export class WaitSession {
       this.matcher = null
       return
     }
+    const previous = this.steps[position - 1]
+    this.chordClasses = new Set([...step.notes, ...(previous?.notes ?? [])].map(n => n.midi % 12))
     const notes = playableNotes(step, this.options.staves).map(n => n.midi)
     this.matcher = new StepMatcher(this.options.onlyHighest ? [Math.max(...notes)] : notes, this.options)
   }
