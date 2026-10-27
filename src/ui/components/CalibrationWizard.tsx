@@ -200,7 +200,8 @@ export function CalibrationWizard({ onClose }: Props) {
         )}
         {step === 'latency' && (
           <>
-            <p className="calibration-step">⏱️ <b>Paso 4:</b> sube el volumen. Sonarán {CLICKS} clics para medir el retraso del micrófono.</p>
+            <p className="calibration-step">⏱️ <b>Paso 4:</b> aquí <b>no tienes que tocar nada</b>.</p>
+            <p>Sube el volumen de la tablet y pulsa <b>Medir</b>. La propia tablet hará {CLICKS} «clics» y medirá cuánto tarda el micrófono en oírlos. Quédate en silencio unos 3 segundos.</p>
             <div className="modal-actions">
               <button className="big-button primary" onClick={runLatency} disabled={message === 'Escuchando los clics…'}>Medir</button>
               <button className="chip" onClick={finish}>Saltar</button>
