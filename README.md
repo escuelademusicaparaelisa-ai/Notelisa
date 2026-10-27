@@ -12,7 +12,7 @@ app (PWA).
 | Fase | Contenido | Estado |
 |------|-----------|--------|
 | 1 | Esqueleto, biblioteca, partitura con cursor, escuchar la pieza | ✅ |
-| 2 | Teclado MIDI + modo espera | Pendiente |
+| 2 | Teclado MIDI + modo espera | ✅ |
 | 3 | Micrófono (una nota cada vez) + calibración | Pendiente |
 | 4 | Importar MuseScore y PDF/imágenes (OMR) | Pendiente |
 | 5 | Modo tempo, puntuación y resumen | Pendiente |
@@ -51,6 +51,40 @@ npm run preview    # sirve la versión final para probarla
    vuelve a escuchar.
 6. Con **−** y **+** cambias el tamaño de la partitura.
 
+## Cómo probar la fase 2 (teclado MIDI y modo espera)
+
+Usa **Chrome o Edge** en un ordenador o tablet Android (Safari en iPhone/iPad no admite
+teclados MIDI; allí la app lo avisa y puedes usar el teclado de la pantalla).
+
+1. Enchufa el teclado MIDI por USB **antes o después** de abrir la app, da igual.
+2. Abre una pieza. Arriba elige **🎹 Practicar** (es el modo por defecto).
+3. Pulsa **⚙️ Ajustes → Conectar teclado MIDI** y acepta el permiso del navegador.
+   Aparece el nombre del teclado con un punto verde. Si lo desenchufas y lo vuelves a
+   enchufar, se reconecta solo.
+4. Pulsa **▶ Empezar**. Abajo se indica qué nota tocar y en el teclado de la pantalla
+   se ilumina en morado.
+5. Toca la nota: se pinta de **verde** en la partitura y el cursor avanza. Si fallas,
+   se pinta de **rojo** y la app espera; cuando la aciertes quedará **naranja** (acertada
+   después de fallar). En los acordes hay que tocar todas las notas (en cualquier orden).
+6. Al final aparece el porcentaje de aciertos.
+
+En **⚙️ Ajustes** también puedes:
+
+- Elegir **Mano derecha / Mano izquierda / Todo**.
+- Practicar solo **del compás X al Y** y marcar **Repetir en bucle**.
+- Activar **Vale cualquier octava** (útil con teclados pequeños de 25 teclas como el
+  AKAI MPK mini).
+- Mostrar u ocultar el **teclado en pantalla** (se puede tocar con el dedo o el ratón).
+
+El teclado MIDI suena a través de la app (los controladores como el MPK mini no tienen
+sonido propio), así que sube el volumen del ordenador.
+
+## Abrir una partitura del dispositivo
+
+En la biblioteca, **📂 Abrir partitura del dispositivo** carga un archivo MusicXML
+(`.musicxml`, `.xml` o `.mxl`) desde el ordenador o la tablet sin subirlo a ningún sitio.
+En MuseScore se exporta con *Archivo → Exportar → MusicXML*.
+
 ## Añadir partituras
 
 El formato interno es **MusicXML** (`.musicxml`, `.xml` o `.mxl`).
@@ -77,7 +111,9 @@ src/
     music/      utilidades de notas (MIDI, nombres, frecuencias)
     score/      partitura → "pasos" (timeline) y control del cursor (OSMD)
     audio/      reproducción con Tone.js
-    input/      capa común de entrada (MIDI y micrófono producen el mismo evento)
+    input/      capa común de entrada: MIDI, teclado en pantalla y micrófono publican
+                el mismo tipo de evento en un "bus" de notas
+    practice/   lógica de práctica (comparar notas, modo espera) con tests
   instruments/  definición de cada instrumento (piano, flauta…)
   library/      catálogo de piezas
   ui/           pantallas y componentes React

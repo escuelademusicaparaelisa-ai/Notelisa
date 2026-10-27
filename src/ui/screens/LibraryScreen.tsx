@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getInstrument } from '../../instruments'
-import { loadLibrary, type Piece } from '../../library/catalog'
+import { loadLibrary, pieceFromFile, type Piece } from '../../library/catalog'
 
 interface Props {
   onOpen(piece: Piece): void
@@ -10,6 +10,17 @@ const CARD_COLORS = ['#ffd6a5', '#caffbf', '#9bf6ff', '#bdb2ff', '#ffc6ff', '#fd
 
 export function LibraryScreen({ onOpen }: Props) {
   const [pieces, setPieces] = useState<Piece[] | null>(null)
+  const [fileError, setFileError] = useState(false)
+
+  const openFile = async (file: File | undefined) => {
+    if (!file) return
+    try {
+      setFileError(false)
+      onOpen(await pieceFromFile(file))
+    } catch {
+      setFileError(true)
+    }
+  }
 
   useEffect(() => {
     loadLibrary().then(setPieces)
@@ -20,6 +31,12 @@ export function LibraryScreen({ onOpen }: Props) {
       <header className="library-header">
         <h1>🎹 Notelisa</h1>
         <p>Elige una pieza para practicar</p>
+        <label className="chip open-file">
+          📂 Abrir partitura del dispositivo
+          <input id="open-file" type="file" accept=".musicxml,.xml,.mxl" hidden
+            onChange={e => openFile(e.target.files?.[0])} />
+        </label>
+        {fileError && <p className="notice warn">No se ha podido leer ese archivo. Usa MusicXML (.musicxml, .xml o .mxl).</p>}
       </header>
       {pieces === null && <p className="score-message">Cargando biblioteca…</p>}
       {pieces?.length === 0 && <p className="score-message">Todavía no hay piezas en la biblioteca.</p>}

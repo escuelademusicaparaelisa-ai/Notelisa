@@ -13,6 +13,8 @@ export interface Piece {
   /** MusicXML (.musicxml/.xml) or compressed MusicXML (.mxl), relative to public/library/. */
   file: string
   notes?: string
+  /** Score content opened from the device (MusicXML text or MXL binary string). */
+  content?: string
 }
 
 async function loadIndex(name: string): Promise<Piece[]> {
@@ -31,6 +33,25 @@ export async function loadLibrary(): Promise<Piece[]> {
   return [...shipped, ...local]
 }
 
-export function pieceUrl(piece: Piece): string {
-  return `${import.meta.env.BASE_URL}library/${piece.file}`
+/** What to hand to the score renderer: the file's URL or its in-memory content. */
+export function pieceSource(piece: Piece): string {
+  return piece.content ?? `${import.meta.env.BASE_URL}library/${piece.file}`
+}
+
+/** Reads a MusicXML (.musicxml/.xml) or MXL file chosen by the user. */
+export async function pieceFromFile(file: File): Promise<Piece> {
+  const isMxl = file.name.toLowerCase().endsWith('.mxl')
+  const content = isMxl ? await readBinaryString(file) : await file.text()
+  const title = file.name.replace(/\.[^.]+$/, '').replace(/_/g, ' ')
+  return { id: `file:${file.name}`, title, instrument: 'piano', file: file.name, content }
+}
+
+function readBinaryString(file: File): Promise<string> {
+  // OSMD recognises MXL (zip) content when given as a binary string.
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsBinaryString(file)
+  })
 }

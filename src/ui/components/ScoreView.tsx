@@ -5,14 +5,16 @@ import type { Timeline } from '../../core/score/timeline'
 export interface ScoreViewHandle {
   goTo(step: number): void
   setZoom(zoom: number): void
+  colorCurrent(midis: readonly number[], color: string): void
+  clearColors(): void
 }
 
 interface Props {
-  url: string
+  source: string
   onLoaded(timeline: Timeline): void
 }
 
-export const ScoreView = forwardRef<ScoreViewHandle, Props>(function ScoreView({ url, onLoaded }, ref) {
+export const ScoreView = forwardRef<ScoreViewHandle, Props>(function ScoreView({ source, onLoaded }, ref) {
   const containerRef = useRef<HTMLDivElement>(null)
   const controllerRef = useRef<ScoreController | null>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -20,6 +22,8 @@ export const ScoreView = forwardRef<ScoreViewHandle, Props>(function ScoreView({
   useImperativeHandle(ref, () => ({
     goTo: step => controllerRef.current?.goTo(step),
     setZoom: zoom => controllerRef.current?.setZoom(zoom),
+    colorCurrent: (midis, color) => controllerRef.current?.colorCurrent(midis, color),
+    clearColors: () => controllerRef.current?.clearColors(),
   }), [])
 
   useEffect(() => {
@@ -29,7 +33,7 @@ export const ScoreView = forwardRef<ScoreViewHandle, Props>(function ScoreView({
     const controller = new ScoreController(container)
     controllerRef.current = controller
     setStatus('loading')
-    controller.load(url)
+    controller.load(source)
       .then(timeline => {
         if (cancelled) return
         setStatus('ready')
@@ -46,7 +50,7 @@ export const ScoreView = forwardRef<ScoreViewHandle, Props>(function ScoreView({
     }
     // onLoaded is intentionally not a dependency: reload only when the score changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [url])
+  }, [source])
 
   return (
     <div className="score-view">
