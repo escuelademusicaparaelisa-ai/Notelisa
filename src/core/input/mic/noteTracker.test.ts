@@ -61,6 +61,13 @@ describe('NoteTracker with a simulated piano', () => {
     expect(ons(track(render(strikes, 3.6))).map(e => e.midi)).toEqual(melody)
   })
 
+  it('dates each note at its attack, not when its pitch became stable', () => {
+    const melody = [48, 52, 55, 60, 64, 67, 72]
+    const strikes = melody.map((midi, i) => ({ midi, at: 0.1 + i * 0.4, length: 0.4 }))
+    const delays = ons(track(render(strikes, 3.2))).map((e, i) => e.time - strikes[i].at * 1000)
+    for (const delay of delays) expect(delay).toBeLessThan(30)
+  })
+
   it('does not count a sustained note twice', () => {
     expect(ons(track(render([{ midi: 60, at: 0.1, length: 3 }], 3.2)))).toHaveLength(1)
   })
