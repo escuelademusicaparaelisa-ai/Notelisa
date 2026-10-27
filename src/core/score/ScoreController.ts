@@ -10,6 +10,7 @@ export class ScoreController {
   // Drawn notes of every step, so any step can be painted (not only the one under the cursor).
   private stepNotes: GraphicalNote[][] = []
   timeline: Timeline | null = null
+  private disposed = false
 
   constructor(container: HTMLElement) {
     this.osmd = new OpenSheetMusicDisplay(container, {
@@ -29,6 +30,9 @@ export class ScoreController {
   /** Loads a score from a URL or from MusicXML/MXL content already in memory. */
   async load(source: string): Promise<Timeline> {
     await this.osmd.load(source)
+    // Disposed while loading (the screen changed score): drawing now would leave a
+    // second copy of the score in the container.
+    if (this.disposed) throw new Error('Score view closed while loading')
     this.osmd.render()
     this.osmd.cursor.show()
     this.timeline = extractTimeline(this.osmd)
@@ -114,6 +118,7 @@ export class ScoreController {
   }
 
   dispose(): void {
+    this.disposed = true
     this.osmd.clear()
   }
 }
