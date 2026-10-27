@@ -254,8 +254,19 @@ tools/importer/ importación de partituras (MuseScore, Audiveris) y revisión
 
 Para añadir un instrumento nuevo basta con crear su definición en `src/instruments/`.
 
+## Partituras libres
+
+La biblioteca incluye 28 piezas de piano de dominio público para todos los alumnos (sin clave), del
+nivel ★★ al ★★★★★: minuetos del cuaderno de Anna Magdalena Bach, Mozart, Schumann, Burgmüller,
+Clementi, Chaikovski, Para Elisa, Chopin, Satie, Bach, Grieg y Kuhlau. Están en
+`public/library/libre/` (MusicXML comprimido, `.mxl`) y en `public/library/index.json` con ids
+`libre-…`. La fuente, el editor y la licencia de cada una están en
+[`public/library/libre/FUENTES.md`](public/library/libre/FUENTES.md); para añadir más, ver
+`tools/mutopia/`.
+
 ## Créditos
 
 - [OpenSheetMusicDisplay](https://opensheetmusicdisplay.org) (BSD-3) para dibujar la partitura.
 - [Tone.js](https://tonejs.github.io) (MIT) para el sonido.
 - Muestras de piano de [tonejs-instruments](https://github.com/nbrosowsky/tonejs-instruments) (CC BY 3.0).
+- Partituras libres del [Mutopia Project](https://www.mutopiaproject.org) (dominio público y CC BY-SA 2.5; detalle en `public/library/libre/FUENTES.md`).
