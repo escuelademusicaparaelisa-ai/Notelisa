@@ -17,6 +17,42 @@
       "file": "demo/oda-a-la-alegria.musicxml"
     },
     {
+      "id": "libre-martinillo",
+      "title": "Martinillo (Frère Jacques)",
+      "composer": "Popular (Francia)",
+      "arranger": "Notelisa",
+      "level": 1,
+      "instrument": "piano",
+      "file": "libre/martinillo.mxl"
+    },
+    {
+      "id": "libre-al-claro-de-la-luna",
+      "title": "Al claro de la luna (Au clair de la lune)",
+      "composer": "Popular (Francia)",
+      "arranger": "Notelisa",
+      "level": 1,
+      "instrument": "piano",
+      "file": "libre/al-claro-de-la-luna.mxl"
+    },
+    {
+      "id": "libre-maria-tenia-un-corderito",
+      "title": "María tenía un corderito",
+      "composer": "Popular (EE. UU.)",
+      "arranger": "Notelisa",
+      "level": 1,
+      "instrument": "piano",
+      "file": "libre/maria-tenia-un-corderito.mxl"
+    },
+    {
+      "id": "libre-el-puente-de-londres",
+      "title": "El puente de Londres",
+      "composer": "Popular (Inglaterra)",
+      "arranger": "Notelisa",
+      "level": 1,
+      "instrument": "piano",
+      "file": "libre/el-puente-de-londres.mxl"
+    },
+    {
       "id": "libre-minueto-sol-mayor-bwv-anh-114",
       "title": "Minueto en Sol mayor (BWV Anh. 114)",
       "composer": "C. Petzold",
@@ -87,6 +123,69 @@
       "level": 2,
       "instrument": "piano",
       "file": "libre/burgmuller-la-candidez.mxl"
+    },
+    {
+      "id": "libre-cancion-de-cuna-brahms",
+      "title": "Canción de cuna (op. 49 n.º 4)",
+      "composer": "J. Brahms",
+      "arranger": "Notelisa",
+      "level": 2,
+      "instrument": "piano",
+      "file": "libre/cancion-de-cuna-brahms.mxl"
+    },
+    {
+      "id": "libre-oh-susana",
+      "title": "Oh! Susana",
+      "composer": "S. Foster",
+      "arranger": "Notelisa",
+      "level": 2,
+      "instrument": "piano",
+      "file": "libre/oh-susana.mxl"
+    },
+    {
+      "id": "libre-adeste-fideles",
+      "title": "Adeste fideles",
+      "composer": "J. F. Wade",
+      "arranger": "Notelisa",
+      "level": 2,
+      "instrument": "piano",
+      "file": "libre/adeste-fideles.mxl"
+    },
+    {
+      "id": "libre-oh-abeto",
+      "title": "Oh, abeto (O Tannenbaum)",
+      "composer": "Popular (Alemania)",
+      "arranger": "Notelisa",
+      "level": 2,
+      "instrument": "piano",
+      "file": "libre/oh-abeto.mxl"
+    },
+    {
+      "id": "libre-os-deseamos-feliz-navidad",
+      "title": "Os deseamos feliz Navidad (We Wish You a Merry Christmas)",
+      "composer": "Popular (Inglaterra)",
+      "arranger": "Notelisa",
+      "level": 2,
+      "instrument": "piano",
+      "file": "libre/os-deseamos-feliz-navidad.mxl"
+    },
+    {
+      "id": "libre-engalanad-los-salones",
+      "title": "Engalanad los salones (Deck the Halls)",
+      "composer": "Popular (Gales)",
+      "arranger": "Notelisa",
+      "level": 2,
+      "instrument": "piano",
+      "file": "libre/engalanad-los-salones.mxl"
+    },
+    {
+      "id": "libre-al-mundo-paz",
+      "title": "Al mundo paz (Joy to the World)",
+      "composer": "L. Mason",
+      "arranger": "Notelisa",
+      "level": 2,
+      "instrument": "piano",
+      "file": "libre/al-mundo-paz.mxl"
     },
     {
       "id": "libre-schumann-jinete-salvaje",
@@ -183,6 +282,15 @@
       "level": 3,
       "instrument": "piano",
       "file": "libre/kuhlau-sonatina-op20-1.mxl"
+    },
+    {
+      "id": "libre-greensleeves",
+      "title": "Greensleeves",
+      "composer": "Popular (Inglaterra)",
+      "arranger": "Notelisa",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/greensleeves.mxl"
     },
     {
       "id": "libre-para-elisa",

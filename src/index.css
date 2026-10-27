@@ -209,6 +209,8 @@ button:disabled { opacity: 0.45; cursor: default; }
 /* Instrument buttons in the library */
 .instrument-filter { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
 .instrument-filter .chip { font-size: 1.1rem; padding: 10px 18px; }
+.library-search { display: block; width: 100%; max-width: 520px; margin-bottom: 16px; padding: 12px 18px; font: inherit; font-size: 1.1rem; color: var(--ink); background: var(--bg); border: 2px solid var(--line); border-radius: 999px; }
+.library-search:focus { outline: none; border-color: var(--accent); }
 
 /* Metronome beat */
 .beat { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;

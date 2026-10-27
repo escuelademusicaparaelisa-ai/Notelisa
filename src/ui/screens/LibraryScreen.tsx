@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getInstrument, instruments } from '../../instruments'
 import { isPlayable, loadLibrary, pieceFromFile, type Piece } from '../../library/catalog'
+import { matchesQuery } from '../../library/search'
 import { loadSchoolLibrary, lockSchoolLibrary, openSchoolPiece, unlockSchoolLibrary, type SchoolLibrary } from '../../library/school'
 
 interface Props {
@@ -50,6 +51,9 @@ export function LibraryScreen({ onOpen, onReview, onExercises }: Props) {
   const [openError, setOpenError] = useState(false)
   // Instrument shown in the library; null = all.
   const [filter, setFilter] = useState<string | null>(savedFilter)
+  const [query, setQuery] = useState('')
+  // Difficulty shown; null = all.
+  const [level, setLevel] = useState<number | null>(null)
 
   const load = () => Promise.all([loadLibrary(), loadSchoolLibrary()]).then(([all, schoolLibrary]) => {
     const playable = all.filter(isPlayable)
@@ -90,7 +94,11 @@ export function LibraryScreen({ onOpen, onReview, onExercises }: Props) {
   // Only instruments that have pieces get a button.
   const available = Object.values(instruments).filter(inst => pieces?.some(p => getInstrument(p.instrument).id === inst.id))
   const activeFilter = available.some(inst => inst.id === filter) ? filter : null
-  const shown = pieces?.filter(p => !activeFilter || getInstrument(p.instrument).id === activeFilter)
+  const levels = [...new Set(pieces?.map(p => p.level).filter((l): l is number => !!l))].sort((a, b) => a - b)
+  const activeLevel = level !== null && levels.includes(level) ? level : null
+  const shown = pieces?.filter(p => (!activeFilter || getInstrument(p.instrument).id === activeFilter)
+    && (activeLevel === null || p.level === activeLevel)
+    && matchesQuery(p, query))
 
   return (
     <main className="library">
@@ -118,6 +126,23 @@ export function LibraryScreen({ onOpen, onReview, onExercises }: Props) {
       {school.state === 'locked' && <SchoolUnlock onUnlocked={() => void load()} />}
       {pieces === null && <p className="score-message">Cargando biblioteca…</p>}
       {pieces?.length === 0 && <p className="score-message">Todavía no hay piezas en la biblioteca.</p>}
+      {!!pieces?.length && (
+        <input className="library-search" type="search" placeholder="🔍 Buscar por título o autor"
+          value={query} onChange={e => setQuery(e.target.value)} aria-label="Buscar pieza" />
+      )}
+      {levels.length > 1 && (
+        <div className="instrument-filter" role="group" aria-label="Dificultad">
+          <button className={`chip ${activeLevel === null ? 'active' : ''}`} onClick={() => setLevel(null)} aria-pressed={activeLevel === null}>
+            Todos los niveles
+          </button>
+          {levels.map(l => (
+            <button key={l} className={`chip ${activeLevel === l ? 'active' : ''}`}
+              onClick={() => setLevel(l)} aria-pressed={activeLevel === l} aria-label={`Nivel ${l}`}>
+              {'★'.repeat(l)}
+            </button>
+          ))}
+        </div>
+      )}
       {available.length > 1 && (
         <div className="instrument-filter" role="group" aria-label="Instrumento">
           <button className={`chip ${activeFilter === null ? 'active' : ''}`} onClick={() => chooseFilter(null)} aria-pressed={activeFilter === null}>
@@ -131,6 +156,7 @@ export function LibraryScreen({ onOpen, onReview, onExercises }: Props) {
           ))}
         </div>
       )}
+      {!!pieces?.length && shown?.length === 0 && <p className="score-message">No hay piezas que coincidan con la búsqueda.</p>}
       <ul className="piece-grid">
         {shown?.map((piece, i) => (
           <li key={piece.id}>
