@@ -15,7 +15,7 @@ export interface MicCalibration {
 export const DEFAULT_CALIBRATION: MicCalibration = { threshold: 0.01, a4Hz: DEFAULT_A4_HZ, latencyMs: 0 }
 
 const MIN_THRESHOLD = 0.004
-const MAX_THRESHOLD = 0.1
+const MAX_THRESHOLD = 0.05
 
 function percentile(values: number[], p: number): number {
   if (values.length === 0) return 0
@@ -27,20 +27,35 @@ export function median(values: number[]): number {
   return percentile(values, 0.5)
 }
 
-/** Step 1 (silence): the threshold sits safely above the room's background noise. */
-export function thresholdFromNoise(silence: AudioFrame[]): number {
-  const noise = percentile(silence.map(f => f.rms), 0.9)
-  return Math.min(MAX_THRESHOLD, Math.max(MIN_THRESHOLD, noise * 3))
+/** Step 1 (silence): the background noise level of the room. */
+export function noiseLevel(silence: AudioFrame[]): number {
+  return percentile(silence.map(f => f.rms), 0.9)
 }
 
-export type LoudnessCheck = { ok: true; peak: number } | { ok: false; reason: 'silent' | 'tooQuiet'; peak: number }
+/** A first threshold safely above the room's background noise. */
+export function thresholdFromNoise(silence: AudioFrame[]): number {
+  return clampThreshold(noiseLevel(silence) * 3)
+}
 
-/** Step 2 (a loud note): checks the piano is clearly louder than the threshold. */
-export function checkLoudness(frames: AudioFrame[], threshold: number): LoudnessCheck {
+function clampThreshold(value: number): number {
+  return Math.min(MAX_THRESHOLD, Math.max(MIN_THRESHOLD, value))
+}
+
+export type LoudnessCheck =
+  | { ok: true; peak: number; threshold: number }
+  | { ok: false; reason: 'silent' | 'tooQuiet'; peak: number }
+
+/**
+ * Step 2 (a loud note): checks the piano stands out from the noise and sets the
+ * final threshold between the noise and the piano, so softer playing still counts.
+ */
+export function checkLoudness(frames: AudioFrame[], noise: number): LoudnessCheck {
   const peak = Math.max(0, ...frames.map(f => f.rms))
-  if (peak < threshold) return { ok: false, reason: 'silent', peak }
-  if (peak < threshold * 4) return { ok: false, reason: 'tooQuiet', peak }
-  return { ok: true, peak }
+  const floor = Math.max(noise, MIN_THRESHOLD / 3)
+  const pitched = frames.filter(f => f.rms > floor * 2 && f.clarity >= 0.9).length
+  if (peak < floor * 2 || pitched < 3) return { ok: false, reason: 'silent', peak }
+  if (peak < floor * 4) return { ok: false, reason: 'tooQuiet', peak }
+  return { ok: true, peak, threshold: clampThreshold(Math.max(floor * 2, Math.min(floor * 3, peak / 4))) }
 }
 
 export type TuningResult = { ok: true; a4Hz: number; cents: number } | { ok: false; reason: 'noPitch' | 'notAnA' }
