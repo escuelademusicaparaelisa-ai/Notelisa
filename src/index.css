@@ -185,3 +185,7 @@ button:disabled { opacity: 0.45; cursor: default; }
 .school-unlock-row { display: flex; gap: 10px; flex-wrap: wrap; }
 .school-unlock-row input { flex: 1 1 180px; min-width: 0; font-size: 1.25rem; padding: 10px 14px;
   border: 2px solid var(--line); border-radius: 14px; background: var(--bg); color: var(--ink); }
+
+/* Instrument buttons in the library */
+.instrument-filter { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+.instrument-filter .chip { font-size: 1.1rem; padding: 10px 18px; }

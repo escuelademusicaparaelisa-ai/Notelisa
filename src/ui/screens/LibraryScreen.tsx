@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getInstrument } from '../../instruments'
+import { getInstrument, instruments } from '../../instruments'
 import { isPlayable, loadLibrary, pieceFromFile, type Piece } from '../../library/catalog'
 import { loadSchoolLibrary, lockSchoolLibrary, openSchoolPiece, unlockSchoolLibrary, type SchoolLibrary } from '../../library/school'
 
@@ -9,6 +9,25 @@ interface Props {
 }
 
 const CARD_COLORS = ['#ffd6a5', '#caffbf', '#9bf6ff', '#bdb2ff', '#ffc6ff', '#fdffb6', '#a0c4ff']
+
+const FILTER_KEY = 'notelisa.instrumentFilter'
+
+function savedFilter(): string | null {
+  try {
+    return localStorage.getItem(FILTER_KEY)
+  } catch {
+    return null
+  }
+}
+
+function saveFilter(value: string | null): void {
+  try {
+    if (value) localStorage.setItem(FILTER_KEY, value)
+    else localStorage.removeItem(FILTER_KEY)
+  } catch {
+    // Private browsing: the choice is just not remembered.
+  }
+}
 
 export function LibraryScreen({ onOpen, onReview }: Props) {
   const [pieces, setPieces] = useState<Piece[] | null>(null)
@@ -28,6 +47,8 @@ export function LibraryScreen({ onOpen, onReview }: Props) {
   const [school, setSchool] = useState<SchoolLibrary>({ state: 'none' })
   const [opening, setOpening] = useState<string | null>(null)
   const [openError, setOpenError] = useState(false)
+  // Instrument shown in the library; null = all.
+  const [filter, setFilter] = useState<string | null>(savedFilter)
 
   const load = () => Promise.all([loadLibrary(), loadSchoolLibrary()]).then(([all, schoolLibrary]) => {
     const playable = all.filter(isPlayable)
@@ -60,6 +81,16 @@ export function LibraryScreen({ onOpen, onReview }: Props) {
     void load()
   }
 
+  const chooseFilter = (value: string | null) => {
+    setFilter(value)
+    saveFilter(value)
+  }
+
+  // Only instruments that have pieces get a button.
+  const available = Object.values(instruments).filter(inst => pieces?.some(p => getInstrument(p.instrument).id === inst.id))
+  const activeFilter = available.some(inst => inst.id === filter) ? filter : null
+  const shown = pieces?.filter(p => !activeFilter || getInstrument(p.instrument).id === activeFilter)
+
   return (
     <main className="library">
       <header className="library-header">
@@ -82,8 +113,21 @@ export function LibraryScreen({ onOpen, onReview }: Props) {
       {school.state === 'locked' && <SchoolUnlock onUnlocked={() => void load()} />}
       {pieces === null && <p className="score-message">Cargando biblioteca…</p>}
       {pieces?.length === 0 && <p className="score-message">Todavía no hay piezas en la biblioteca.</p>}
+      {available.length > 1 && (
+        <div className="instrument-filter" role="group" aria-label="Instrumento">
+          <button className={`chip ${activeFilter === null ? 'active' : ''}`} onClick={() => chooseFilter(null)} aria-pressed={activeFilter === null}>
+            Todas
+          </button>
+          {available.map(inst => (
+            <button key={inst.id} className={`chip ${activeFilter === inst.id ? 'active' : ''}`}
+              onClick={() => chooseFilter(inst.id)} aria-pressed={activeFilter === inst.id}>
+              {inst.icon} {inst.name}
+            </button>
+          ))}
+        </div>
+      )}
       <ul className="piece-grid">
-        {pieces?.map((piece, i) => (
+        {shown?.map((piece, i) => (
           <li key={piece.id}>
             <button
               className="piece-card"
@@ -92,7 +136,11 @@ export function LibraryScreen({ onOpen, onReview }: Props) {
               disabled={opening !== null}
             >
               <span className="piece-title">{piece.title}</span>
-              {piece.composer && <span className="piece-composer">{piece.composer}</span>}
+              {(piece.composer || piece.arranger) && (
+                <span className="piece-composer">
+                  {[piece.composer, piece.arranger && `arr. ${piece.arranger}`].filter(Boolean).join(' · ')}
+                </span>
+              )}
               <span className="piece-meta">
                 {opening === piece.id ? 'Abriendo… · ' : ''}
                 {getInstrument(piece.instrument).name}
