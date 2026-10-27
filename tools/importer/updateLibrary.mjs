@@ -1,7 +1,7 @@
 // Rebuilds the teacher's library from a folder of scores and the Excel sheet that
 // describes them, then publishes it as the encrypted school library.
 import JSZip from 'jszip'
-import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { extname, join } from 'node:path'
 import { readSheet, SHEET_NAME, writeSheet } from './catalogSheet.mjs'
@@ -44,10 +44,40 @@ function guessInstrument(file) {
   return /fl(auta|ute|\.)|flautas/i.test(file) ? 'flute' : 'piano'
 }
 
+// Rows for the free pieces that ship with the app (public/library/libre/). Their files
+// are not in the teacher's folder; the sheet is only used to set their level.
+const isFreeRow = row => row.file.startsWith('libre/')
+
+/**
+ * Applies the levels written in the sheet to the free pieces of index.json, keeping
+ * them sorted by level. Returns how many changed.
+ */
+function applyFreeLevels(libraryDir, rows) {
+  const path = join(libraryDir, 'index.json')
+  if (!existsSync(path) || rows.length === 0) return 0
+  const index = JSON.parse(readFileSync(path, 'utf8'))
+  const levels = new Map(rows.filter(r => r.level).map(r => [r.file, r.level]))
+  let changed = 0
+  for (const piece of index.pieces) {
+    const level = levels.get(piece.file)
+    if (level && level !== piece.level) {
+      piece.level = level
+      changed++
+    }
+  }
+  if (!changed) return 0
+  const free = index.pieces.filter(p => p.file.startsWith('libre/')).sort((a, b) => a.level - b.level)
+  index.pieces = [...index.pieces.filter(p => !p.file.startsWith('libre/')), ...free]
+  writeFileSync(path, JSON.stringify(index, null, 2) + '\n')
+  return changed
+}
+
 /**
  * Converts every score of `folder`, applies the details from its Excel sheet
  * (adding rows for new files and dropping rows of deleted ones), writes the sheet
- * back and publishes the encrypted library. Returns { published, failed, added, removed }.
+ * back and publishes the encrypted library. Rows of the free pieces (`libre/…`) stay in
+ * the sheet and set those pieces' level in index.json.
+ * Returns { published, failed, added, removed, freeLevels }.
  */
 export async function updateLibrary(folder, password, { onLog = () => {}, libraryDir = LIBRARY_DIR } = {}) {
   let mscore
@@ -56,7 +86,8 @@ export async function updateLibrary(folder, password, { onLog = () => {}, librar
   const previous = await readSheet(sheetPath)
   const byFile = new Map(previous.map(r => [r.file, r]))
   const present = new Set(files.map(f => f.normalize('NFC')))
-  const removed = previous.filter(r => !present.has(r.file)).map(r => r.file)
+  const free = previous.filter(isFreeRow)
+  const removed = previous.filter(r => !isFreeRow(r) && !present.has(r.file)).map(r => r.file)
 
   const localDir = libraryDir === LIBRARY_DIR ? LOCAL_DIR : join(libraryDir, 'local')
   rmSync(localDir, { recursive: true, force: true })
@@ -122,7 +153,8 @@ export async function updateLibrary(folder, password, { onLog = () => {}, librar
 
   writeIndex({ pieces }, libraryDir === LIBRARY_DIR ? LOCAL_INDEX : join(libraryDir, 'index.local.json'))
   rows.sort((a, b) => (a.title || a.file).localeCompare(b.title || b.file, 'es'))
-  await writeSheet(sheetPath, rows)
+  await writeSheet(sheetPath, [...rows, ...free])
+  const freeLevels = applyFreeLevels(libraryDir, free)
   const published = await publishSchoolLibrary({ escuela: password }, { libraryDir })
-  return { published, failed, added, removed }
+  return { published, failed, added, removed, freeLevels }
 }
