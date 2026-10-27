@@ -221,6 +221,17 @@ el compositor y el arreglista se escriben también dentro de la partitura, y el
 instrumento decide en qué botón (🎹 Piano / 🪈 Flauta) aparece. Las partituras nuevas
 se añaden a la hoja solas, y las que borres de la carpeta desaparecen de la biblioteca.
 
+## Ejercicios y escalas
+
+En la pantalla de inicio, **🎯 Ejercicios y escalas** crea ejercicios nuevos al momento:
+
+- **Tipo:** lectura (una melodía al azar) o escala (sube y baja; las menores son armónicas).
+- **Instrumento, clave** (sol, fa o dos pentagramas), **tonalidad** y **compás** (2/4, 3/4, 4/4, 6/8).
+- **Figuras:** 1 redondas y blancas, 2 + negras, 3 + corcheas, 4 + puntillos y semicorcheas.
+- **Silencios**, **notas** (5 notas, una octava o con saltos) y **compases** (4, 8 o 12).
+
+Con dos pentagramas la mano izquierda toca una nota larga por compás (I, IV, V, I). Cada ejercicio se practica como cualquier pieza (paso a paso, con tempo, escuchar) y **🔄 Otro ejercicio** crea uno nuevo con las mismas opciones. Las opciones se recuerdan en el dispositivo. El generador está en `src/core/exercises/generator.ts`.
+
 ## Estructura del código
 
 ```
@@ -233,6 +244,7 @@ src/
                 el mismo tipo de evento en un "bus" de notas
       mic/      micrófono: análisis de tono (pitchy), detector de notas y calibración
     practice/   lógica de práctica (comparar notas, modo espera, modo tempo, resumen) con tests
+    exercises/  generador de ejercicios de lectura y escalas (MusicXML)
   instruments/  definición de cada instrumento (piano, flauta…)
   library/      catálogo de piezas
   ui/           pantallas y componentes React

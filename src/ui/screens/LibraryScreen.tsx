@@ -6,6 +6,7 @@ import { loadSchoolLibrary, lockSchoolLibrary, openSchoolPiece, unlockSchoolLibr
 interface Props {
   onOpen(piece: Piece): void
   onReview(): void
+  onExercises(): void
 }
 
 const CARD_COLORS = ['#ffd6a5', '#caffbf', '#9bf6ff', '#bdb2ff', '#ffc6ff', '#fdffb6', '#a0c4ff']
@@ -29,7 +30,7 @@ function saveFilter(value: string | null): void {
   }
 }
 
-export function LibraryScreen({ onOpen, onReview }: Props) {
+export function LibraryScreen({ onOpen, onReview, onExercises }: Props) {
   const [pieces, setPieces] = useState<Piece[] | null>(null)
   const [fileError, setFileError] = useState(false)
 
@@ -110,6 +111,10 @@ export function LibraryScreen({ onOpen, onReview }: Props) {
         {fileError && <p className="notice warn">No se ha podido leer ese archivo. Usa MusicXML (.musicxml, .xml o .mxl).</p>}
         {openError && <p className="notice warn">No se ha podido abrir la pieza. Comprueba la conexión a internet.</p>}
       </header>
+      <button className="exercises-link" onClick={onExercises}>
+        <span className="icon" aria-hidden="true">🎯</span>
+        <span><strong>Ejercicios y escalas</strong>Crea un ejercicio nuevo de lectura o una escala</span>
+      </button>
       {school.state === 'locked' && <SchoolUnlock onUnlocked={() => void load()} />}
       {pieces === null && <p className="score-message">Cargando biblioteca…</p>}
       {pieces?.length === 0 && <p className="score-message">Todavía no hay piezas en la biblioteca.</p>}
