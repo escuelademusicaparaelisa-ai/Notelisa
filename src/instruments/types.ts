@@ -5,6 +5,8 @@ export interface InstrumentDefinition {
   id: string
   /** Name shown in the UI (Spanish). */
   name: string
+  /** Emoji shown on buttons. */
+  icon: string
   /** Playable range as MIDI numbers. */
   range: { low: number; high: number }
   /** Names for each staff, e.g. piano: right hand / left hand. */
