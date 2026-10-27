@@ -77,4 +77,13 @@ describe('WaitSession', () => {
     expect(s.expectedNotes).toEqual([60])
     expect(types(s.play(60))).toEqual(['correct', 'stepDone', 'advance'])
   })
+
+  it('ignores chord notes the microphone hears in another octave', () => {
+    const s = new WaitSession(timeline, { onlyHighest: true })
+    expect(s.play(36)).toEqual([])
+    expect(types(s.play(61))).toEqual(['wrong'])
+    expect(types(s.play(60))).toEqual(['correct', 'stepDone', 'advance'])
+    // The low C of the previous chord is still ringing.
+    expect(s.play(24)).toEqual([])
+  })
 })
