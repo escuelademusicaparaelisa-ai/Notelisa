@@ -230,3 +230,10 @@ button:disabled { opacity: 0.45; cursor: default; }
 .exercise-choices { display: flex; flex-wrap: wrap; gap: 8px; }
 .exercise-choices .chip { font-size: 1.05rem; padding: 10px 16px; }
 .create-exercise { width: 100%; max-width: 420px; }
+.key-rows { display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: center; }
+.key-row-label { font-weight: 800; }
+.minor-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.exercise-choices .key-chip { min-width: 52px; padding: 8px 12px; }
+@media (max-width: 560px) {
+  .key-rows { grid-template-columns: 1fr; }
+}

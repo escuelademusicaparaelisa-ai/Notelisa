@@ -19,7 +19,11 @@ export interface ExerciseOptions {
   rests: boolean
   range: RangeLevel
   measures: number
+  /** Which minor scale minor keys use. */
+  minor: MinorScale
 }
+
+export type MinorScale = 'natural' | 'harmonic' | 'melodic'
 
 export interface KeyDefinition {
   id: string
@@ -32,16 +36,54 @@ export interface KeyDefinition {
   mode: 'major' | 'minor'
 }
 
-export const KEYS: KeyDefinition[] = [
-  { id: 'C', name: 'Do mayor', letter: 0, alter: 0, fifths: 0, mode: 'major' },
-  { id: 'G', name: 'Sol mayor', letter: 4, alter: 0, fifths: 1, mode: 'major' },
-  { id: 'F', name: 'Fa mayor', letter: 3, alter: 0, fifths: -1, mode: 'major' },
-  { id: 'D', name: 'Re mayor', letter: 1, alter: 0, fifths: 2, mode: 'major' },
-  { id: 'Bb', name: 'Si♭ mayor', letter: 6, alter: -1, fifths: -2, mode: 'major' },
-  { id: 'Am', name: 'La menor', letter: 5, alter: 0, fifths: 0, mode: 'minor' },
-  { id: 'Em', name: 'Mi menor', letter: 2, alter: 0, fifths: 1, mode: 'minor' },
-  { id: 'Dm', name: 'Re menor', letter: 1, alter: 0, fifths: -1, mode: 'minor' },
+const LETTER_NAMES_ES = ['Do', 'Re', 'Mi', 'Fa', 'Sol', 'La', 'Si']
+
+function keyDefinition(id: string, letter: number, alter: number, fifths: number, mode: 'major' | 'minor'): KeyDefinition {
+  const name = LETTER_NAMES_ES[letter] + (alter > 0 ? '♯' : alter < 0 ? '♭' : '')
+  return { id, name: `${name} ${mode === 'major' ? 'mayor' : 'menor'}`, letter, alter, fifths, mode }
+}
+
+/** All major keys, sharps first and then flats, in the order of the circle of fifths. */
+export const MAJOR_KEYS: KeyDefinition[] = [
+  keyDefinition('C', 0, 0, 0, 'major'),
+  keyDefinition('G', 4, 0, 1, 'major'),
+  keyDefinition('D', 1, 0, 2, 'major'),
+  keyDefinition('A', 5, 0, 3, 'major'),
+  keyDefinition('E', 2, 0, 4, 'major'),
+  keyDefinition('B', 6, 0, 5, 'major'),
+  keyDefinition('F#', 3, 1, 6, 'major'),
+  keyDefinition('C#', 0, 1, 7, 'major'),
+  keyDefinition('F', 3, 0, -1, 'major'),
+  keyDefinition('Bb', 6, -1, -2, 'major'),
+  keyDefinition('Eb', 2, -1, -3, 'major'),
+  keyDefinition('Ab', 5, -1, -4, 'major'),
+  keyDefinition('Db', 1, -1, -5, 'major'),
+  keyDefinition('Gb', 4, -1, -6, 'major'),
+  keyDefinition('Cb', 0, -1, -7, 'major'),
 ]
+
+/** All minor keys, in the same order as their relative majors. */
+export const MINOR_KEYS: KeyDefinition[] = [
+  keyDefinition('Am', 5, 0, 0, 'minor'),
+  keyDefinition('Em', 2, 0, 1, 'minor'),
+  keyDefinition('Bm', 6, 0, 2, 'minor'),
+  keyDefinition('F#m', 3, 1, 3, 'minor'),
+  keyDefinition('C#m', 0, 1, 4, 'minor'),
+  keyDefinition('G#m', 4, 1, 5, 'minor'),
+  keyDefinition('D#m', 1, 1, 6, 'minor'),
+  keyDefinition('A#m', 5, 1, 7, 'minor'),
+  keyDefinition('Dm', 1, 0, -1, 'minor'),
+  keyDefinition('Gm', 4, 0, -2, 'minor'),
+  keyDefinition('Cm', 0, 0, -3, 'minor'),
+  keyDefinition('Fm', 3, 0, -4, 'minor'),
+  keyDefinition('Bbm', 6, -1, -5, 'minor'),
+  keyDefinition('Ebm', 2, -1, -6, 'minor'),
+  keyDefinition('Abm', 5, -1, -7, 'minor'),
+]
+
+export const KEYS: KeyDefinition[] = [...MAJOR_KEYS, ...MINOR_KEYS]
+
+export const MINOR_SCALE_NAMES: Record<MinorScale, string> = { natural: 'natural', harmonic: 'armónica', melodic: 'melódica' }
 
 /** One note or rest. `degree` counts scale steps from the tonic (0 = tonic, 7 = octave). */
 export interface ExerciseEvent {
@@ -70,6 +112,7 @@ const LETTER_NAMES = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
 const MAJOR = [0, 2, 4, 5, 7, 9, 11]
 const NATURAL_MINOR = [0, 2, 3, 5, 7, 8, 10]
 const HARMONIC_MINOR = [0, 2, 3, 5, 7, 8, 11]
+const MELODIC_MINOR = [0, 2, 3, 5, 7, 9, 11]
 const FLUTE_RANGE = { low: 60, high: 91 }
 
 const DURATION_TYPES: Record<number, { type: string; dot: boolean }> = {
@@ -123,30 +166,34 @@ function pick<T>(random: () => number, items: { value: T; weight: number }[]): T
 class Pitches {
   readonly tonicMidi: number
   readonly key: KeyDefinition
-  private readonly steps: number[]
+  private readonly minor: MinorScale
 
-  constructor(key: KeyDefinition, clef: 'treble' | 'bass', scale = false) {
+  constructor(key: KeyDefinition, clef: 'treble' | 'bass', minor: MinorScale = 'natural') {
     this.key = key
-    this.steps = key.mode === 'major' ? MAJOR : scale ? HARMONIC_MINOR : NATURAL_MINOR
+    this.minor = minor
     const pitchClass = (LETTER_SEMITONES[key.letter] + key.alter + 12) % 12
     // Tonic between C4 and B4 for treble clef, and between G2 and F#3 for bass clef,
     // so the exercise stays on the staff.
     this.tonicMidi = clef === 'treble' ? 60 + pitchClass : pitchClass < 7 ? 48 + pitchClass : 36 + pitchClass
   }
 
-  midi(degree: number): number {
+  /** The melodic minor raises the 6th and 7th going up and uses the natural minor going down. */
+  midi(degree: number, ascending = true): number {
+    const steps = this.key.mode === 'major' ? MAJOR
+      : this.minor === 'harmonic' ? HARMONIC_MINOR
+        : this.minor === 'melodic' && ascending ? MELODIC_MINOR : NATURAL_MINOR
     const octave = Math.floor(degree / 7)
-    return this.tonicMidi + 12 * octave + this.steps[degree - 7 * octave]
+    return this.tonicMidi + 12 * octave + steps[degree - 7 * octave]
   }
 
-  /** MusicXML spelling of a degree. */
-  spell(degree: number): { step: string; alter: number; octave: number } {
+  /** MusicXML spelling of a degree sounding at `midi`. */
+  spell(degree: number, midi: number): { step: string; alter: number; octave: number } {
     const total = this.key.letter + degree
     const letter = ((total % 7) + 7) % 7
     // The tonic's own octave: the tonic letter written below its sounding pitch.
     const tonicOctave = Math.floor((this.tonicMidi - this.key.alter) / 12) - 1
     const octave = tonicOctave + Math.floor(total / 7)
-    const alter = this.midi(degree) - (12 * (octave + 1) + LETTER_SEMITONES[letter])
+    const alter = midi - (12 * (octave + 1) + LETTER_SEMITONES[letter])
     return { step: LETTER_NAMES[letter], alter, octave }
   }
 }
@@ -287,8 +334,9 @@ function readingMelody(options: ExerciseOptions, clef: 'treble' | 'bass', pitche
         events.push({ duration, degree: null, midi: null })
         return
       }
+      const previous = degree
       if (!first) degree = last ? closestTonic(degree, low, high) : nextDegree(degree, low, high, options.range, random)
-      events.push({ duration, degree, midi: pitches.midi(degree) })
+      events.push({ duration, degree, midi: pitches.midi(degree, degree >= previous) })
     })
     measures.push(mergeRests(events))
   }
@@ -333,11 +381,12 @@ function scaleLine(options: ExerciseOptions, pitches: Pitches): ExerciseEvent[][
     }
   }
   degrees.forEach((degree, i) => {
-    if (i < degrees.length - 1) return push({ duration: noteLength, degree, midi: pitches.midi(degree) })
+    const ascending = i <= top
+    if (i < degrees.length - 1) return push({ duration: noteLength, degree, midi: pitches.midi(degree, ascending) })
     // The last tonic lasts until the end of the measure (or a whole measure on the downbeat).
     const remaining = position === 0 ? length : length - position
     const [first, ...rest] = writableDurations(remaining)
-    push({ duration: first, degree, midi: pitches.midi(degree) })
+    push({ duration: first, degree, midi: pitches.midi(degree, ascending) })
     for (const d of rest) push({ duration: d, degree: null, midi: null })
   })
   return measures
@@ -347,21 +396,22 @@ export function generateExercise(options: ExerciseOptions, seed: number): Exerci
   const random = seededRandom(seed)
   const key = getKey(options.key)
   const clef: Clef = options.instrument === 'flute' ? 'treble' : options.clef
-  const opts = { ...options, clef }
+  const opts = { ...options, clef, minor: options.minor ?? 'harmonic' }
+  const name = key.mode === 'minor' ? `${key.name} ${MINOR_SCALE_NAMES[opts.minor]}` : key.name
   const staves: ExerciseStaff[] = []
   const tempo = opts.time === '6/8' ? 90 : opts.kind === 'scale' ? 72 : 80
 
   if (opts.kind === 'scale') {
     for (const staffClef of clef === 'grand' ? (['treble', 'bass'] as const) : [clef]) {
-      staves.push({ clef: staffClef, measures: scaleLine(opts, new Pitches(key, staffClef, true)) })
+      staves.push({ clef: staffClef, measures: scaleLine(opts, new Pitches(key, staffClef, opts.minor)) })
     }
-    return { title: `Escala · ${key.name}`, options: opts, staves, tempo }
+    return { title: `Escala · ${name}`, options: opts, staves, tempo }
   }
 
   const melodyClef = clef === 'bass' ? 'bass' : 'treble'
-  staves.push({ clef: melodyClef, measures: readingMelody(opts, melodyClef, new Pitches(key, melodyClef), random) })
-  if (clef === 'grand') staves.push({ clef: 'bass', measures: bassLine(opts, new Pitches(key, 'bass')) })
-  return { title: `Lectura · ${key.name}`, options: opts, staves, tempo }
+  staves.push({ clef: melodyClef, measures: readingMelody(opts, melodyClef, new Pitches(key, melodyClef, opts.minor), random) })
+  if (clef === 'grand') staves.push({ clef: 'bass', measures: bassLine(opts, new Pitches(key, 'bass', opts.minor)) })
+  return { title: `Lectura · ${name}`, options: opts, staves, tempo }
 }
 
 // --- MusicXML ---------------------------------------------------------------
@@ -407,7 +457,7 @@ function noteXml(event: ExerciseEvent, pitches: Pitches, staff: number, beamTags
   if (event.degree === null) {
     head = wholeMeasure ? '<rest measure="yes"/>' : '<rest/>'
   } else {
-    const { step, alter, octave } = pitches.spell(event.degree)
+    const { step, alter, octave } = pitches.spell(event.degree, event.midi!)
     head = `<pitch><step>${step}</step>${alter ? `<alter>${alter}</alter>` : ''}<octave>${octave}</octave></pitch>`
   }
   return `<note>${head}<duration>${event.duration}</duration><voice>${voice}</voice><type>${type}</type>${dot ? '<dot/>' : ''}`
@@ -443,7 +493,7 @@ export function exerciseToMusicXml(exercise: Exercise): string {
     staves.forEach((staff, s) => {
       if (s > 0) xml += `<backup><duration>${length}</duration></backup>`
       const events = staff.measures[m]
-      const pitches = new Pitches(key, staff.clef, options.kind === 'scale')
+      const pitches = new Pitches(key, staff.clef, options.minor)
       const beamTags = beams(events, beatLength(options.time))
       events.forEach((event, i) => { xml += noteXml(event, pitches, s + 1, beamTags[i], events.length === 1) })
     })

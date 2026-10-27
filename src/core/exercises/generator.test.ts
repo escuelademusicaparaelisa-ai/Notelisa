@@ -5,7 +5,7 @@ import {
 } from './generator'
 
 const BASE: ExerciseOptions = {
-  kind: 'reading', instrument: 'piano', clef: 'treble', key: 'C', time: '4/4', rhythm: 2, rests: false, range: 1, measures: 8,
+  kind: 'reading', instrument: 'piano', clef: 'treble', key: 'C', time: '4/4', rhythm: 2, rests: false, range: 1, measures: 8, minor: 'harmonic',
 }
 const TIMES: TimeSignature[] = ['2/4', '3/4', '4/4', '6/8']
 const LEVELS: RhythmLevel[] = [1, 2, 3, 4]
@@ -97,8 +97,8 @@ describe('scales', () => {
     expect(midis).toEqual([67, 69, 71, 72, 74, 76, 78, 79, 78, 76, 74, 72, 71, 69, 67])
   })
 
-  it('raises the seventh in minor scales', () => {
-    const xml = exerciseToMusicXml(generateExercise({ ...BASE, kind: 'scale', key: 'Am' }, 1))
+  it('raises the seventh in harmonic minor scales', () => {
+    const xml = exerciseToMusicXml(generateExercise({ ...BASE, kind: 'scale', key: 'Am', minor: 'harmonic' }, 1))
     expect(xml).toContain('<step>G</step><alter>1</alter>')
   })
 
@@ -111,6 +111,37 @@ describe('scales', () => {
         }
       }
     }
+  })
+})
+
+describe('minor scales', () => {
+  const midis = (minor: 'natural' | 'harmonic' | 'melodic') =>
+    generateExercise({ ...BASE, kind: 'scale', key: 'Am', minor }, 1).staves[0].measures.flat().flatMap(e => (e.midi === null ? [] : [e.midi]))
+
+  it('plays the natural, harmonic and melodic minor', () => {
+    expect(midis('natural')).toEqual([69, 71, 72, 74, 76, 77, 79, 81, 79, 77, 76, 74, 72, 71, 69])
+    expect(midis('harmonic')).toEqual([69, 71, 72, 74, 76, 77, 80, 81, 80, 77, 76, 74, 72, 71, 69])
+    expect(midis('melodic')).toEqual([69, 71, 72, 74, 76, 78, 80, 81, 79, 77, 76, 74, 72, 71, 69])
+  })
+
+  it('spells raised notes with sharps and double sharps', () => {
+    const xml = exerciseToMusicXml(generateExercise({ ...BASE, kind: 'scale', key: 'G#m', minor: 'harmonic' }, 1))
+    expect(xml).toContain('<fifths>5</fifths>')
+    expect(xml).toContain('<step>F</step><alter>2</alter>')
+  })
+
+  it('names the minor scale in the title', () => {
+    expect(generateExercise({ ...BASE, key: 'Dm', minor: 'melodic' }, 1).title).toBe('Lectura · Re menor melódica')
+  })
+})
+
+describe('keys', () => {
+  it('has all 15 major and 15 minor keys, spelled from the tonic', () => {
+    expect(KEYS.filter(k => k.mode === 'major')).toHaveLength(15)
+    expect(KEYS.filter(k => k.mode === 'minor')).toHaveLength(15)
+    const xml = exerciseToMusicXml(generateExercise({ ...BASE, kind: 'scale', key: 'Cb' }, 1))
+    expect(xml).toMatch(/<step>C<\/step><alter>-1<\/alter><octave>5<\/octave>/)
+    expect(xml).toContain('<fifths>-7</fifths>')
   })
 })
 

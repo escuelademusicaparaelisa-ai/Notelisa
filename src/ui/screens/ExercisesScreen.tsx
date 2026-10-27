@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { KEYS, type ExerciseOptions } from '../../core/exercises/generator'
+import { MAJOR_KEYS, MINOR_KEYS, MINOR_SCALE_NAMES, type ExerciseOptions, type MinorScale } from '../../core/exercises/generator'
 import { saveExerciseOptions } from '../../core/exercises/savedOptions'
 
 interface Props {
@@ -31,6 +31,20 @@ function Choices<T extends string | number | boolean>({ label, value, choices, o
         ))}
       </div>
     </fieldset>
+  )
+}
+
+/** Key chips show just the tonic ("Sol", "Si♭"); the row says major or minor. */
+function KeyChips({ keys, value, onChange }: { keys: typeof MAJOR_KEYS; value: string; onChange(id: string): void }) {
+  return (
+    <div className="exercise-choices">
+      {keys.map(k => (
+        <button key={k.id} type="button" className={`chip key-chip ${k.id === value ? 'active' : ''}`}
+          aria-pressed={k.id === value} aria-label={k.name} onClick={() => onChange(k.id)}>
+          {k.name.replace(/ (mayor|menor)$/, '')}
+        </button>
+      ))}
+    </div>
   )
 }
 
@@ -69,8 +83,25 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
             { value: 'grand', label: '𝄞+𝄢 Dos pentagramas' },
           ]} />
         )}
-        <Choices label="Tonalidad" value={options.key} onChange={set('key')}
-          choices={KEYS.map(k => ({ value: k.id, label: k.name }))} />
+        <fieldset className="exercise-option">
+          <legend>Tonalidad</legend>
+          <div className="key-rows">
+            <span className="key-row-label">Mayores</span>
+            <KeyChips keys={MAJOR_KEYS} value={options.key} onChange={set('key')} />
+            <span className="key-row-label">Menores</span>
+            <div className="minor-row">
+              <KeyChips keys={MINOR_KEYS} value={options.key} onChange={set('key')} />
+              <div className="segmented minor-scale" role="group" aria-label="Escala menor">
+                {(Object.keys(MINOR_SCALE_NAMES) as MinorScale[]).map(minor => (
+                  <button key={minor} type="button" className={options.minor === minor ? 'active' : ''}
+                    aria-pressed={options.minor === minor} onClick={() => set('minor')(minor)}>
+                    {MINOR_SCALE_NAMES[minor][0].toUpperCase() + MINOR_SCALE_NAMES[minor].slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </fieldset>
         <Choices label="Compás" value={options.time} onChange={set('time')} choices={[
           { value: '2/4', label: '2/4' },
           { value: '3/4', label: '3/4' },
