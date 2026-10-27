@@ -7,6 +7,7 @@ import {
 import { microphoneInput } from '../../core/input/mic/microphone'
 import { DEFAULT_A4_HZ } from '../../core/music/pitch'
 import { MicMeter } from './MicPanel'
+import { CircleCheck, Ear, Mic, Music, Piano, Timer } from '../icons'
 
 interface Props {
   onClose(): void
@@ -166,7 +167,7 @@ export function CalibrationWizard({ onClose }: Props) {
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="calibration-title">
       <div className="modal">
-        <h2 id="calibration-title">🎤 Calibrar el micrófono</h2>
+        <h2 id="calibration-title"><Mic /> Calibrar el micrófono</h2>
         <MicMeter />
         {step === 'intro' && (
           <>
@@ -176,11 +177,11 @@ export function CalibrationWizard({ onClose }: Props) {
           </>
         )}
         {step === 'silence' && (
-          <p className="calibration-step">🤫 <b>Paso 1:</b> silencio, por favor… estoy escuchando el ruido de la sala.</p>
+          <p className="calibration-step"><Ear /> <b>Paso 1:</b> silencio, por favor… estoy escuchando el ruido de la sala.</p>
         )}
         {step === 'loud' && (
           <>
-            <p className="calibration-step">🎹 <b>Paso 2:</b> toca una nota <b>fuerte</b> en el centro del piano.</p>
+            <p className="calibration-step"><Piano /> <b>Paso 2:</b> toca una nota <b>fuerte</b> en el centro del piano.</p>
             <div className="modal-actions">
               <button className="big-button primary" onClick={runLoud} disabled={message === 'Escuchando…'}>
                 {message === 'Escuchando…' ? 'Te escucho…' : 'Escuchar otra vez'}
@@ -191,7 +192,7 @@ export function CalibrationWizard({ onClose }: Props) {
         )}
         {step === 'tuning' && (
           <>
-            <p className="calibration-step">🎵 <b>Paso 3:</b> toca un <b>La</b> (el del centro) y déjalo sonar. Así sé si tu piano está afinado.</p>
+            <p className="calibration-step"><Music /> <b>Paso 3:</b> toca un <b>La</b> (el del centro) y déjalo sonar. Así sé si tu piano está afinado.</p>
             <div className="modal-actions">
               <button className="big-button primary" onClick={runTuning} disabled={message === 'Escuchando…'}>
                 {message === 'Escuchando…' ? 'Te escucho…' : 'Escuchar otra vez'}
@@ -202,7 +203,7 @@ export function CalibrationWizard({ onClose }: Props) {
         )}
         {step === 'latency' && (
           <>
-            <p className="calibration-step">⏱️ <b>Paso 4:</b> aquí <b>no tienes que tocar nada</b>.</p>
+            <p className="calibration-step"><Timer /> <b>Paso 4:</b> aquí <b>no tienes que tocar nada</b>.</p>
             <p>Sube el volumen de la tablet y pulsa <b>Medir</b>. La propia tablet hará {CLICKS} «clics» y medirá cuánto tarda el micrófono en oírlos. Quédate en silencio unos 3 segundos.</p>
             <div className="modal-actions">
               <button className="big-button primary" onClick={runLatency} disabled={message === 'Escuchando los clics…'}>Medir</button>
@@ -212,7 +213,7 @@ export function CalibrationWizard({ onClose }: Props) {
         )}
         {step === 'done' && saved && (
           <>
-            <p>✅ ¡Listo! Afinación: La = {saved.a4Hz} Hz · retraso: {saved.latencyMs} ms.</p>
+            <p className="with-icon"><CircleCheck /> ¡Listo! Afinación: La = {saved.a4Hz} Hz · retraso: {saved.latencyMs} ms.</p>
             <button className="big-button primary" onClick={onClose}>Practicar</button>
           </>
         )}

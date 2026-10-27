@@ -3,6 +3,7 @@ import { getInstrument, instruments } from '../../instruments'
 import { isPlayable, loadLibrary, pieceFromFile, type Piece } from '../../library/catalog'
 import { matchesQuery } from '../../library/search'
 import { loadSchoolLibrary, lockSchoolLibrary, openSchoolPiece, unlockSchoolLibrary, type SchoolLibrary } from '../../library/school'
+import { ArrowRight, FileMusic, FolderOpen, InstrumentIcon, KeyRound, Lock, Search, Stars, Target } from '../icons'
 
 interface Props {
   onOpen(piece: Piece): void
@@ -107,15 +108,15 @@ export function LibraryScreen({ onOpen, onReview, onExercises }: Props) {
         <img className="app-logo" src={`${import.meta.env.BASE_URL}brand/logo-notelisa.png`} alt="Notelisa" />
         <div className="app-bar-actions">
           <label className="chip open-file">
-            📂 Abrir partitura
+            <FolderOpen /> Abrir partitura
             <input id="open-file" type="file" accept=".musicxml,.xml,.mxl" hidden
               onChange={e => openFile(e.target.files?.[0])} />
           </label>
           {toReview > 0 && (
-            <button className="chip review-link" onClick={onReview}>📝 Revisar importaciones ({toReview})</button>
+            <button className="chip review-link" onClick={onReview}><FileMusic /> Revisar importaciones ({toReview})</button>
           )}
           {school.state === 'open' && (
-            <button className="chip" onClick={lock} title="Para usar otra clave en este dispositivo">🔒 Cerrar biblioteca</button>
+            <button className="chip" onClick={lock} title="Para usar otra clave en este dispositivo"><Lock /> Cerrar biblioteca</button>
           )}
         </div>
       </header>
@@ -126,17 +127,20 @@ export function LibraryScreen({ onOpen, onReview, onExercises }: Props) {
         {openError && <p className="notice warn">No se ha podido abrir la pieza. Comprueba la conexión a internet.</p>}
       </section>
       <button className="exercises-link" onClick={onExercises}>
-        <span className="icon" aria-hidden="true">🎯</span>
+        <span className="icon" aria-hidden="true"><Target /></span>
         <span className="exercises-text"><strong>Ejercicios y escalas</strong>Crea un ejercicio nuevo de lectura o una escala</span>
-        <span className="exercises-go" aria-hidden="true">→</span>
+        <span className="exercises-go" aria-hidden="true"><ArrowRight /></span>
       </button>
       {school.state === 'locked' && <SchoolUnlock onUnlocked={() => void load()} />}
       {pieces === null && <p className="score-message">Cargando biblioteca…</p>}
       {pieces?.length === 0 && <p className="score-message">Todavía no hay piezas en la biblioteca.</p>}
       {!!pieces?.length && <h2 className="section-title">Biblioteca</h2>}
       {!!pieces?.length && (
-        <input className="library-search" type="search" placeholder="🔍 Buscar por título o autor"
-          value={query} onChange={e => setQuery(e.target.value)} aria-label="Buscar pieza" />
+        <label className="library-search">
+          <Search />
+          <input type="search" placeholder="Buscar por título o autor"
+            value={query} onChange={e => setQuery(e.target.value)} aria-label="Buscar pieza" />
+        </label>
       )}
       {levels.length > 1 && (
         <div className="instrument-filter" role="group" aria-label="Dificultad">
@@ -146,7 +150,7 @@ export function LibraryScreen({ onOpen, onReview, onExercises }: Props) {
           {levels.map(l => (
             <button key={l} className={`chip ${activeLevel === l ? 'active' : ''}`}
               onClick={() => setLevel(l)} aria-pressed={activeLevel === l} aria-label={`Nivel ${l}`}>
-              {'★'.repeat(l)}
+              <Stars count={l} label={false} />
             </button>
           ))}
         </div>
@@ -159,7 +163,7 @@ export function LibraryScreen({ onOpen, onReview, onExercises }: Props) {
           {available.map(inst => (
             <button key={inst.id} className={`chip ${activeFilter === inst.id ? 'active' : ''}`}
               onClick={() => chooseFilter(inst.id)} aria-pressed={activeFilter === inst.id}>
-              {inst.icon} {inst.name}
+              <InstrumentIcon id={inst.id} /> {inst.name}
             </button>
           ))}
         </div>
@@ -170,8 +174,8 @@ export function LibraryScreen({ onOpen, onReview, onExercises }: Props) {
           <li key={piece.id}>
             <button className="piece-card" onClick={() => void open(piece)} disabled={opening !== null}>
               <span className={`piece-cover cover-${COVERS[i % COVERS.length]}`} aria-hidden="true">
-                <span className="piece-icon">{getInstrument(piece.instrument).icon}</span>
-                {piece.level ? <span className="piece-level">{'★'.repeat(piece.level)}</span> : null}
+                <span className="piece-icon"><InstrumentIcon id={getInstrument(piece.instrument).id} strokeWidth={1.6} /></span>
+                {piece.level ? <span className="piece-level"><Stars count={piece.level} /></span> : null}
               </span>
               <span className="piece-body">
                 <span className="piece-title">{piece.title}</span>
@@ -213,7 +217,7 @@ function SchoolUnlock({ onUnlocked }: { onUnlocked(): void }) {
 
   return (
     <form className="school-unlock" onSubmit={submit}>
-      <h2>🔑 Biblioteca de la escuela</h2>
+      <h2><KeyRound /> Biblioteca de la escuela</h2>
       <p>Escribe la clave que te ha dado tu profe para ver todas las canciones. Solo hay que hacerlo una vez.</p>
       <div className="school-unlock-row">
         <input id="school-password" type="text" autoComplete="off" autoCapitalize="none" spellCheck={false}

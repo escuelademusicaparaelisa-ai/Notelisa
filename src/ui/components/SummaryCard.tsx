@@ -1,4 +1,5 @@
 import type { PracticeSummary } from '../../core/practice/summary'
+import { Repeat, RotateCcw, StarFilled } from '../icons'
 
 interface Props {
   summary: PracticeSummary
@@ -7,7 +8,7 @@ interface Props {
   onClose(): void
 }
 
-const PRAISE = ['¡Sigue practicando, vas por buen camino!', '¡Muy bien!', '¡Genial, casi perfecto!', '¡Perfecto! 🎉']
+const PRAISE = ['¡Sigue practicando, vas por buen camino!', '¡Muy bien!', '¡Genial, casi perfecto!', '¡Perfecto!']
 
 /** End-of-exercise results: stars, percentages and the measures to practise. */
 export function SummaryCard({ summary, onPracticeMeasure, onAgain, onClose }: Props) {
@@ -16,7 +17,7 @@ export function SummaryCard({ summary, onPracticeMeasure, onAgain, onClose }: Pr
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="summary-title">
       <div className="modal summary">
         <p className="stars" aria-label={`${summary.stars} de 3 estrellas`}>
-          {[1, 2, 3].map(n => <span key={n} className={n <= summary.stars ? 'on' : ''}>★</span>)}
+          {[1, 2, 3].map(n => <StarFilled key={n} className={n <= summary.stars ? 'on' : ''} />)}
         </p>
         <h2 id="summary-title">{PRAISE[perfect ? 3 : summary.stars - 1]}</h2>
         <div className="summary-scores">
@@ -40,13 +41,13 @@ export function SummaryCard({ summary, onPracticeMeasure, onAgain, onClose }: Pr
             <p>Los compases que más cuestan:</p>
             <div className="modal-actions">
               {summary.problemMeasures.map(m => (
-                <button key={m} className="chip" onClick={() => onPracticeMeasure(m)}>🔁 Practicar compás {m + 1}</button>
+                <button key={m} className="chip" onClick={() => onPracticeMeasure(m)}><Repeat /> Practicar compás {m + 1}</button>
               ))}
             </div>
           </div>
         )}
         <div className="modal-actions">
-          <button className="big-button primary" onClick={onAgain}>↻ Otra vez</button>
+          <button className="big-button primary" onClick={onAgain}><RotateCcw /> Otra vez</button>
           <button className="chip" onClick={onClose}>Cerrar</button>
         </div>
       </div>

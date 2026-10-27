@@ -19,6 +19,7 @@ import { MidiPanel } from '../components/MidiPanel'
 import { OnScreenKeyboard } from '../components/OnScreenKeyboard'
 import { ScoreView, type ScoreViewHandle } from '../components/ScoreView'
 import { SummaryCard } from '../components/SummaryCard'
+import { ArrowLeft, ChevronLeft, ChevronRight, Footprints, Metronome, Music, PartyPopper, Play, RefreshCw, RotateCcw, Settings, SkipBack, Square, Volume2 } from '../icons'
 
 interface Props {
   piece: Piece
@@ -414,21 +415,21 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
     <main className="practice">
       <header className="practice-header">
         <button className="big-button ghost" onClick={() => { stopListening(); onBack() }} aria-label={`Volver a ${backLabel.toLowerCase()}`}>
-          ← {backLabel}
+          <ArrowLeft /> {backLabel}
         </button>
         <h1>{piece.title}</h1>
         {onAnother && (
-          <button className="big-button ghost" onClick={() => { stopListening(); stopPractice(); onAnother() }}>🔄 Otro ejercicio</button>
+          <button className="big-button ghost" onClick={() => { stopListening(); stopPractice(); onAnother() }}><RefreshCw /> Otro ejercicio</button>
         )}
         <div className="segmented" role="tablist" aria-label="Modo">
           <button role="tab" aria-selected={mode === 'wait'} className={mode === 'wait' ? 'active' : ''} onClick={() => switchMode('wait')}>
-            🎹 Paso a paso
+            <Footprints /> Paso a paso
           </button>
           <button role="tab" aria-selected={mode === 'tempo'} className={mode === 'tempo' ? 'active' : ''} onClick={() => switchMode('tempo')}>
-            🎵 Con tempo
+            <Music /> Con tempo
           </button>
           <button role="tab" aria-selected={mode === 'listen'} className={mode === 'listen' ? 'active' : ''} onClick={() => switchMode('listen')}>
-            🔊 Escuchar
+            <Volume2 /> Escuchar
           </button>
         </div>
         <div className="zoom">
@@ -514,7 +515,7 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
             <>
               <span>Compás {current.measureIndex + 1}</span>
               <button className="note-chip" onClick={() => currentNotes.forEach(n => void player.playNote(n.midi))} disabled={currentNotes.length === 0}>
-                {currentNotes.length > 0 ? `🔈 ${names(currentNotes.map(n => n.midi))}` : 'Silencio'}
+                {currentNotes.length > 0 ? <><Volume2 /> {names(currentNotes.map(n => n.midi))}</> : 'Silencio'}
               </button>
             </>
           )}
@@ -523,20 +524,20 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
         <div className="transport">
           {mode === 'wait' ? (
             <button className={`big-button primary ${session ? 'stop' : ''}`} onClick={session ? stopPractice : startPractice} disabled={!timeline}>
-              {session ? '⏹ Parar' : feedback.kind === 'finished' ? '↻ Otra vez' : '▶ Empezar'}
+              {session ? <><Square /> Parar</> : feedback.kind === 'finished' ? <><RotateCcw /> Otra vez</> : <><Play /> Empezar</>}
             </button>
           ) : mode === 'tempo' ? (
             <button className={`big-button primary ${tempoRun ? 'stop' : ''}`} onClick={tempoRun ? stopPractice : () => void startTempo()} disabled={!timeline}>
-              {tempoRun ? '⏹ Parar' : feedback.kind === 'finished' ? '↻ Otra vez' : '▶ Empezar'}
+              {tempoRun ? <><Square /> Parar</> : feedback.kind === 'finished' ? <><RotateCcw /> Otra vez</> : <><Play /> Empezar</>}
             </button>
           ) : (
             <>
-              <button className="big-button" onClick={() => move(-Infinity)} disabled={!timeline} aria-label="Ir al principio">⏮</button>
-              <button className="big-button" onClick={() => move(-1)} disabled={!timeline} aria-label="Nota anterior">◀</button>
+              <button className="big-button" onClick={() => move(-Infinity)} disabled={!timeline} aria-label="Ir al principio"><SkipBack /></button>
+              <button className="big-button" onClick={() => move(-1)} disabled={!timeline} aria-label="Nota anterior"><ChevronLeft /></button>
               <button className={`big-button primary ${playing ? 'stop' : ''}`} onClick={listen} disabled={!timeline || audioLoading}>
-                {audioLoading ? 'Cargando…' : playing ? '⏹ Parar' : '🔊 Escuchar'}
+                {audioLoading ? 'Cargando…' : playing ? <><Square /> Parar</> : <><Volume2 /> Escuchar</>}
               </button>
-              <button className="big-button" onClick={() => move(1)} disabled={!timeline} aria-label="Nota siguiente">▶</button>
+              <button className="big-button" onClick={() => move(1)} disabled={!timeline} aria-label="Nota siguiente"><ChevronRight /></button>
             </>
           )}
         </div>
@@ -546,10 +547,10 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
           {metronomeOn && <BeatIndicator />}
           <button className={`chip ${metronomeOn ? 'active' : ''}`} onClick={() => changeSetting(setMetronomeOn)(!metronomeOn)}
             aria-pressed={metronomeOn} title="El metrónomo suena al empezar">
-            🥁 Metrónomo
+            <Metronome /> Metrónomo
           </button>
           <button className={`chip ${showSettings ? 'active' : ''}`} onClick={() => setShowSettings(v => !v)} aria-expanded={showSettings}>
-            ⚙️ Ajustes
+            <Settings /> Ajustes
           </button>
         </div>
       </footer>
@@ -574,7 +575,7 @@ interface WaitFeedbackProps {
 }
 
 function WaitFeedback({ session, feedback, expected, names }: WaitFeedbackProps) {
-  if (feedback.kind === 'finished') return <span className="feedback finished">🎉 ¡Terminado!</span>
+  if (feedback.kind === 'finished') return <span className="feedback finished"><PartyPopper /> ¡Terminado!</span>
   if (!session) return <span className="feedback">Pulsa <b>Empezar</b> y toca las notas de la partitura.</span>
   if (feedback.kind === 'wrong') {
     return (
@@ -594,10 +595,10 @@ interface TempoFeedbackProps {
   names(midis: readonly number[]): string
 }
 
-const TIMING_TEXT: Record<Timing, string> = { onTime: '¡A tiempo! 👏', early: 'Un poco pronto', late: 'Un poco tarde' }
+const TIMING_TEXT: Record<Timing, string> = { onTime: '¡A tiempo!', early: 'Un poco pronto', late: 'Un poco tarde' }
 
 function TempoFeedback({ running, countdown, feedback, expected, names }: TempoFeedbackProps) {
-  if (feedback.kind === 'finished') return <span className="feedback finished">🎉 ¡Terminado!</span>
+  if (feedback.kind === 'finished') return <span className="feedback finished"><PartyPopper /> ¡Terminado!</span>
   if (!running) return <span className="feedback">Pulsa <b>Empezar</b>: tras la cuenta atrás, la partitura avanza sola.</span>
   if (countdown !== null) return <span className="countdown" aria-label="Cuenta atrás">{countdown}…</span>
   if (feedback.kind === 'timing') {

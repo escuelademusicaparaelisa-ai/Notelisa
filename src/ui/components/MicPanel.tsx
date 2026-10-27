@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { microphoneInput, MicrophoneInput, type MicStatus } from '../../core/input/mic/microphone'
 import { frequencyToMidi, midiToSolfege } from '../../core/music/pitch'
 import { isEmbedded } from './embedded'
+import { Mic, TriangleAlert } from '../icons'
 
 interface Props {
   onCalibrate(): void
@@ -34,14 +35,14 @@ export function MicPanel({ onCalibrate }: Props) {
     case 'starting':
       return (
         <button className="chip" onClick={start} disabled={status.state === 'starting'}>
-          🎤 {status.state === 'starting' ? 'Abriendo micrófono…' : 'Usar micrófono'}
+          <Mic /> {status.state === 'starting' ? 'Abriendo micrófono…' : 'Usar micrófono'}
         </button>
       )
     case 'on':
       return (
         <div className="mic-on">
           <MicMeter />
-          <button className="chip" onClick={onCalibrate}>{status.calibrated ? 'Calibrar de nuevo' : '⚠️ Calibrar'}</button>
+          <button className="chip" onClick={onCalibrate}>{status.calibrated ? 'Calibrar de nuevo' : <><TriangleAlert /> Calibrar</>}</button>
           <button className="chip" onClick={() => microphoneInput.stop()}>Apagar</button>
         </div>
       )
