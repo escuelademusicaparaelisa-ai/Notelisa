@@ -12,6 +12,7 @@ import { measureCount, playableNotes, wholeNotesToSeconds, type ScoreStep, type 
 import { getInstrument, staffLabel } from '../../instruments'
 import { pieceSource, type Piece } from '../../library/catalog'
 import { microphoneInput } from '../../core/input/mic/microphone'
+import { BeatIndicator } from '../components/BeatIndicator'
 import { CalibrationWizard } from '../components/CalibrationWizard'
 import { MicMeter, MicPanel } from '../components/MicPanel'
 import { MidiPanel } from '../components/MidiPanel'
@@ -534,6 +535,11 @@ export function PracticeScreen({ piece, onBack }: Props) {
 
         <div className="footer-actions">
           {micOn && mode !== 'listen' && <MicMeter />}
+          {metronomeOn && <BeatIndicator />}
+          <button className={`chip ${metronomeOn ? 'active' : ''}`} onClick={() => changeSetting(setMetronomeOn)(!metronomeOn)}
+            aria-pressed={metronomeOn} title="El metrónomo suena al empezar">
+            🥁 Metrónomo
+          </button>
           <button className={`chip ${showSettings ? 'active' : ''}`} onClick={() => setShowSettings(v => !v)} aria-expanded={showSettings}>
             ⚙️ Ajustes
           </button>
