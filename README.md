@@ -182,9 +182,10 @@ npm run biblioteca-escuela -- --clave "la clave de la escuela"
 ```
 
 Cifra todas las piezas aprobadas de tu biblioteca local y deja el resultado en
-`public/library/school/`, listo para subir a GitHub. Cada vez se genera una llave
-interna nueva: si cambias la clave, la anterior deja de funcionar y los alumnos
-tendrán que escribir la nueva. La clave **no** se guarda en el repositorio.
+`public/library/school/`, listo para subir a GitHub. Con la misma clave, los alumnos
+ven las canciones nuevas sin volver a escribirla. Si cambias la clave (o añades
+`--nueva-llave`), la anterior deja de funcionar y tendrán que escribir la nueva.
+La clave **no** se guarda en el repositorio.
 
 ## Estructura del código
 

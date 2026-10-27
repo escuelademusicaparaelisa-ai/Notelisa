@@ -10,10 +10,11 @@ if (!password) {
 
 Cifra las piezas aprobadas de tu biblioteca (public/library/index.local.json) en
 public/library/school/. Esa carpeta se puede publicar: sin la clave no se puede leer.
-Cada vez que se ejecuta cambia la clave interna, así que las claves anteriores dejan de valer.`)
+Con la misma clave, los alumnos no tienen que volver a escribirla. Con una clave nueva
+(o con --nueva-llave) las claves anteriores dejan de valer.`)
   process.exit(1)
 }
 
-const pieces = await publishSchoolLibrary({ escuela: password })
+const pieces = await publishSchoolLibrary({ escuela: password }, { newKey: args.includes('--nueva-llave') })
 console.log(`✅ Biblioteca de la escuela cifrada con ${pieces.length} piezas:`)
 for (const p of pieces) console.log(`   · ${p.title}`)
