@@ -14,14 +14,22 @@ describe('thresholdFromNoise', () => {
 })
 
 describe('checkLoudness', () => {
-  it('accepts a clearly loud note', () => {
-    expect(checkLoudness([frame(0.01), frame(0.2)], 0.01).ok).toBe(true)
+  const note = (rms: number) => Array.from({ length: 5 }, () => frame(rms, 261, 0.95))
+  it('accepts a clearly loud note and keeps the threshold above the noise', () => {
+    const result = checkLoudness(note(0.2), 0.005)
+    expect(result).toMatchObject({ ok: true })
+    expect(result.ok && result.threshold).toBeCloseTo(0.015)
+  })
+  it('lowers the threshold for a quiet piano that still stands out', () => {
+    const result = checkLoudness(note(0.025), 0.005)
+    expect(result.ok && result.threshold).toBeCloseTo(0.01)
   })
   it('reports a note too close to the noise', () => {
-    expect(checkLoudness([frame(0.02)], 0.01)).toMatchObject({ ok: false, reason: 'tooQuiet' })
+    expect(checkLoudness(note(0.015), 0.005)).toMatchObject({ ok: false, reason: 'tooQuiet' })
   })
-  it('reports silence', () => {
-    expect(checkLoudness([frame(0.005)], 0.01)).toMatchObject({ ok: false, reason: 'silent' })
+  it('reports silence or unpitched noise', () => {
+    expect(checkLoudness([frame(0.005)], 0.005)).toMatchObject({ ok: false, reason: 'silent' })
+    expect(checkLoudness([frame(0.2, 0, 0.3)], 0.005)).toMatchObject({ ok: false, reason: 'silent' })
   })
 })
 
