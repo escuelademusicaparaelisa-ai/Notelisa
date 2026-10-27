@@ -27,6 +27,8 @@ export interface Piece {
   /** Score content opened from the device (MusicXML text or MXL binary string). */
   content?: string
   review?: PieceReview
+  /** Pieces of the school library: the file is encrypted and decrypted when opened. */
+  encrypted?: { format: 'xml' | 'mxl' }
 }
 
 /** Pieces students can practise: everything except recognised scores not yet approved. */

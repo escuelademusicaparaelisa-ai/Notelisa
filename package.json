@@ -9,7 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
-    "importar": "node tools/importer/cli.mjs"
+    "importar": "node tools/importer/cli.mjs",
+    "biblioteca-escuela": "node tools/importer/schoolCli.mjs"
   },
   "dependencies": {
     "opensheetmusicdisplay": "^2.2.1",

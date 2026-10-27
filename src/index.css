@@ -196,3 +196,12 @@ button:disabled { opacity: 0.45; cursor: default; }
 @media (max-width: 560px) {
   .segmented button { padding: 6px 9px; font-size: 0.9rem; }
 }
+
+/* School library password */
+.school-unlock { max-width: 640px; margin: 0 auto 20px; padding: 20px; border-radius: var(--radius);
+  background: var(--surface); border: 2px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.school-unlock h2 { margin: 0; color: var(--accent); }
+.school-unlock p { margin: 0; line-height: 1.45; }
+.school-unlock-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.school-unlock-row input { flex: 1 1 180px; min-width: 0; font-size: 1.25rem; padding: 10px 14px;
+  border: 2px solid var(--line); border-radius: 14px; background: var(--bg); color: var(--ink); }

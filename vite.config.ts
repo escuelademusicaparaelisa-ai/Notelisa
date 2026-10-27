@@ -31,9 +31,15 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,json,musicxml,mxl}'],
         // Review images of imported scans are only needed by the teacher.
-        globIgnores: ['**/review/**'],
+        globIgnores: ['**/review/**', '**/school/**'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
+          {
+            // School library (encrypted): use the network when online so new songs appear.
+            urlPattern: /\/library\/school\//,
+            handler: 'NetworkFirst',
+            options: { cacheName: 'school-library' },
+          },
           {
             // Piano samples are fetched on demand and kept for offline use.
             urlPattern: /\/samples\/.*\.mp3$/,
