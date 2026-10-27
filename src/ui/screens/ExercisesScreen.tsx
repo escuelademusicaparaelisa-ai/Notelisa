@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { MAJOR_KEYS, MINOR_KEYS, MINOR_SCALE_NAMES, type ExerciseOptions, type MinorScale } from '../../core/exercises/generator'
 import { saveExerciseOptions } from '../../core/exercises/savedOptions'
+import { ArrowLeft, FileMusic, Flute, Piano, Scale, Sparkles } from '../icons'
 
 interface Props {
   options: ExerciseOptions
@@ -11,6 +12,7 @@ interface Props {
 interface Choice<T> {
   value: T
   label: string
+  icon?: React.ReactNode
 }
 
 function Choices<T extends string | number | boolean>({ label, value, choices, onChange }: {
@@ -26,7 +28,7 @@ function Choices<T extends string | number | boolean>({ label, value, choices, o
         {choices.map(choice => (
           <button key={String(choice.value)} type="button" className={`chip ${choice.value === value ? 'active' : ''}`}
             aria-pressed={choice.value === value} onClick={() => onChange(choice.value)}>
-            {choice.label}
+            {choice.icon}{choice.label}
           </button>
         ))}
       </div>
@@ -63,7 +65,7 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
   return (
     <main className="library exercises">
       <header className="app-bar">
-        <button className="big-button ghost" onClick={onBack}>← Biblioteca</button>
+        <button className="big-button ghost" onClick={onBack}><ArrowLeft /> Biblioteca</button>
         <img className="app-logo small" src={`${import.meta.env.BASE_URL}brand/logo-n.png`} alt="Notelisa" />
       </header>
       <section className="library-hero">
@@ -72,12 +74,12 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
       </section>
       <div className="exercise-options">
         <Choices label="Tipo" value={options.kind} onChange={set('kind')} choices={[
-          { value: 'reading', label: '🎼 Lectura' },
-          { value: 'scale', label: '🪜 Escala' },
+          { value: 'reading', label: 'Lectura', icon: <FileMusic /> },
+          { value: 'scale', label: 'Escala', icon: <Scale /> },
         ]} />
         <Choices label="Instrumento" value={options.instrument} onChange={set('instrument')} choices={[
-          { value: 'piano', label: '🎹 Piano' },
-          { value: 'flute', label: '🪈 Flauta' },
+          { value: 'piano', label: 'Piano', icon: <Piano /> },
+          { value: 'flute', label: 'Flauta', icon: <Flute /> },
         ]} />
         {piano && (
           <Choices label="Clave" value={options.clef} onChange={set('clef')} choices={[
@@ -144,7 +146,7 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
           ]} />
         )}
       </div>
-      <button className="big-button primary create-exercise" onClick={create}>✨ Crear ejercicio</button>
+      <button className="big-button primary create-exercise" onClick={create}><Sparkles /> Crear ejercicio</button>
     </main>
   )
 }

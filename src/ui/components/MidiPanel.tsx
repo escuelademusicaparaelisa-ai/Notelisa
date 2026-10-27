@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { midiInput, MidiInput, type MidiStatus } from '../../core/input/midi'
 import { isEmbedded } from './embedded'
+import { Piano } from '../icons'
 
 /** Lets the student connect and choose a MIDI keyboard. */
 export function MidiPanel() {
@@ -18,7 +19,7 @@ export function MidiPanel() {
         </p>
       )
     case 'idle':
-      return <button className="chip" onClick={() => midiInput.start()}>🎹 Conectar teclado MIDI</button>
+      return <button className="chip" onClick={() => midiInput.start()}><Piano /> Conectar teclado MIDI</button>
     case 'denied':
       return isEmbedded() ? (
         <p className="notice warn">

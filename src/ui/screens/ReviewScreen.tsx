@@ -3,6 +3,7 @@ import { ScorePlayer } from '../../core/audio/player'
 import type { Timeline } from '../../core/score/timeline'
 import { libraryUrl, loadLibrary, pieceSource, type Piece, type ReviewStatus } from '../../library/catalog'
 import { ScoreView } from '../components/ScoreView'
+import { ArrowLeft, CircleCheck, Download, Square, Trash2, Upload, Volume2 } from '../icons'
 
 interface Props {
   onBack(): void
@@ -78,7 +79,7 @@ export function ReviewScreen({ onBack }: Props) {
   const decide = async (status: ReviewStatus) => {
     if (!piece) return
     if (await post(`review/${piece.id}`, { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) })) {
-      setNotice(status === 'approved' ? '✅ Aprobada: ya aparece en la biblioteca.' : 'Descartada.')
+      setNotice(status === 'approved' ? 'Aprobada: ya aparece en la biblioteca.' : 'Descartada.')
       await reload(piece.id)
     }
   }
@@ -90,7 +91,7 @@ export function ReviewScreen({ onBack }: Props) {
       body: await file.arrayBuffer(),
     })
     if (ok) {
-      setNotice('✅ Versión corregida guardada y aprobada.')
+      setNotice('Versión corregida guardada y aprobada.')
       setTimeline(null)
       setVersion(v => v + 1)
       await reload(piece.id)
@@ -112,7 +113,7 @@ export function ReviewScreen({ onBack }: Props) {
   return (
     <main className="review">
       <header className="practice-header">
-        <button className="big-button ghost" onClick={() => { player.stop(); onBack() }}>← Biblioteca</button>
+        <button className="big-button ghost" onClick={() => { player.stop(); onBack() }}><ArrowLeft /> Biblioteca</button>
         <h1>Revisar importaciones</h1>
       </header>
 
@@ -135,14 +136,14 @@ export function ReviewScreen({ onBack }: Props) {
         <>
           <div className="review-actions">
             <span className="review-source">De: {piece.review?.importedFrom ?? '—'}</span>
-            <button className="chip" onClick={listen} disabled={!timeline}>{playing ? '⏹ Parar' : '🔊 Escuchar lo reconocido'}</button>
-            <button className="chip approve" onClick={() => decide('approved')} disabled={busy || !piece.file}>✅ Aprobar</button>
+            <button className="chip" onClick={listen} disabled={!timeline}>{playing ? <><Square /> Parar</> : <><Volume2 /> Escuchar lo reconocido</>}</button>
+            <button className="chip approve" onClick={() => decide('approved')} disabled={busy || !piece.file}><CircleCheck /> Aprobar</button>
             {piece.file && (
-              <a className="chip" href={libraryUrl(piece.file)} download={`${piece.id}.mxl`}>⬇️ Descargar para MuseScore</a>
+              <a className="chip" href={libraryUrl(piece.file)} download={`${piece.id}.mxl`}><Download /> Descargar para MuseScore</a>
             )}
-            <button className="chip" onClick={() => fileInput.current?.click()} disabled={busy}>🔁 Subir versión corregida</button>
+            <button className="chip" onClick={() => fileInput.current?.click()} disabled={busy}><Upload /> Subir versión corregida</button>
             <input ref={fileInput} type="file" accept=".musicxml,.xml,.mxl,.mscz,.mscx" hidden onChange={e => replace(e.target.files?.[0])} />
-            <button className="chip" onClick={() => decide('rejected')} disabled={busy}>🗑️ Descartar</button>
+            <button className="chip" onClick={() => decide('rejected')} disabled={busy}><Trash2 /> Descartar</button>
           </div>
           {notice && <p className="notice review-notice">{notice}</p>}
 
