@@ -14,6 +14,9 @@ export interface TimingWindows {
 
 export const DEFAULT_WINDOWS: TimingWindows = { perfect: 0.15, ok: 0.3 }
 
+/** A little more room with the microphone, whose timing is less exact than a MIDI keyboard. */
+export const MICROPHONE_WINDOWS: TimingWindows = { perfect: 0.2, ok: 0.35 }
+
 export interface TempoSessionOptions extends MatchOptions {
   staves?: readonly number[]
   /** First and last measure to practise, 0-based and inclusive. */

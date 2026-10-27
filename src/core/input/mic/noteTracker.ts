@@ -25,6 +25,8 @@ export interface TrackerSettings {
   shortOnsetRatio: number
   /** Minimum time between two attacks, in ms (one attack spans several overlapping frames, ~45 ms). */
   minAttackGapMs: number
+  /** An attack this recent (ms) is taken as the start of the note whose pitch was just recognised. */
+  maxAttackToPitchMs: number
   /** Frames below threshold before a note is considered released. */
   releaseFrames: number
   lowestMidi: number
@@ -39,6 +41,7 @@ export const DEFAULT_TRACKER_SETTINGS: TrackerSettings = {
   onsetRatio: 1.6,
   shortOnsetRatio: 1.8,
   minAttackGapMs: 100,
+  maxAttackToPitchMs: 250,
   releaseFrames: 4,
   lowestMidi: 21,
   highestMidi: 108,
@@ -49,6 +52,8 @@ export class NoteTracker {
   private current: number | null = null
   private candidate: number | null = null
   private candidateCount = 0
+  /** Time of the first frame of the current candidate pitch. */
+  private candidateStart = 0
   private quietFrames = 0
   /** Lowest level seen since the last attack; a new attack must rise well above it. */
   private valley = Infinity
@@ -118,6 +123,7 @@ export class NoteTracker {
     else {
       this.candidate = midi
       this.candidateCount = 1
+      this.candidateStart = frame.time
     }
     if (this.candidateCount < s.stableFrames) return events
 
@@ -126,7 +132,11 @@ export class NoteTracker {
       this.current = midi
       this.attackPending = false
       const strength = Math.min(1, Math.max(this.attackStrength, frame.rms) / (s.threshold * 10))
-      events.push({ type: 'noteon', midi, time: frame.time, strength, source: 'microphone' })
+      // The note started when it was struck (or first heard), not when its pitch became
+      // stable a few frames later: that delay would make every note look late.
+      const recentAttack = frame.time - this.lastAttackTime <= s.maxAttackToPitchMs
+      const time = recentAttack ? Math.min(this.lastAttackTime, this.candidateStart) : this.candidateStart
+      events.push({ type: 'noteon', midi, time, strength, source: 'microphone' })
     }
     return events
   }

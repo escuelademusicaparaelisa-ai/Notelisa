@@ -5,7 +5,7 @@ import { ScorePlayer } from '../../core/audio/player'
 import { noteBus } from '../../core/input/bus'
 import { midiToSolfege } from '../../core/music/pitch'
 import { summarize, type PracticeSummary } from '../../core/practice/summary'
-import { TempoSession, type TempoEvent, type Timing } from '../../core/practice/tempoSession'
+import { DEFAULT_WINDOWS, MICROPHONE_WINDOWS, TempoSession, type TempoEvent, type Timing } from '../../core/practice/tempoSession'
 import { WaitSession, type WaitEvent } from '../../core/practice/waitSession'
 import { beatsForSteps, beatsInMeasure } from '../../core/score/beats'
 import { measureCount, playableNotes, wholeNotesToSeconds, type ScoreStep, type Timeline } from '../../core/score/timeline'
@@ -229,6 +229,7 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
       ignoreOctave,
       onlyHighest: micOn,
       tempoFactor,
+      windows: micOn ? MICROPHONE_WINDOWS : DEFAULT_WINDOWS,
     })
     if (s.firstStep === null) return
     goTo(s.firstStep)
