@@ -23,7 +23,7 @@ export class ScoreController {
       drawCredits: true,
       drawPartNames: false,
       followCursor: true,
-      cursorsOptions: [{ type: 0, color: '#5b4bdb', alpha: 0.35, follow: true }],
+      cursorsOptions: [{ type: 0, color: '#a457bd', alpha: 0.35, follow: true }],
     })
   }
 

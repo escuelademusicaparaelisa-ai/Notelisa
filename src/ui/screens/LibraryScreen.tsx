@@ -10,7 +10,8 @@ interface Props {
   onExercises(): void
 }
 
-const CARD_COLORS = ['#ffd6a5', '#caffbf', '#9bf6ff', '#bdb2ff', '#ffc6ff', '#fdffb6', '#a0c4ff']
+// Card covers cycle through the colours of the logo.
+const COVERS = ['lila', 'azul', 'amarillo', 'naranja']
 
 const FILTER_KEY = 'notelisa.instrumentFilter'
 
@@ -102,30 +103,37 @@ export function LibraryScreen({ onOpen, onReview, onExercises }: Props) {
 
   return (
     <main className="library">
-      <header className="library-header">
-        <h1>🎹 Notelisa</h1>
-        <p>Elige una pieza para practicar</p>
-        <label className="chip open-file">
-          📂 Abrir partitura del dispositivo
-          <input id="open-file" type="file" accept=".musicxml,.xml,.mxl" hidden
-            onChange={e => openFile(e.target.files?.[0])} />
-        </label>
-        {toReview > 0 && (
-          <button className="chip review-link" onClick={onReview}>📝 Revisar importaciones ({toReview})</button>
-        )}
-        {school.state === 'open' && (
-          <button className="chip" onClick={lock} title="Para usar otra clave en este dispositivo">🔒 Cerrar biblioteca de la escuela</button>
-        )}
+      <header className="app-bar">
+        <img className="app-logo" src={`${import.meta.env.BASE_URL}brand/logo-notelisa.png`} alt="Notelisa" />
+        <div className="app-bar-actions">
+          <label className="chip open-file">
+            📂 Abrir partitura
+            <input id="open-file" type="file" accept=".musicxml,.xml,.mxl" hidden
+              onChange={e => openFile(e.target.files?.[0])} />
+          </label>
+          {toReview > 0 && (
+            <button className="chip review-link" onClick={onReview}>📝 Revisar importaciones ({toReview})</button>
+          )}
+          {school.state === 'open' && (
+            <button className="chip" onClick={lock} title="Para usar otra clave en este dispositivo">🔒 Cerrar biblioteca</button>
+          )}
+        </div>
+      </header>
+      <section className="library-hero">
+        <h1>¿Qué quieres practicar hoy?</h1>
+        <p>Elige una pieza de la biblioteca o crea un ejercicio nuevo.</p>
         {fileError && <p className="notice warn">No se ha podido leer ese archivo. Usa MusicXML (.musicxml, .xml o .mxl).</p>}
         {openError && <p className="notice warn">No se ha podido abrir la pieza. Comprueba la conexión a internet.</p>}
-      </header>
+      </section>
       <button className="exercises-link" onClick={onExercises}>
         <span className="icon" aria-hidden="true">🎯</span>
-        <span><strong>Ejercicios y escalas</strong>Crea un ejercicio nuevo de lectura o una escala</span>
+        <span className="exercises-text"><strong>Ejercicios y escalas</strong>Crea un ejercicio nuevo de lectura o una escala</span>
+        <span className="exercises-go" aria-hidden="true">→</span>
       </button>
       {school.state === 'locked' && <SchoolUnlock onUnlocked={() => void load()} />}
       {pieces === null && <p className="score-message">Cargando biblioteca…</p>}
       {pieces?.length === 0 && <p className="score-message">Todavía no hay piezas en la biblioteca.</p>}
+      {!!pieces?.length && <h2 className="section-title">Biblioteca</h2>}
       {!!pieces?.length && (
         <input className="library-search" type="search" placeholder="🔍 Buscar por título o autor"
           value={query} onChange={e => setQuery(e.target.value)} aria-label="Buscar pieza" />
@@ -160,22 +168,23 @@ export function LibraryScreen({ onOpen, onReview, onExercises }: Props) {
       <ul className="piece-grid">
         {shown?.map((piece, i) => (
           <li key={piece.id}>
-            <button
-              className="piece-card"
-              style={{ background: CARD_COLORS[i % CARD_COLORS.length] }}
-              onClick={() => void open(piece)}
-              disabled={opening !== null}
-            >
-              <span className="piece-title">{piece.title}</span>
-              {(piece.composer || piece.arranger) && (
-                <span className="piece-composer">
-                  {[piece.composer, piece.arranger && `arr. ${piece.arranger}`].filter(Boolean).join(' · ')}
+            <button className="piece-card" onClick={() => void open(piece)} disabled={opening !== null}>
+              <span className={`piece-cover cover-${COVERS[i % COVERS.length]}`} aria-hidden="true">
+                <span className="piece-icon">{getInstrument(piece.instrument).icon}</span>
+                {piece.level ? <span className="piece-level">{'★'.repeat(piece.level)}</span> : null}
+              </span>
+              <span className="piece-body">
+                <span className="piece-title">{piece.title}</span>
+                {(piece.composer || piece.arranger) && (
+                  <span className="piece-composer">
+                    {[piece.composer, piece.arranger && `arr. ${piece.arranger}`].filter(Boolean).join(' · ')}
+                  </span>
+                )}
+                <span className="piece-meta">
+                  {opening === piece.id ? 'Abriendo… · ' : ''}
+                  {getInstrument(piece.instrument).name}
+                  {piece.level ? ` · nivel ${piece.level}` : ''}
                 </span>
-              )}
-              <span className="piece-meta">
-                {opening === piece.id ? 'Abriendo… · ' : ''}
-                {getInstrument(piece.instrument).name}
-                {piece.level ? ` · ${'★'.repeat(piece.level)}` : ''}
               </span>
             </button>
           </li>

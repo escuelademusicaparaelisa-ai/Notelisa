@@ -16,22 +16,26 @@ export default defineConfig({
       // NO_PWA=1 builds for hosts that do not allow service workers.
       disable: !!process.env.NO_PWA,
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.ico', 'brand/*.png'],
       manifest: {
         name: 'Notelisa',
         short_name: 'Notelisa',
         description: 'Practica tus piezas de la escuela de música Para Elisa',
         lang: 'es',
-        theme_color: '#5b4bdb',
-        background_color: '#fffaf3',
+        theme_color: '#a457bd',
+        background_color: '#f7f1fb',
         display: 'standalone',
         orientation: 'any',
-        icons: [{ src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
+        icons: [
+          { src: 'brand/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'brand/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'brand/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+        ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,json,musicxml,mxl}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,json,musicxml,mxl}'],
         // Review images of imported scans are only needed by the teacher.
-        globIgnores: ['**/review/**', '**/school/**'],
+        globIgnores: ['**/review/**', '**/school/**', '**/*-{hebrew,cyrillic,cyrillic-ext,greek,vietnamese}-*.woff2'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         runtimeCaching: [
           {
