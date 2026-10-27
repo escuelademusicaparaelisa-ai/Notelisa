@@ -44,3 +44,25 @@ altura real con líneas adicionales.
 | Invención n.º 4 en re menor (BWV 775) | J. S. Bach | ★★★★ | `bach-invencion-4.mxl` | [Mutopia n.º 67](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=67) · Allen Garvin · Bach-Gesellschaft | Dominio público |
 | En la gruta del rey de la montaña (Peer Gynt, op. 46 n.º 4) | E. Grieg | ★★★★ | `grieg-rey-montana.mxl` | [Mutopia n.º 1888](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=1888) · Coyau · The University Society, 1918 | Dominio público |
 | Marcha turca (Sonata KV 331, Rondo alla turca) | W. A. Mozart | ★★★★★ | `mozart-marcha-turca.mxl` | [Mutopia n.º 108](https://www.mutopiaproject.org/cgibin/piece-info.cgi?id=108) · Rune Zedeler and Chris Sawer · IMSLP | Dominio público |
+
+## Melodías populares y villancicos (arreglos de Notelisa)
+
+Melodías tradicionales o de autores fallecidos hace más de 80 años (Brahms, S. Foster, L. Mason,
+J. F. Wade), así que la música es de **dominio público**. Los arreglos sencillos para piano están
+hechos para Notelisa y se ceden al dominio público (**CC0**). Se han escrito sin copiar ninguna
+edición concreta, así que conviene escucharlos antes de usarlos en clase.
+
+| Pieza | Compositor | Nivel | Archivo | Fuente | Licencia |
+|---|---|---|---|---|---|
+| Martinillo (Frère Jacques) | Popular (Francia) | ★ | `martinillo.mxl` | Arreglo de Notelisa ([`tools/arreglos/martinillo.ly`](../../../tools/arreglos/martinillo.ly)) | Melodía: dominio público · arreglo: CC0 |
+| Al claro de la luna (Au clair de la lune) | Popular (Francia) | ★ | `al-claro-de-la-luna.mxl` | Arreglo de Notelisa ([`tools/arreglos/al-claro-de-la-luna.ly`](../../../tools/arreglos/al-claro-de-la-luna.ly)) | Melodía: dominio público · arreglo: CC0 |
+| María tenía un corderito | Popular (EE. UU.) | ★ | `maria-tenia-un-corderito.mxl` | Arreglo de Notelisa ([`tools/arreglos/maria-tenia-un-corderito.ly`](../../../tools/arreglos/maria-tenia-un-corderito.ly)) | Melodía: dominio público · arreglo: CC0 |
+| El puente de Londres | Popular (Inglaterra) | ★ | `el-puente-de-londres.mxl` | Arreglo de Notelisa ([`tools/arreglos/el-puente-de-londres.ly`](../../../tools/arreglos/el-puente-de-londres.ly)) | Melodía: dominio público · arreglo: CC0 |
+| Canción de cuna (op. 49 n.º 4) | J. Brahms | ★★ | `cancion-de-cuna-brahms.mxl` | Arreglo de Notelisa ([`tools/arreglos/cancion-de-cuna-brahms.ly`](../../../tools/arreglos/cancion-de-cuna-brahms.ly)) | Melodía: dominio público · arreglo: CC0 |
+| Oh! Susana | S. Foster | ★★ | `oh-susana.mxl` | Arreglo de Notelisa ([`tools/arreglos/oh-susana.ly`](../../../tools/arreglos/oh-susana.ly)) | Melodía: dominio público · arreglo: CC0 |
+| Adeste fideles | J. F. Wade | ★★ | `adeste-fideles.mxl` | Arreglo de Notelisa ([`tools/arreglos/adeste-fideles.ly`](../../../tools/arreglos/adeste-fideles.ly)) | Melodía: dominio público · arreglo: CC0 |
+| Oh, abeto (O Tannenbaum) | Popular (Alemania) | ★★ | `oh-abeto.mxl` | Arreglo de Notelisa ([`tools/arreglos/oh-abeto.ly`](../../../tools/arreglos/oh-abeto.ly)) | Melodía: dominio público · arreglo: CC0 |
+| Os deseamos feliz Navidad (We Wish You a Merry Christmas) | Popular (Inglaterra) | ★★ | `os-deseamos-feliz-navidad.mxl` | Arreglo de Notelisa ([`tools/arreglos/os-deseamos-feliz-navidad.ly`](../../../tools/arreglos/os-deseamos-feliz-navidad.ly)) | Melodía: dominio público · arreglo: CC0 |
+| Engalanad los salones (Deck the Halls) | Popular (Gales) | ★★ | `engalanad-los-salones.mxl` | Arreglo de Notelisa ([`tools/arreglos/engalanad-los-salones.ly`](../../../tools/arreglos/engalanad-los-salones.ly)) | Melodía: dominio público · arreglo: CC0 |
+| Al mundo paz (Joy to the World) | L. Mason | ★★ | `al-mundo-paz.mxl` | Arreglo de Notelisa ([`tools/arreglos/al-mundo-paz.ly`](../../../tools/arreglos/al-mundo-paz.ly)) | Melodía: dominio público · arreglo: CC0 |
+| Greensleeves | Popular (Inglaterra) | ★★★ | `greensleeves.mxl` | Arreglo de Notelisa ([`tools/arreglos/greensleeves.ly`](../../../tools/arreglos/greensleeves.ly)) | Melodía: dominio público · arreglo: CC0 |

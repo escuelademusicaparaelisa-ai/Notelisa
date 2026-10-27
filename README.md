@@ -256,13 +256,15 @@ Para añadir un instrumento nuevo basta con crear su definición en `src/instrum
 
 ## Partituras libres
 
-La biblioteca incluye 28 piezas de piano de dominio público para todos los alumnos (sin clave), del
-nivel ★★ al ★★★★★: minuetos del cuaderno de Anna Magdalena Bach, Mozart, Schumann, Burgmüller,
-Clementi, Chaikovski, Para Elisa, Chopin, Satie, Bach, Grieg y Kuhlau. Están en
+La biblioteca incluye 40 piezas de piano de dominio público para todos los alumnos (sin clave), del
+nivel ★ al ★★★★★: 12 arreglos sencillos de canciones populares y villancicos (Martinillo, Adeste
+fideles, Greensleeves…) y 28 obras del Mutopia Project (minuetos del cuaderno de Anna Magdalena
+Bach, Mozart, Schumann, Burgmüller, Clementi, Chaikovski, Para Elisa, Chopin, Satie, Bach, Grieg y
+Kuhlau). Están en
 `public/library/libre/` (MusicXML comprimido, `.mxl`) y en `public/library/index.json` con ids
 `libre-…`. La fuente, el editor y la licencia de cada una están en
 [`public/library/libre/FUENTES.md`](public/library/libre/FUENTES.md); para añadir más, ver
-`tools/mutopia/`.
+`tools/mutopia/`. Los arreglos de Notelisa están en `tools/arreglos/`.
 
 ## Créditos
 

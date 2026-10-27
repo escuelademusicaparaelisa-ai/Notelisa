@@ -1,6 +1,6 @@
 """Rebuilds a piano score as MusicXML from the events dumped by nl-dump.ly.
 
-usage: python tools/mutopia/build_xml.py events.txt out.musicxml --title T --composer C [--rights R] [--tempo 4=120]
+usage: build_xml.py events.txt out.musicxml --title T --composer C [--rights R] [--tempo 4=120]
 """
 import argparse
 import collections
@@ -59,7 +59,7 @@ EXPR = {
 }
 
 
-def build(events, title, composer, rights, default_tempo, score=1):
+def build(events, title, composer, rights, default_tempo, score=1, arranger=None):
     ev = parse(events, score)
     notes = []
     for i, f in enumerate(ev['N']):
@@ -127,6 +127,8 @@ def build(events, title, composer, rights, default_tempo, score=1):
     md.composer = composer
     if rights:
         md.copyright = rights
+    if arranger:
+        md.addContributor(metadata.Contributor(role='arranger', name=arranger))
     score.insert(0, md)
     all_keys = sorted({(mom(f[1])[0], int(f[2]), int(f[3]), f[4]) for f in ev['K']})
     parts = []
@@ -340,10 +342,11 @@ if __name__ == '__main__':
     ap.add_argument('--rights', default='')
     ap.add_argument('--tempo', default='4=100')
     ap.add_argument('--score', type=int, default=1)
+    ap.add_argument('--arranger')
     a = ap.parse_args()
     u, c = a.tempo.split('=')
     unit = F(1, int(u.rstrip('.'))) * (F(3, 2) if u.endswith('.') else 1)
-    s = build(a.events, a.title, a.composer, a.rights, (unit, int(c)), a.score)
+    s = build(a.events, a.title, a.composer, a.rights, (unit, int(c)), a.score, a.arranger)
     s.splitAtDurations(recurse=True)
     s.write('musicxml', fp=a.out, makeNotation=False)
     print('ok', a.out)
