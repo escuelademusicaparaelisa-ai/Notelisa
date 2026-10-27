@@ -1,6 +1,6 @@
 """Builds the app's logo and icon files from the designer's PNGs (white background).
 
-Usage: python3 tools/brand/make_assets.py <Logo_Notelisa_horizontal.png> <N logo.png>
+Usage: python3 tools/brand/make_assets.py <Logo_Notelisa_horizontal.png> <Logo_Notelisa_N_cuadrado.png>
 Writes public/brand/*.png and public/favicon.ico.
 """
 import sys
