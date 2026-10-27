@@ -40,8 +40,10 @@ export const ScoreView = forwardRef<ScoreViewHandle, Props>(function ScoreView({
         onLoaded(timeline)
       })
       .catch(error => {
+        // A score replaced while loading fails harmlessly: only report the current one.
+        if (cancelled) return
         console.error(error)
-        if (!cancelled) setStatus('error')
+        setStatus('error')
       })
     return () => {
       cancelled = true
