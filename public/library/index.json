@@ -156,7 +156,7 @@
       "title": "Oh, abeto (O Tannenbaum)",
       "composer": "Popular (Alemania)",
       "arranger": "Notelisa",
-      "level": 2,
+      "level": 3,
       "instrument": "piano",
       "file": "libre/oh-abeto.mxl"
     },
@@ -165,7 +165,7 @@
       "title": "Os deseamos feliz Navidad (We Wish You a Merry Christmas)",
       "composer": "Popular (Inglaterra)",
       "arranger": "Notelisa",
-      "level": 2,
+      "level": 3,
       "instrument": "piano",
       "file": "libre/os-deseamos-feliz-navidad.mxl"
     },
@@ -174,7 +174,7 @@
       "title": "Engalanad los salones (Deck the Halls)",
       "composer": "Popular (Gales)",
       "arranger": "Notelisa",
-      "level": 2,
+      "level": 3,
       "instrument": "piano",
       "file": "libre/engalanad-los-salones.mxl"
     },
@@ -183,7 +183,7 @@
       "title": "Al mundo paz (Joy to the World)",
       "composer": "L. Mason",
       "arranger": "Notelisa",
-      "level": 2,
+      "level": 3,
       "instrument": "piano",
       "file": "libre/al-mundo-paz.mxl"
     },
@@ -191,7 +191,7 @@
       "id": "libre-schumann-jinete-salvaje",
       "title": "El jinete salvaje (op. 68 n.º 8)",
       "composer": "R. Schumann",
-      "level": 3,
+      "level": 4,
       "instrument": "piano",
       "file": "libre/schumann-jinete-salvaje.mxl"
     },
@@ -199,7 +199,7 @@
       "id": "libre-schumann-alegre-campesino",
       "title": "El alegre campesino (op. 68 n.º 10)",
       "composer": "R. Schumann",
-      "level": 3,
+      "level": 4,
       "instrument": "piano",
       "file": "libre/schumann-alegre-campesino.mxl"
     },
@@ -207,7 +207,7 @@
       "id": "libre-burgmuller-arabesca",
       "title": "La arabesca (op. 100 n.º 2)",
       "composer": "F. Burgmüller",
-      "level": 3,
+      "level": 4,
       "instrument": "piano",
       "file": "libre/burgmuller-arabesca.mxl"
     },
@@ -215,7 +215,7 @@
       "id": "libre-burgmuller-pastoral",
       "title": "La pastoral (op. 100 n.º 3)",
       "composer": "F. Burgmüller",
-      "level": 3,
+      "level": 4,
       "instrument": "piano",
       "file": "libre/burgmuller-pastoral.mxl"
     },
@@ -223,7 +223,7 @@
       "id": "libre-burgmuller-inocencia",
       "title": "Inocencia (op. 100 n.º 5)",
       "composer": "F. Burgmüller",
-      "level": 3,
+      "level": 4,
       "instrument": "piano",
       "file": "libre/burgmuller-inocencia.mxl"
     },
@@ -231,7 +231,7 @@
       "id": "libre-clementi-sonatina-op36-1",
       "title": "Sonatina op. 36 n.º 1 (1.er movimiento)",
       "composer": "M. Clementi",
-      "level": 3,
+      "level": 4,
       "instrument": "piano",
       "file": "libre/clementi-sonatina-op36-1.mxl"
     },
@@ -239,7 +239,7 @@
       "id": "libre-tchaikovsky-oracion-manana",
       "title": "Oración de la mañana (Álbum para la juventud, op. 39 n.º 1)",
       "composer": "P. I. Chaikovski",
-      "level": 3,
+      "level": 4,
       "instrument": "piano",
       "file": "libre/tchaikovsky-oracion-manana.mxl"
     },
@@ -247,7 +247,7 @@
       "id": "libre-tchaikovsky-cancion-francesa",
       "title": "Canción francesa antigua (op. 39 n.º 16)",
       "composer": "P. I. Chaikovski",
-      "level": 3,
+      "level": 4,
       "instrument": "piano",
       "file": "libre/tchaikovsky-cancion-francesa.mxl"
     },
@@ -255,7 +255,7 @@
       "id": "libre-tchaikovsky-marcha-soldados-madera",
       "title": "Marcha de los soldados de madera (op. 39 n.º 5)",
       "composer": "P. I. Chaikovski",
-      "level": 3,
+      "level": 4,
       "instrument": "piano",
       "file": "libre/tchaikovsky-marcha-soldados-madera.mxl"
     },
@@ -263,7 +263,7 @@
       "id": "libre-chopin-preludio-op28-7",
       "title": "Preludio en La mayor (op. 28 n.º 7)",
       "composer": "F. Chopin",
-      "level": 3,
+      "level": 4,
       "instrument": "piano",
       "file": "libre/chopin-preludio-op28-7.mxl"
     },
@@ -271,7 +271,7 @@
       "id": "libre-schumann-de-paises-lejanos",
       "title": "De países y gentes lejanos (Escenas de niños, op. 15 n.º 1)",
       "composer": "R. Schumann",
-      "level": 3,
+      "level": 4,
       "instrument": "piano",
       "file": "libre/schumann-de-paises-lejanos.mxl"
     },
@@ -279,7 +279,7 @@
       "id": "libre-kuhlau-sonatina-op20-1",
       "title": "Sonatina op. 20 n.º 1 (Allegro)",
       "composer": "F. Kuhlau",
-      "level": 3,
+      "level": 4,
       "instrument": "piano",
       "file": "libre/kuhlau-sonatina-op20-1.mxl"
     },
@@ -288,7 +288,7 @@
       "title": "Greensleeves",
       "composer": "Popular (Inglaterra)",
       "arranger": "Notelisa",
-      "level": 3,
+      "level": 4,
       "instrument": "piano",
       "file": "libre/greensleeves.mxl"
     },
@@ -296,7 +296,7 @@
       "id": "libre-para-elisa",
       "title": "Para Elisa (WoO 59)",
       "composer": "L. van Beethoven",
-      "level": 4,
+      "level": 5,
       "instrument": "piano",
       "file": "libre/para-elisa.mxl"
     },
@@ -304,7 +304,7 @@
       "id": "libre-chopin-preludio-op28-4",
       "title": "Preludio en mi menor (op. 28 n.º 4)",
       "composer": "F. Chopin",
-      "level": 4,
+      "level": 5,
       "instrument": "piano",
       "file": "libre/chopin-preludio-op28-4.mxl"
     },
@@ -312,7 +312,7 @@
       "id": "libre-satie-gymnopedie-1",
       "title": "Gymnopédie n.º 1",
       "composer": "E. Satie",
-      "level": 4,
+      "level": 5,
       "instrument": "piano",
       "file": "libre/satie-gymnopedie-1.mxl"
     },
@@ -320,7 +320,7 @@
       "id": "libre-bach-invencion-8",
       "title": "Invención n.º 8 en Fa mayor (BWV 779)",
       "composer": "J. S. Bach",
-      "level": 4,
+      "level": 5,
       "instrument": "piano",
       "file": "libre/bach-invencion-8.mxl"
     },
@@ -328,7 +328,7 @@
       "id": "libre-bach-invencion-4",
       "title": "Invención n.º 4 en re menor (BWV 775)",
       "composer": "J. S. Bach",
-      "level": 4,
+      "level": 5,
       "instrument": "piano",
       "file": "libre/bach-invencion-4.mxl"
     },
@@ -336,7 +336,7 @@
       "id": "libre-grieg-rey-montana",
       "title": "En la gruta del rey de la montaña (Peer Gynt, op. 46 n.º 4)",
       "composer": "E. Grieg",
-      "level": 4,
+      "level": 5,
       "instrument": "piano",
       "file": "libre/grieg-rey-montana.mxl"
     },
