@@ -225,8 +225,9 @@ se añaden a la hoja solas, y las que borres de la carpeta desaparecen de la bib
 
 En la pantalla de inicio, **🎯 Ejercicios y escalas** crea ejercicios nuevos al momento:
 
-- **Tipo:** lectura (una melodía al azar) o escala (sube y baja; las menores son armónicas).
-- **Instrumento, clave** (sol, fa o dos pentagramas), **tonalidad** y **compás** (2/4, 3/4, 4/4, 6/8).
+- **Tipo:** lectura (una melodía al azar) o escala (sube y baja).
+- **Tonalidad:** las 15 mayores y las 15 menores; para las menores se elige natural, armónica o melódica (la melódica sube con 6.º y 7.º alterados y baja como la natural).
+- **Instrumento, clave** (sol, fa o dos pentagramas) y **compás** (2/4, 3/4, 4/4, 6/8).
 - **Figuras:** 1 redondas y blancas, 2 + negras, 3 + corcheas, 4 + puntillos y semicorcheas.
 - **Silencios**, **notas** (5 notas, una octava o con saltos) y **compases** (4, 8 o 12).
 
