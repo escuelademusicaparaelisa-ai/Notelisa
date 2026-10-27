@@ -12,7 +12,7 @@ const SAMPLE_RATE = 44100
 const FRAME = 2048
 const HOP = 512
 
-interface Strike { midi: number; at: number; length: number; gain?: number; a4?: number }
+interface Strike { midi: number; at: number; length: number; gain?: number; a4?: number; release?: number }
 
 function render(strikes: Strike[], seconds: number, noise = 0.001): Float32Array {
   const out = new Float32Array(Math.round(seconds * SAMPLE_RATE))
@@ -25,7 +25,7 @@ function render(strikes: Strike[], seconds: number, noise = 0.001): Float32Array
     const end = Math.min(out.length, start + Math.round(s.length * SAMPLE_RATE))
     for (let i = start; i < end; i++) {
       const t = (i - start) / SAMPLE_RATE
-      const release = Math.min(1, (end - i) / SAMPLE_RATE / 0.04)
+      const release = Math.min(1, (end - i) / SAMPLE_RATE / (s.release ?? 0.04))
       const envelope = Math.min(1, t / 0.005) * Math.exp(-t / 1.2) * release * (s.gain ?? 0.3)
       let v = 0
       for (let h = 1; h <= 6; h++) v += Math.sin(2 * Math.PI * f * h * t) / h
@@ -68,6 +68,29 @@ describe('NoteTracker with a simulated piano', () => {
   it('counts the same key struck again while still ringing', () => {
     const strikes = [{ midi: 67, at: 0.1, length: 2 }, { midi: 67, at: 0.7, length: 1.4 }]
     expect(ons(track(render(strikes, 2.2))).map(e => e.midi)).toEqual([67, 67])
+  })
+
+  it('counts fast repeated notes', () => {
+    for (const gap of [0.25, 0.18, 0.14]) {
+      const strikes = Array.from({ length: 6 }, (_, i) => ({ midi: 67, at: 0.1 + i * gap, length: gap }))
+      expect(ons(track(render(strikes, 0.4 + 6 * gap))).length, `every ${gap}s`).toBe(6)
+    }
+  })
+
+  it('counts fast repeated notes played legato (short damper gap)', () => {
+    const strikes = Array.from({ length: 6 }, (_, i) => ({ midi: 64, at: 0.1 + i * 0.2, length: 0.2, release: 0.015 }))
+    expect(ons(track(render(strikes, 1.6))).length).toBe(6)
+  })
+
+  it('follows a fast passage of different notes', () => {
+    const notes = [60, 62, 64, 62, 60, 62, 64, 65]
+    const strikes = notes.map((midi, i) => ({ midi, at: 0.1 + i * 0.13, length: 0.13, release: 0.015 }))
+    expect(ons(track(render(strikes, 1.4))).map(e => e.midi)).toEqual(notes)
+  })
+
+  it('handles repeated notes with some room noise', () => {
+    const strikes = Array.from({ length: 5 }, (_, i) => ({ midi: 72, at: 0.1 + i * 0.2, length: 0.2 }))
+    expect(ons(track(render(strikes, 1.3, 0.01), { threshold: 0.02 })).length).toBe(5)
   })
 
   it('works across the keyboard (low and high notes)', () => {

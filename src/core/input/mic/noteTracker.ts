@@ -6,7 +6,8 @@ import type { AudioFrame } from './analysis'
 // Monophonic: one note sounds at a time. Rules:
 //  - a pitch must be stable for a few frames before it counts (filters attack noise);
 //  - a note that keeps ringing (piano sustain) never fires again by itself;
-//  - striking the same key again is detected by a jump in volume (a new attack);
+//  - striking the same key again is detected by a jump in volume (a new attack),
+//    looked for both in the overall level and in short blocks for fast repeats;
 //  - octave jumps of the detector while a note decays are ignored.
 
 export interface TrackerSettings {
@@ -20,6 +21,10 @@ export interface TrackerSettings {
   stableFrames: number
   /** Volume must grow by this factor over its recent minimum to count as a new attack. */
   onsetRatio: number
+  /** Same, measured on short blocks inside a frame (catches fast repeated notes). */
+  shortOnsetRatio: number
+  /** Minimum time between two attacks, in ms (one attack spans several overlapping frames, ~45 ms). */
+  minAttackGapMs: number
   /** Frames below threshold before a note is considered released. */
   releaseFrames: number
   lowestMidi: number
@@ -32,6 +37,8 @@ export const DEFAULT_TRACKER_SETTINGS: TrackerSettings = {
   minClarity: 0.85,
   stableFrames: 3,
   onsetRatio: 1.6,
+  shortOnsetRatio: 1.8,
+  minAttackGapMs: 100,
   releaseFrames: 4,
   lowestMidi: 21,
   highestMidi: 108,
@@ -48,6 +55,7 @@ export class NoteTracker {
   /** Set by a fresh attack: the next stable pitch fires even if it equals the current note. */
   private attackPending = true
   private attackStrength = 0
+  private lastAttackTime = -Infinity
 
   constructor(settings: Partial<TrackerSettings> = {}) {
     this.settings = { ...DEFAULT_TRACKER_SETTINGS, ...settings }
@@ -82,7 +90,15 @@ export class NoteTracker {
     this.quietFrames = 0
 
     // A clear rise in volume means a key was struck (again).
-    if (frame.rms > Math.max(this.valley, s.threshold * 0.5) * s.onsetRatio) {
+    const levelRise = frame.rms > Math.max(this.valley, s.threshold * 0.5) * s.onsetRatio
+    const shortRise = (frame.onset ?? 1) >= s.shortOnsetRatio
+    // One attack keeps raising the level of the next few overlapping frames: count it once.
+    const sinceLastAttack = frame.time - this.lastAttackTime
+    if ((levelRise || shortRise) && sinceLastAttack < s.minAttackGapMs) {
+      // Still the same attack: follow the rising level.
+      this.valley = frame.rms
+    } else if (levelRise || shortRise) {
+      this.lastAttackTime = frame.time
       this.attackPending = true
       this.attackStrength = frame.rms
       this.candidate = null
