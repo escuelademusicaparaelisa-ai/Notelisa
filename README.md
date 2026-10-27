@@ -13,7 +13,7 @@ app (PWA).
 |------|-----------|--------|
 | 1 | Esqueleto, biblioteca, partitura con cursor, escuchar la pieza | ✅ |
 | 2 | Teclado MIDI + modo espera | ✅ |
-| 3 | Micrófono (una nota cada vez) + calibración | Pendiente |
+| 3 | Micrófono (una nota cada vez) + calibración | ✅ |
 | 4 | Importar MuseScore y PDF/imágenes (OMR) | Pendiente |
 | 5 | Modo tempo, puntuación y resumen | Pendiente |
 | 6 | Investigación de detección de acordes por micrófono | Pendiente |
@@ -79,6 +79,33 @@ En **⚙️ Ajustes** también puedes:
 El teclado MIDI suena a través de la app (los controladores como el MPK mini no tienen
 sonido propio), así que sube el volumen del ordenador.
 
+## Cómo probar la fase 3 (micrófono)
+
+Funciona en Chrome, Edge y Safari (también en iPhone y iPad). La app tiene que abrirse
+en su propia dirección (no dentro de otra página) para poder usar el micrófono.
+
+1. Coloca el móvil o la tablet en el atril, cerca del piano.
+2. Abre una pieza, pulsa **⚙️ Ajustes → 🎤 Usar micrófono** y acepta el permiso.
+3. La primera vez se abre la **calibración** (unos 30 segundos):
+   1. silencio, para medir el ruido de la sala;
+   2. una nota fuerte, para comprobar que el piano se oye bien;
+   3. un La, para saber si el piano está afinado a 440 o a otra frecuencia (se puede saltar);
+   4. unos clics por el altavoz, para medir el retraso del micrófono (se puede saltar).
+   Se guarda en el dispositivo; con **Calibrar de nuevo** se repite.
+4. Pulsa **▶ Empezar** y toca. La barra junto a Ajustes muestra el volumen que oye la
+   app y la nota que detecta. La rayita de la barra es el volumen mínimo: por debajo,
+   la app no hace caso (ruido).
+
+Qué hay que saber:
+
+- El micrófono reconoce **una nota cada vez**. Si la partitura tiene un acorde, basta con
+  la nota más aguda. Lo ideal es practicar **con una mano** (Ajustes → Qué tocar).
+  Los acordes llegarán en la fase 6.
+- Una nota que sigue sonando (pedal o tecla mantenida) **no** cuenta como nueva; volver a
+  tocar la misma tecla sí.
+- Con micrófono a veces la app confunde la octava. Si pasa, activa **Vale cualquier octava**.
+- La app no hace sonar las notas que oye por el micrófono (ya suena tu piano).
+
 ## Abrir una partitura del dispositivo
 
 En la biblioteca, **📂 Abrir partitura del dispositivo** carga un archivo MusicXML
@@ -113,6 +140,7 @@ src/
     audio/      reproducción con Tone.js
     input/      capa común de entrada: MIDI, teclado en pantalla y micrófono publican
                 el mismo tipo de evento en un "bus" de notas
+      mic/      micrófono: análisis de tono (pitchy), detector de notas y calibración
     practice/   lógica de práctica (comparar notas, modo espera) con tests
   instruments/  definición de cada instrumento (piano, flauta…)
   library/      catálogo de piezas

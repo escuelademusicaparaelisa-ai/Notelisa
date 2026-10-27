@@ -71,4 +71,10 @@ describe('WaitSession', () => {
     const s = new WaitSession(timeline, { ignoreOctave: true, staves: [0] })
     expect(types(s.play(72))).toEqual(['correct', 'stepDone', 'advance'])
   })
+
+  it('asks only for the top note of a chord when listening by microphone', () => {
+    const s = new WaitSession(timeline, { onlyHighest: true })
+    expect(s.expectedNotes).toEqual([60])
+    expect(types(s.play(60))).toEqual(['correct', 'stepDone', 'advance'])
+  })
 })

@@ -11,6 +11,11 @@ export interface WaitSessionOptions extends MatchOptions {
   toMeasure?: number
   /** Start again at the first step of the range after the last one. */
   loop: boolean
+  /**
+   * Only ask for the highest note of each chord. Used with the microphone, which
+   * hears one note at a time (the melody is usually on top).
+   */
+  onlyHighest?: boolean
 }
 
 export type WaitEvent =
@@ -105,7 +110,8 @@ export class WaitSession {
       this.matcher = null
       return
     }
-    this.matcher = new StepMatcher(playableNotes(step, this.options.staves).map(n => n.midi), this.options)
+    const notes = playableNotes(step, this.options.staves).map(n => n.midi)
+    this.matcher = new StepMatcher(this.options.onlyHighest ? [Math.max(...notes)] : notes, this.options)
   }
 
   private statsFor(measure: number): MeasureStats {

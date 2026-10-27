@@ -1,14 +1,6 @@
 import { useEffect, useState } from 'react'
 import { midiInput, MidiInput, type MidiStatus } from '../../core/input/midi'
-
-function isEmbedded(): boolean {
-  try {
-    return window.self !== window.top
-  } catch {
-    // Reading window.top from a cross-origin frame throws: we are embedded.
-    return true
-  }
-}
+import { isEmbedded } from './embedded'
 
 /** Lets the student connect and choose a MIDI keyboard. */
 export function MidiPanel() {
