@@ -14,7 +14,7 @@ app (PWA).
 | 1 | Esqueleto, biblioteca, partitura con cursor, escuchar la pieza | ✅ |
 | 2 | Teclado MIDI + modo espera | ✅ |
 | 3 | Micrófono (una nota cada vez) + calibración | ✅ |
-| 4 | Importar MuseScore y PDF/imágenes (OMR) | Pendiente |
+| 4 | Importar MuseScore y PDF/imágenes (OMR) | ✅ herramienta y revisión · prueba con PDF pendiente |
 | 5 | Modo tempo, puntuación y resumen | Pendiente |
 | 6 | Investigación de detección de acordes por micrófono | Pendiente |
 
@@ -112,7 +112,7 @@ En la biblioteca, **📂 Abrir partitura del dispositivo** carga un archivo Musi
 (`.musicxml`, `.xml` o `.mxl`) desde el ordenador o la tablet sin subirlo a ningún sitio.
 En MuseScore se exporta con *Archivo → Exportar → MusicXML*.
 
-## Añadir partituras
+## Añadir partituras (fase 4: importación)
 
 El formato interno es **MusicXML** (`.musicxml`, `.xml` o `.mxl`).
 
@@ -121,14 +121,50 @@ El formato interno es **MusicXML** (`.musicxml`, `.xml` o `.mxl`).
   Esta carpeta **no se sube a GitHub** (está en `.gitignore`), para no publicar
   partituras por error.
 
-Para convertir archivos de MuseScore (`.mscz`) e incluirlos en tu biblioteca, con
-MuseScore instalado:
+### Programas necesarios en tu ordenador
+
+| Para importar… | Necesitas |
+|---|---|
+| MusicXML | nada más |
+| MuseScore (`.mscz`) | [MuseScore](https://musescore.org) 4 |
+| PDF y fotos | [Audiveris](https://audiveris.github.io/audiveris/) (reconocimiento óptico, necesita Java) y, para PDF, Poppler (`pdftoppm`) |
+
+Si un programa no está en la ruta habitual, indica dónde está:
+`MSCORE=/ruta/a/mscore`, `AUDIVERIS=/ruta/a/Audiveris`, `PDFTOPPM=/ruta/a/pdftoppm`.
+
+### Importar
 
 ```bash
-npm run import-scores -- "/ruta/a/mi/carpeta de partituras"
+npm run importar -- "/ruta/a/mi carpeta de partituras"
+npm run importar -- cancion.pdf --titulo "Canciones de Navidad"
 ```
 
-(La fase 4 mejorará este proceso y añadirá PDF e imágenes.)
+- **MusicXML** se copia; **MuseScore** se convierte con MuseScore. Entran directamente en
+  la biblioteca.
+- **PDF y fotos** pasan por estos pasos:
+  1. Cada página del PDF se convierte en imagen a 300 ppp.
+  2. Se **limpia**: se quitan los colores (por ejemplo, las franjas azules del cursor de
+     otras apps), se pasa a escala de grises y, si es pequeña, se amplía.
+  3. Audiveris la reconoce y produce MusicXML.
+  4. La pieza queda **pendiente de revisar** y no la ven los alumnos.
+
+El reconocimiento óptico **siempre comete errores**, por eso existe la revisión.
+
+### Revisar las piezas reconocidas
+
+1. Arranca la app en tu ordenador con `npm run dev`.
+2. En la biblioteca pulsa **📝 Revisar importaciones**.
+3. Verás la partitura **original** a la izquierda y la **reconocida** a la derecha.
+   Pulsa **🔊 Escuchar lo reconocido** para detectar notas equivocadas de oído.
+4. Según lo que veas:
+   - **✅ Aprobar**: pasa a la biblioteca.
+   - **⬇️ Descargar para MuseScore**: ábrela en MuseScore, corrige los errores y guarda.
+     Después pulsa **🔁 Subir versión corregida** y elige el archivo (`.mscz` o MusicXML):
+     sustituye a la reconocida y queda aprobada.
+   - **🗑️ Descartar**.
+
+Las decisiones se guardan en `public/library/index.local.json`, por eso la revisión solo
+funciona con la app abierta con `npm run dev` en tu ordenador.
 
 ## Estructura del código
 
@@ -145,7 +181,7 @@ src/
   instruments/  definición de cada instrumento (piano, flauta…)
   library/      catálogo de piezas
   ui/           pantallas y componentes React
-scripts/        herramientas de línea de comandos (importación)
+tools/importer/ importación de partituras (MuseScore, Audiveris) y revisión
 ```
 
 Para añadir un instrumento nuevo basta con crear su definición en `src/instruments/`.
