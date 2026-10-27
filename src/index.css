@@ -209,3 +209,11 @@ button:disabled { opacity: 0.45; cursor: default; }
 /* Instrument buttons in the library */
 .instrument-filter { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
 .instrument-filter .chip { font-size: 1.1rem; padding: 10px 18px; }
+
+/* Metronome beat */
+.beat { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px;
+  border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 900; font-size: 1.3rem;
+  animation: beat-flash 0.35s ease-out; }
+.beat.accent { background: #e08a00; }
+@keyframes beat-flash { from { transform: scale(1.35); } to { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .beat { animation: none; } }
