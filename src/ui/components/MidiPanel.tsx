@@ -1,6 +1,15 @@
 import { useEffect, useState } from 'react'
 import { midiInput, MidiInput, type MidiStatus } from '../../core/input/midi'
 
+function isEmbedded(): boolean {
+  try {
+    return window.self !== window.top
+  } catch {
+    // Reading window.top from a cross-origin frame throws: we are embedded.
+    return true
+  }
+}
+
 /** Lets the student connect and choose a MIDI keyboard. */
 export function MidiPanel() {
   const [status, setStatus] = useState<MidiStatus>(
@@ -19,7 +28,17 @@ export function MidiPanel() {
     case 'idle':
       return <button className="chip" onClick={() => midiInput.start()}>🎹 Conectar teclado MIDI</button>
     case 'denied':
-      return <p className="notice warn">No se ha dado permiso para usar el teclado MIDI. Revisa los permisos del navegador.</p>
+      return isEmbedded() ? (
+        <p className="notice warn">
+          Esta página está abierta dentro de otra (por ejemplo, un enlace de vista previa) y el navegador
+          no deja usar el MIDI aquí. Abre Notelisa en su propia dirección.
+        </p>
+      ) : (
+        <p className="notice warn">
+          El navegador ha bloqueado el teclado MIDI. Pulsa el icono que hay a la izquierda de la
+          dirección de la página, permite «Dispositivos MIDI» y recarga la página.
+        </p>
+      )
     case 'ready':
       if (status.devices.length === 0) {
         return <p className="notice">Enchufa tu teclado MIDI por USB; aparecerá aquí solo.</p>
