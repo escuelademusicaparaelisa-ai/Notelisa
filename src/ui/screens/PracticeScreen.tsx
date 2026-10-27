@@ -6,6 +6,9 @@ import { WaitSession, type WaitEvent } from '../../core/practice/waitSession'
 import { measureCount, playableNotes, type Timeline } from '../../core/score/timeline'
 import { getInstrument, staffLabel } from '../../instruments'
 import { pieceSource, type Piece } from '../../library/catalog'
+import { microphoneInput } from '../../core/input/mic/microphone'
+import { CalibrationWizard } from '../components/CalibrationWizard'
+import { MicMeter, MicPanel } from '../components/MicPanel'
 import { MidiPanel } from '../components/MidiPanel'
 import { OnScreenKeyboard } from '../components/OnScreenKeyboard'
 import { ScoreView, type ScoreViewHandle } from '../components/ScoreView'
@@ -48,6 +51,8 @@ export function PracticeScreen({ piece, onBack }: Props) {
   const [expected, setExpected] = useState<number[]>([])
   const [feedback, setFeedback] = useState<Feedback>({ kind: 'idle' })
   const [held, setHeld] = useState<Set<number>>(new Set())
+  const [micOn, setMicOn] = useState(microphoneInput.isOn)
+  const [calibrating, setCalibrating] = useState(false)
   const instrument = getInstrument(piece.instrument)
   const staves = useMemo(() => (staff === null ? undefined : [staff]), [staff])
   const measures = timeline ? measureCount(timeline) : 1
@@ -71,6 +76,13 @@ export function PracticeScreen({ piece, onBack }: Props) {
 
   useEffect(() => () => { player.stop() }, [])
 
+  useEffect(() => microphoneInput.onStatus(status => {
+    setMicOn(status.state === 'on')
+    // The input changed: a running exercise would mix rules, so stop it.
+    setSession(null)
+    setExpected([])
+  }), [])
+
   const onLoaded = (t: Timeline) => {
     setTimeline(t)
     setStep(0)
@@ -90,6 +102,7 @@ export function PracticeScreen({ piece, onBack }: Props) {
       toMeasure: toMeasure - 1,
       loop,
       ignoreOctave,
+      onlyHighest: micOn,
     })
     setFeedback({ kind: 'idle' })
     if (s.currentStep === null) {
@@ -255,6 +268,10 @@ export function PracticeScreen({ piece, onBack }: Props) {
             <span className="setting-label">Teclado MIDI</span>
             <MidiPanel />
           </div>
+          <div className="setting">
+            <span className="setting-label">Micrófono</span>
+            <MicPanel onCalibrate={() => { stopPractice(); setCalibrating(true) }} />
+          </div>
           {staffOptions.length > 1 && (
             <div className="setting">
               <span className="setting-label">Qué tocar</span>
@@ -340,6 +357,7 @@ export function PracticeScreen({ piece, onBack }: Props) {
         </div>
 
         <div className="footer-actions">
+          {micOn && mode === 'wait' && <MicMeter />}
           <button className={`chip ${showSettings ? 'active' : ''}`} onClick={() => setShowSettings(v => !v)} aria-expanded={showSettings}>
             ⚙️ Ajustes
           </button>
@@ -349,6 +367,8 @@ export function PracticeScreen({ piece, onBack }: Props) {
       {showKeyboard && mode === 'wait' && (
         <OnScreenKeyboard hints={expected} pressed={held} />
       )}
+
+      {calibrating && <CalibrationWizard onClose={() => setCalibrating(false)} />}
     </main>
   )
 }
