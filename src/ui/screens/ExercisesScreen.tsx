@@ -62,11 +62,14 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
 
   return (
     <main className="library exercises">
-      <header className="library-header">
+      <header className="app-bar">
         <button className="big-button ghost" onClick={onBack}>← Biblioteca</button>
-        <h1>🎯 Ejercicios y escalas</h1>
-        <p>Elige qué quieres practicar y se creará un ejercicio nuevo cada vez.</p>
+        <img className="app-logo small" src={`${import.meta.env.BASE_URL}brand/logo-n.png`} alt="Notelisa" />
       </header>
+      <section className="library-hero">
+        <h1>Ejercicios y escalas</h1>
+        <p>Elige qué quieres practicar y se creará un ejercicio nuevo cada vez.</p>
+      </section>
       <div className="exercise-options">
         <Choices label="Tipo" value={options.kind} onChange={set('kind')} choices={[
           { value: 'reading', label: '🎼 Lectura' },
