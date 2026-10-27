@@ -200,9 +200,26 @@ npm run biblioteca-escuela -- --clave "la clave de la escuela"
 ```
 
 Cifra todas las piezas aprobadas de tu biblioteca local y deja el resultado en
-`public/library/school/`, listo para subir a GitHub. Cada vez se genera una llave
-interna nueva: si cambias la clave, la anterior deja de funcionar y los alumnos
-tendrán que escribir la nueva. La clave **no** se guarda en el repositorio.
+`public/library/school/`, listo para subir a GitHub. Con la misma clave, los alumnos
+ven las canciones nuevas sin volver a escribirla. Si cambias la clave (o añades
+`--nueva-llave`), la anterior deja de funcionar y tendrán que escribir la nueva.
+La clave **no** se guarda en el repositorio.
+
+## Actualizar la biblioteca desde una carpeta (con hoja de datos)
+
+La forma habitual de mantener la biblioteca: deja todas las partituras (MuseScore o
+MusicXML) en una carpeta y ejecuta
+
+```bash
+npm run actualizar-biblioteca -- <carpeta> --clave "la clave de la escuela"
+```
+
+En esa carpeta se crea (o actualiza) la hoja **datos-partituras.xlsx**, con una fila
+por archivo: **Título, Compositor, Arreglista, Instrumento** (Piano o Flauta),
+**Nivel** (1 a 5) y **Publicar** (sí/no). Lo que escribas en la hoja manda: el título,
+el compositor y el arreglista se escriben también dentro de la partitura, y el
+instrumento decide en qué botón (🎹 Piano / 🪈 Flauta) aparece. Las partituras nuevas
+se añaden a la hoja solas, y las que borres de la carpeta desaparecen de la biblioteca.
 
 ## Estructura del código
 

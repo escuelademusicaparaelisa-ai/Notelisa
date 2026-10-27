@@ -18,6 +18,7 @@ export interface Piece {
   id: string
   title: string
   composer?: string
+  arranger?: string
   /** 1 (easiest) to 5. */
   level?: number
   instrument: string
