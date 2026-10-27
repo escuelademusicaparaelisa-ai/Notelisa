@@ -1,4 +1,4 @@
-import { OpenSheetMusicDisplay } from 'opensheetmusicdisplay'
+import { OpenSheetMusicDisplay, type GraphicalNote } from 'opensheetmusicdisplay'
 import { extractTimeline } from './osmdTimeline'
 import type { Timeline } from './timeline'
 
@@ -7,6 +7,8 @@ export class ScoreController {
   private osmd: OpenSheetMusicDisplay
   private position = 0
   private colored: SVGElement[] = []
+  // Drawn notes of every step, so any step can be painted (not only the one under the cursor).
+  private stepNotes: GraphicalNote[][] = []
   timeline: Timeline | null = null
 
   constructor(container: HTMLElement) {
@@ -27,6 +29,7 @@ export class ScoreController {
     this.osmd.render()
     this.osmd.cursor.show()
     this.timeline = extractTimeline(this.osmd)
+    this.collectNotes()
     this.position = 0
     return this.timeline
   }
@@ -52,12 +55,28 @@ export class ScoreController {
     }
   }
 
-  /**
-   * Paints the noteheads under the cursor. Only notes whose MIDI number is listed
-   * are painted, so a chord can turn green note by note.
-   */
+  private collectNotes(): void {
+    const cursor = this.osmd.cursor
+    this.stepNotes = []
+    cursor.reset()
+    while (!cursor.Iterator.EndReached) {
+      this.stepNotes.push(cursor.GNotesUnderCursor())
+      cursor.next()
+    }
+    cursor.reset()
+  }
+
+  /** Paints the noteheads under the cursor (see colorStep). */
   colorCurrent(midis: readonly number[], color: string): void {
-    for (const gNote of this.osmd.cursor.GNotesUnderCursor()) {
+    this.colorStep(this.position, midis, color)
+  }
+
+  /**
+   * Paints the noteheads of a step. Only notes whose MIDI number is listed are
+   * painted, so a chord can turn green note by note.
+   */
+  colorStep(step: number, midis: readonly number[], color: string): void {
+    for (const gNote of this.stepNotes[step] ?? []) {
       const note = gNote.sourceNote
       if (note.isRest() || !midis.includes(note.halfTone + 12)) continue
       const heads = (gNote as unknown as { getNoteheadSVGs?: () => HTMLElement[] }).getNoteheadSVGs?.() ?? []
@@ -83,10 +102,10 @@ export class ScoreController {
     this.osmd.Zoom = zoom
     this.osmd.render()
     this.colored = []
-    // render() rebuilds the cursor, so restore its position.
+    // render() rebuilds the cursor and the drawn notes, so restore its position.
     const step = this.position
     this.osmd.cursor.show()
-    this.osmd.cursor.reset()
+    this.collectNotes()
     this.position = 0
     this.goTo(step)
   }

@@ -15,7 +15,7 @@ app (PWA).
 | 2 | Teclado MIDI + modo espera | ✅ |
 | 3 | Micrófono (una nota cada vez) + calibración | ✅ |
 | 4 | Importar MuseScore y PDF/imágenes (OMR) | ✅ herramienta y revisión · prueba con PDF pendiente |
-| 5 | Modo tempo, puntuación y resumen | Pendiente |
+| 5 | Modo tempo, metrónomo, puntuación y resumen | ✅ |
 | 6 | Investigación de detección de acordes por micrófono | Pendiente |
 
 ## Instalar y ejecutar
@@ -57,7 +57,7 @@ Usa **Chrome o Edge** en un ordenador o tablet Android (Safari en iPhone/iPad no
 teclados MIDI; allí la app lo avisa y puedes usar el teclado de la pantalla).
 
 1. Enchufa el teclado MIDI por USB **antes o después** de abrir la app, da igual.
-2. Abre una pieza. Arriba elige **🎹 Practicar** (es el modo por defecto).
+2. Abre una pieza. Arriba elige **🎹 Paso a paso** (es el modo por defecto).
 3. Pulsa **⚙️ Ajustes → Conectar teclado MIDI** y acepta el permiso del navegador.
    Aparece el nombre del teclado con un punto verde. Si lo desenchufas y lo vuelves a
    enchufar, se reconecta solo.
@@ -66,7 +66,7 @@ teclados MIDI; allí la app lo avisa y puedes usar el teclado de la pantalla).
 5. Toca la nota: se pinta de **verde** en la partitura y el cursor avanza. Si fallas,
    se pinta de **rojo** y la app espera; cuando la aciertes quedará **naranja** (acertada
    después de fallar). En los acordes hay que tocar todas las notas (en cualquier orden).
-6. Al final aparece el porcentaje de aciertos.
+6. Al final aparece el resumen con estrellas y los compases que más cuestan.
 
 En **⚙️ Ajustes** también puedes:
 
@@ -78,6 +78,24 @@ En **⚙️ Ajustes** también puedes:
 
 El teclado MIDI suena a través de la app (los controladores como el MPK mini no tienen
 sonido propio), así que sube el volumen del ordenador.
+
+## Cómo probar la fase 5 (modo con tempo y resumen)
+
+1. Abre una pieza y arriba elige **🎵 Con tempo**.
+2. En **⚙️ Ajustes** elige la **Velocidad** (del 40% al 120% del tempo de la
+   partitura) y, si quieres, activa el **Metrónomo** (también funciona en los otros
+   modos).
+3. Pulsa **▶ Empezar**: suena un compás de cuenta atrás (4, 3, 2, 1…) y la partitura
+   avanza sola. Toca a la vez que el cursor:
+   - **verde**: nota correcta y a tiempo (menos de 0,15 s de diferencia);
+   - **naranja**: nota correcta pero un poco pronto o tarde (hasta 0,3 s);
+   - **rojo**: nota que no se ha tocado a tiempo.
+4. Al terminar sale el **resumen**: estrellas, % de notas correctas, % a tiempo y los
+   tres compases que más cuestan. **🔁 Practicar compás N** abre ese compás en bucle en
+   el modo paso a paso.
+
+Con micrófono se descuenta el retraso medido en la calibración, así que conviene
+calibrar antes de usar este modo.
 
 ## Cómo probar la fase 3 (micrófono)
 
@@ -173,11 +191,11 @@ src/
   core/
     music/      utilidades de notas (MIDI, nombres, frecuencias)
     score/      partitura → "pasos" (timeline) y control del cursor (OSMD)
-    audio/      reproducción con Tone.js
+    audio/      reproducción con Tone.js y metrónomo
     input/      capa común de entrada: MIDI, teclado en pantalla y micrófono publican
                 el mismo tipo de evento en un "bus" de notas
       mic/      micrófono: análisis de tono (pitchy), detector de notas y calibración
-    practice/   lógica de práctica (comparar notas, modo espera) con tests
+    practice/   lógica de práctica (comparar notas, modo espera, modo tempo, resumen) con tests
   instruments/  definición de cada instrumento (piano, flauta…)
   library/      catálogo de piezas
   ui/           pantallas y componentes React

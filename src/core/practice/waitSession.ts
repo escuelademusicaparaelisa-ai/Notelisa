@@ -27,8 +27,18 @@ export type WaitEvent =
   | { type: 'finished' }
 
 export interface MeasureStats {
+  /** Right notes. */
   correct: number
+  /** Wrong or extra notes. */
   wrong: number
+  /** Notes never played (tempo mode only). */
+  missed: number
+  /** Right notes played noticeably early or late (tempo mode only). */
+  offTime: number
+}
+
+export function newMeasureStats(): MeasureStats {
+  return { correct: 0, wrong: 0, missed: 0, offTime: 0 }
 }
 
 export class WaitSession {
@@ -117,7 +127,7 @@ export class WaitSession {
   private statsFor(measure: number): MeasureStats {
     let stats = this.stats.get(measure)
     if (!stats) {
-      stats = { correct: 0, wrong: 0 }
+      stats = newMeasureStats()
       this.stats.set(measure, stats)
     }
     return stats
