@@ -15,6 +15,230 @@
       "level": 1,
       "instrument": "piano",
       "file": "demo/oda-a-la-alegria.musicxml"
+    },
+    {
+      "id": "libre-minueto-sol-mayor-bwv-anh-114",
+      "title": "Minueto en Sol mayor (BWV Anh. 114)",
+      "composer": "C. Petzold",
+      "level": 2,
+      "instrument": "piano",
+      "file": "libre/minueto-sol-mayor-bwv-anh-114.mxl"
+    },
+    {
+      "id": "libre-minueto-sol-menor-bwv-anh-115",
+      "title": "Minueto en sol menor (BWV Anh. 115)",
+      "composer": "C. Petzold",
+      "level": 2,
+      "instrument": "piano",
+      "file": "libre/minueto-sol-menor-bwv-anh-115.mxl"
+    },
+    {
+      "id": "libre-minueto-fa-bwv-anh-113",
+      "title": "Minueto en Fa mayor (BWV Anh. 113)",
+      "composer": "Anónimo (Cuaderno de Anna Magdalena Bach)",
+      "level": 2,
+      "instrument": "piano",
+      "file": "libre/minueto-fa-bwv-anh-113.mxl"
+    },
+    {
+      "id": "libre-minueto-sol-bwv-anh-116",
+      "title": "Minueto en Sol mayor (BWV Anh. 116)",
+      "composer": "Anónimo (Cuaderno de Anna Magdalena Bach)",
+      "level": 2,
+      "instrument": "piano",
+      "file": "libre/minueto-sol-bwv-anh-116.mxl"
+    },
+    {
+      "id": "libre-musette-bwv-anh-126",
+      "title": "Musette en Re mayor (BWV Anh. 126)",
+      "composer": "Anónimo (Cuaderno de Anna Magdalena Bach)",
+      "level": 2,
+      "instrument": "piano",
+      "file": "libre/musette-bwv-anh-126.mxl"
+    },
+    {
+      "id": "libre-mozart-minueto-kv2",
+      "title": "Minueto en Fa mayor (KV 2)",
+      "composer": "W. A. Mozart",
+      "level": 2,
+      "instrument": "piano",
+      "file": "libre/mozart-minueto-kv2.mxl"
+    },
+    {
+      "id": "libre-schumann-melodia",
+      "title": "Melodía (Álbum para la juventud, op. 68 n.º 1)",
+      "composer": "R. Schumann",
+      "level": 2,
+      "instrument": "piano",
+      "file": "libre/schumann-melodia.mxl"
+    },
+    {
+      "id": "libre-schumann-marcha-soldados",
+      "title": "Marcha de los soldados (op. 68 n.º 2)",
+      "composer": "R. Schumann",
+      "level": 2,
+      "instrument": "piano",
+      "file": "libre/schumann-marcha-soldados.mxl"
+    },
+    {
+      "id": "libre-burgmuller-la-candidez",
+      "title": "La candidez (op. 100 n.º 1)",
+      "composer": "F. Burgmüller",
+      "level": 2,
+      "instrument": "piano",
+      "file": "libre/burgmuller-la-candidez.mxl"
+    },
+    {
+      "id": "libre-schumann-jinete-salvaje",
+      "title": "El jinete salvaje (op. 68 n.º 8)",
+      "composer": "R. Schumann",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/schumann-jinete-salvaje.mxl"
+    },
+    {
+      "id": "libre-schumann-alegre-campesino",
+      "title": "El alegre campesino (op. 68 n.º 10)",
+      "composer": "R. Schumann",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/schumann-alegre-campesino.mxl"
+    },
+    {
+      "id": "libre-burgmuller-arabesca",
+      "title": "La arabesca (op. 100 n.º 2)",
+      "composer": "F. Burgmüller",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/burgmuller-arabesca.mxl"
+    },
+    {
+      "id": "libre-burgmuller-pastoral",
+      "title": "La pastoral (op. 100 n.º 3)",
+      "composer": "F. Burgmüller",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/burgmuller-pastoral.mxl"
+    },
+    {
+      "id": "libre-burgmuller-inocencia",
+      "title": "Inocencia (op. 100 n.º 5)",
+      "composer": "F. Burgmüller",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/burgmuller-inocencia.mxl"
+    },
+    {
+      "id": "libre-clementi-sonatina-op36-1",
+      "title": "Sonatina op. 36 n.º 1 (1.er movimiento)",
+      "composer": "M. Clementi",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/clementi-sonatina-op36-1.mxl"
+    },
+    {
+      "id": "libre-tchaikovsky-oracion-manana",
+      "title": "Oración de la mañana (Álbum para la juventud, op. 39 n.º 1)",
+      "composer": "P. I. Chaikovski",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/tchaikovsky-oracion-manana.mxl"
+    },
+    {
+      "id": "libre-tchaikovsky-cancion-francesa",
+      "title": "Canción francesa antigua (op. 39 n.º 16)",
+      "composer": "P. I. Chaikovski",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/tchaikovsky-cancion-francesa.mxl"
+    },
+    {
+      "id": "libre-tchaikovsky-marcha-soldados-madera",
+      "title": "Marcha de los soldados de madera (op. 39 n.º 5)",
+      "composer": "P. I. Chaikovski",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/tchaikovsky-marcha-soldados-madera.mxl"
+    },
+    {
+      "id": "libre-chopin-preludio-op28-7",
+      "title": "Preludio en La mayor (op. 28 n.º 7)",
+      "composer": "F. Chopin",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/chopin-preludio-op28-7.mxl"
+    },
+    {
+      "id": "libre-schumann-de-paises-lejanos",
+      "title": "De países y gentes lejanos (Escenas de niños, op. 15 n.º 1)",
+      "composer": "R. Schumann",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/schumann-de-paises-lejanos.mxl"
+    },
+    {
+      "id": "libre-kuhlau-sonatina-op20-1",
+      "title": "Sonatina op. 20 n.º 1 (Allegro)",
+      "composer": "F. Kuhlau",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/kuhlau-sonatina-op20-1.mxl"
+    },
+    {
+      "id": "libre-para-elisa",
+      "title": "Para Elisa (WoO 59)",
+      "composer": "L. van Beethoven",
+      "level": 4,
+      "instrument": "piano",
+      "file": "libre/para-elisa.mxl"
+    },
+    {
+      "id": "libre-chopin-preludio-op28-4",
+      "title": "Preludio en mi menor (op. 28 n.º 4)",
+      "composer": "F. Chopin",
+      "level": 4,
+      "instrument": "piano",
+      "file": "libre/chopin-preludio-op28-4.mxl"
+    },
+    {
+      "id": "libre-satie-gymnopedie-1",
+      "title": "Gymnopédie n.º 1",
+      "composer": "E. Satie",
+      "level": 4,
+      "instrument": "piano",
+      "file": "libre/satie-gymnopedie-1.mxl"
+    },
+    {
+      "id": "libre-bach-invencion-8",
+      "title": "Invención n.º 8 en Fa mayor (BWV 779)",
+      "composer": "J. S. Bach",
+      "level": 4,
+      "instrument": "piano",
+      "file": "libre/bach-invencion-8.mxl"
+    },
+    {
+      "id": "libre-bach-invencion-4",
+      "title": "Invención n.º 4 en re menor (BWV 775)",
+      "composer": "J. S. Bach",
+      "level": 4,
+      "instrument": "piano",
+      "file": "libre/bach-invencion-4.mxl"
+    },
+    {
+      "id": "libre-grieg-rey-montana",
+      "title": "En la gruta del rey de la montaña (Peer Gynt, op. 46 n.º 4)",
+      "composer": "E. Grieg",
+      "level": 4,
+      "instrument": "piano",
+      "file": "libre/grieg-rey-montana.mxl"
+    },
+    {
+      "id": "libre-mozart-marcha-turca",
+      "title": "Marcha turca (Sonata KV 331, Rondo alla turca)",
+      "composer": "W. A. Mozart",
+      "level": 5,
+      "instrument": "piano",
+      "file": "libre/mozart-marcha-turca.mxl"
     }
   ]
 }
