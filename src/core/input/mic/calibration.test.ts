@@ -52,11 +52,27 @@ describe('tuningFromA', () => {
 })
 
 describe('latencyFromClicks', () => {
+  // Frames every 10 ms with room noise and a click heard `delay` ms after each one.
+  const recording = (clicks: number[], delay: number, clickRms: number, noise = 0.002) => {
+    const frames: AudioFrame[] = []
+    for (let t = 500; t < clicks[clicks.length - 1] + 500; t += 10) {
+      const sinceClick = Math.min(...clicks.map(c => (t >= c + delay ? t - c - delay : Infinity)))
+      frames.push(frame(sinceClick < 40 ? clickRms : noise, 0, 0, t))
+    }
+    return frames
+  }
+
   it('takes the median delay', () => {
-    const frames = [frame(0.5, 0, 0, 1060), frame(0.5, 0, 0, 2080), frame(0.5, 0, 0, 3070)]
-    expect(latencyFromClicks([1000, 2000, 3000], frames, 0.01)).toBe(70)
+    expect(latencyFromClicks([1000, 1500, 2000], recording([1000, 1500, 2000], 70, 0.5), 0.01)).toBe(70)
+  })
+  it('hears clicks quieter than the playing threshold', () => {
+    expect(latencyFromClicks([1000, 1500, 2000], recording([1000, 1500, 2000], 120, 0.012), 0.03)).toBe(120)
+  })
+  it('accepts clicks heard slightly before the estimated time', () => {
+    expect(latencyFromClicks([1000, 1500, 2000], recording([1000, 1500, 2000], -40, 0.3), 0.01)).toBe(-40)
   })
   it('gives up when the clicks were not heard', () => {
     expect(latencyFromClicks([1000, 2000], [], 0.01)).toBeNull()
+    expect(latencyFromClicks([1000, 1500], recording([1000, 1500], 50, 0.003), 0.01)).toBeNull()
   })
 })
