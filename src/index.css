@@ -105,6 +105,7 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
 
 .score-view { flex: 1; overflow-y: auto; background: #fff; position: relative; }
 .score-canvas { padding: 0 8px; }
+.score-canvas.clickable svg { cursor: pointer; }
 .score-message { text-align: center; font-size: 1.2rem; color: var(--muted); padding: 32px; }
 .score-message.error { color: var(--naranja-dark); }
 

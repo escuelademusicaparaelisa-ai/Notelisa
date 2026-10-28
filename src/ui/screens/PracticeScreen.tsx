@@ -314,16 +314,21 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
 
   // Listen mode -------------------------------------------------------------
 
-  const listen = async () => {
-    if (!timeline) return
+  const listen = () => {
     if (playing) return stopListening()
+    void startListening(step, fromMeasure, toMeasure)
+  }
+
+  /** Plays from a step; measures are 1-based, as in the settings. */
+  const startListening = async (startStep: number, rangeFrom: number, rangeTo: number) => {
+    if (!timeline) return
     stopPractice()
     setAudioLoading(true)
     try {
       setPlaying(true)
-      const firstOfRange = timeline.steps.find(s => s.measureIndex >= fromMeasure - 1)?.index ?? 0
-      const lastOfRange = [...timeline.steps].reverse().find(s => s.measureIndex <= toMeasure - 1)?.index
-      const from = step >= (lastOfRange ?? timeline.steps.length - 1) || step < firstOfRange ? firstOfRange : step
+      const firstOfRange = timeline.steps.find(s => s.measureIndex >= rangeFrom - 1)?.index ?? 0
+      const lastOfRange = [...timeline.steps].reverse().find(s => s.measureIndex <= rangeTo - 1)?.index
+      const from = startStep >= (lastOfRange ?? timeline.steps.length - 1) || startStep < firstOfRange ? firstOfRange : startStep
       const tempoFactor = tempo / 100
       let startAt: number | undefined
       if (metronomeOn) {
@@ -352,6 +357,32 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
     } finally {
       setAudioLoading(false)
     }
+  }
+
+  /**
+   * A measure was tapped on the score: the cursor jumps there and playing starts
+   * there. Running exercises stop; listening carries on from the new place.
+   */
+  const jumpToMeasure = (measure: number) => {
+    if (!timeline) return
+    const target = timeline.steps.find(s => s.measureIndex === measure)
+    if (!target) return
+    const wasPlaying = playing
+    stopListening()
+    stopPractice()
+    scoreRef.current?.clearColors()
+    setFeedback({ kind: 'idle' })
+    setSummary(null)
+    let rangeFrom = fromMeasure
+    let rangeTo = toMeasure
+    // Exercises start at "del" compás, so it moves to the tapped one. Listening
+    // starts at the cursor, so the range only changes when the tap falls outside it.
+    if (mode !== 'listen' || measure + 1 < fromMeasure) rangeFrom = measure + 1
+    if (measure + 1 > toMeasure) rangeTo = measures
+    setFromMeasure(rangeFrom)
+    setToMeasure(rangeTo)
+    goTo(target.index)
+    if (mode === 'listen' && wasPlaying) void startListening(target.index, rangeFrom, rangeTo)
   }
 
   const move = (delta: number) => {
@@ -438,7 +469,7 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
         </div>
       </header>
 
-      <ScoreView ref={scoreRef} source={pieceSource(piece)} onLoaded={onLoaded} />
+      <ScoreView ref={scoreRef} source={pieceSource(piece)} onLoaded={onLoaded} onMeasureClick={jumpToMeasure} />
 
       {showSettings && (
         <section className="settings-panel" aria-label="Ajustes">
