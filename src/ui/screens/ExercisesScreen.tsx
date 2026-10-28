@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
-  INTERVALS, MAJOR_KEYS, MINOR_KEYS, MINOR_SCALE_NAMES, RANGE_NOTES, type ExerciseOptions, type MinorScale,
+  defaultChosenNotes, INTERVALS, MAJOR_KEYS, MINOR_KEYS, MINOR_SCALE_NAMES, RANGE_NOTES, selectableNotes,
+  type ExerciseOptions, type MinorScale,
 } from '../../core/exercises/generator'
 import { saveExerciseOptions } from '../../core/exercises/savedOptions'
 import { Arpeggio, ArrowLeft, FileMusic, Flute, Piano, Scale, ScaleArpeggio, Sparkles } from '../icons'
@@ -55,6 +56,39 @@ function KeyChips({ keys, value, onChange }: { keys: typeof MAJOR_KEYS; value: s
   )
 }
 
+/** Notes of the key to tap one by one, each with its octave (Do4, Mi4…). */
+function NoteChips({ options, onChange }: { options: ExerciseOptions; onChange(notes: number[]): void }) {
+  const toggle = (position: number) =>
+    onChange(options.notes.includes(position) ? options.notes.filter(p => p !== position) : [...options.notes, position])
+  const chosen = selectableNotes(options).filter(n => options.notes.includes(n.position)).length
+  return (
+    <fieldset className="exercise-option">
+      <legend>Elige las notas</legend>
+      <div className="exercise-choices">
+        {selectableNotes(options).map(note => {
+          const active = options.notes.includes(note.position)
+          return (
+            <button key={note.position} type="button" className={`chip key-chip ${active ? 'active' : ''}`}
+              aria-pressed={active} onClick={() => toggle(note.position)}>
+              {note.name}
+            </button>
+          )
+        })}
+      </div>
+      <p className="exercise-hint">
+        {chosen < 2 ? 'Elige al menos dos notas; mientras tanto se usarán 5 notas.' : 'Toca una nota para añadirla o quitarla. Do4 es el Do central.'}
+      </p>
+    </fieldset>
+  )
+}
+
+/** Notes the melody spans, counted like an interval, to grey out wider intervals. */
+function rangeNotes(options: ExerciseOptions): number {
+  if (options.range !== 5) return RANGE_NOTES[options.range]
+  const chosen = selectableNotes(options).map(n => n.position).filter(p => options.notes.includes(p))
+  return chosen.length >= 2 ? Math.max(...chosen) - Math.min(...chosen) + 1 : RANGE_NOTES[1]
+}
+
 /** Lets the teacher or student choose what to practise and creates a new exercise each time. */
 export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
   const [options, setOptions] = useState(initial)
@@ -62,6 +96,9 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
   // Scales and arpeggios share their options.
   const scale = options.kind !== 'reading'
   const piano = options.instrument === 'piano'
+  // "Elegir notas" starts from the tonic and the two notes above it.
+  const chooseRange = (range: ExerciseOptions['range']) =>
+    setOptions(o => ({ ...o, range, notes: range === 5 && !o.notes?.length ? defaultChosenNotes(o) : o.notes }))
 
   const create = () => {
     saveExerciseOptions(options)
@@ -139,7 +176,7 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
             { value: true, label: 'Con silencios' },
           ]} />
         )}
-        <Choices label={scale ? 'Octavas' : 'Notas'} value={scale ? (options.range >= 3 ? 4 : 1) : options.range} onChange={set('range')} choices={scale ? [
+        <Choices label={scale ? 'Octavas' : 'Notas'} value={scale ? (options.range === 3 || options.range === 4 ? 4 : 1) : options.range} onChange={chooseRange} choices={scale ? [
           { value: 1, label: 'Una octava' },
           { value: 4, label: 'Dos octavas' },
         ] : [
@@ -148,12 +185,14 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
           { value: 2, label: 'Una octava' },
           { value: 3, label: 'Con saltos' },
           { value: 4, label: 'Dos octavas' },
+          { value: 5, label: 'Elegir notas' },
         ]} />
+        {!scale && options.range === 5 && <NoteChips options={options} onChange={set('notes')} />}
         {!scale && (
           // Intervals wider than the chosen notes cannot come up, so they are greyed out.
-          <Choices label="Intervalo máximo" value={Math.min(options.maxInterval, RANGE_NOTES[options.range]) as ExerciseOptions['maxInterval']}
+          <Choices label="Intervalo máximo" value={Math.min(options.maxInterval, rangeNotes(options)) as ExerciseOptions['maxInterval']}
             onChange={set('maxInterval')} hint="El salto más grande que puede aparecer entre dos notas seguidas."
-            choices={INTERVALS.map(i => ({ value: i, label: i === 2 ? '2ª · por grados' : `${i}ª`, disabled: i > RANGE_NOTES[options.range] }))} />
+            choices={INTERVALS.map(i => ({ value: i, label: i === 2 ? '2ª · por grados' : `${i}ª`, disabled: i > rangeNotes(options) }))} />
         )}
         {!scale && (
           <Choices label="Compases" value={options.measures} onChange={set('measures')} choices={[
