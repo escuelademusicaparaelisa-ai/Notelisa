@@ -3,7 +3,7 @@ import {
   INTERVALS, MAJOR_KEYS, MINOR_KEYS, MINOR_SCALE_NAMES, RANGE_NOTES, type ExerciseOptions, type MinorScale,
 } from '../../core/exercises/generator'
 import { saveExerciseOptions } from '../../core/exercises/savedOptions'
-import { ArrowLeft, FileMusic, Flute, Piano, Scale, Sparkles } from '../icons'
+import { Arpeggio, ArrowLeft, FileMusic, Flute, Piano, Scale, ScaleArpeggio, Sparkles } from '../icons'
 
 interface Props {
   options: ExerciseOptions
@@ -59,7 +59,8 @@ function KeyChips({ keys, value, onChange }: { keys: typeof MAJOR_KEYS; value: s
 export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
   const [options, setOptions] = useState(initial)
   const set = <K extends keyof ExerciseOptions>(key: K) => (value: ExerciseOptions[K]) => setOptions(o => ({ ...o, [key]: value }))
-  const scale = options.kind === 'scale'
+  // Scales and arpeggios share their options.
+  const scale = options.kind !== 'reading'
   const piano = options.instrument === 'piano'
 
   const create = () => {
@@ -81,6 +82,8 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
         <Choices label="Tipo" value={options.kind} onChange={set('kind')} choices={[
           { value: 'reading', label: 'Lectura', icon: <FileMusic /> },
           { value: 'scale', label: 'Escala', icon: <Scale /> },
+          { value: 'arpeggio', label: 'Arpegio', icon: <Arpeggio /> },
+          { value: 'scale-arpeggio', label: 'Escala + arpegio', icon: <ScaleArpeggio /> },
         ]} />
         <Choices label="Instrumento" value={options.instrument} onChange={set('instrument')} choices={[
           { value: 'piano', label: 'Piano', icon: <Piano /> },
@@ -101,14 +104,15 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
             <span className="key-row-label">Menores</span>
             <div className="minor-row">
               <KeyChips keys={MINOR_KEYS} value={options.key} onChange={set('key')} />
-              <div className="segmented minor-scale" role="group" aria-label="Escala menor">
+              {/* The arpeggio alone is the same in every minor scale. */}
+              {options.kind !== 'arpeggio' && <div className="segmented minor-scale" role="group" aria-label="Escala menor">
                 {(Object.keys(MINOR_SCALE_NAMES) as MinorScale[]).map(minor => (
                   <button key={minor} type="button" className={options.minor === minor ? 'active' : ''}
                     aria-pressed={options.minor === minor} onClick={() => set('minor')(minor)}>
                     {MINOR_SCALE_NAMES[minor][0].toUpperCase() + MINOR_SCALE_NAMES[minor].slice(1)}
                   </button>
                 ))}
-              </div>
+              </div>}
             </div>
           </div>
         </fieldset>
@@ -118,7 +122,7 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
           { value: '4/4', label: '4/4' },
           { value: '6/8', label: '6/8' },
         ]} />
-        <Choices label={scale ? 'Figura de la escala' : 'Figuras'} value={options.rhythm} onChange={set('rhythm')} choices={scale ? [
+        <Choices label={scale ? 'Figura' : 'Figuras'} value={options.rhythm} onChange={set('rhythm')} choices={scale ? [
           { value: 1, label: 'Lentas (blancas)' },
           { value: 2, label: 'Negras' },
           { value: 3, label: 'Corcheas' },

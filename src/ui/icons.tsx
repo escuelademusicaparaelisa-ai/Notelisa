@@ -42,6 +42,30 @@ export function Scale(props: LucideProps) {
   )
 }
 
+/** An arpeggio: three notes leaping up the chord. */
+export function Arpeggio(props: LucideProps) {
+  return (
+    <LineIcon {...props}>
+      <ellipse cx="4.5" cy="21" rx="2.5" ry="2" fill="currentColor" />
+      <ellipse cx="11.5" cy="14.5" rx="2.5" ry="2" fill="currentColor" />
+      <ellipse cx="18.5" cy="8" rx="2.5" ry="2" fill="currentColor" />
+      <path d="M7 21V9M14 14.5V3.5M21 8V2" />
+    </LineIcon>
+  )
+}
+
+/** A scale and an arpeggio: a step up and then a leap. */
+export function ScaleArpeggio(props: LucideProps) {
+  return (
+    <LineIcon {...props}>
+      <ellipse cx="4.5" cy="20" rx="2.5" ry="2" fill="currentColor" />
+      <ellipse cx="11.5" cy="17" rx="2.5" ry="2" fill="currentColor" />
+      <ellipse cx="18.5" cy="8" rx="2.5" ry="2" fill="currentColor" />
+      <path d="M7 20V10M14 17V7M21 8V2" />
+    </LineIcon>
+  )
+}
+
 const INSTRUMENT_ICONS: Record<string, (props: LucideProps) => React.ReactNode> = { piano: Piano, flute: Flute }
 
 /** The icon of an instrument by its id (piano, flute…). */

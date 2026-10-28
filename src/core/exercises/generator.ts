@@ -1,7 +1,7 @@
-// Generates practice exercises (sight-reading lines and scales) as MusicXML, so
+// Generates practice exercises (sight-reading lines, scales and arpeggios) as MusicXML, so
 // they open in the practice screen like any other piece.
 
-export type ExerciseKind = 'reading' | 'scale'
+export type ExerciseKind = 'reading' | 'scale' | 'arpeggio' | 'scale-arpeggio'
 export type Clef = 'treble' | 'bass' | 'grand'
 export type TimeSignature = '2/4' | '3/4' | '4/4' | '6/8'
 /** 1 whole/half notes, 2 + quarters, 3 + eighths, 4 + dotted figures and sixteenths. */
@@ -104,6 +104,8 @@ export interface ExerciseEvent {
   duration: number
   degree: number | null
   midi: number | null
+  /** Piano finger, 1 = thumb … 5 = little finger. */
+  finger?: number
 }
 
 export interface ExerciseStaff {
@@ -383,11 +385,58 @@ function scaleNoteLength(time: TimeSignature, level: RhythmLevel): number {
   return level === 3 ? 2 : 1
 }
 
-/** Up and down the scale, ending on a long tonic. Two octaves for the wide range. */
-function scaleLine(options: ExerciseOptions, pitches: Pitches): ExerciseEvent[][] {
-  const octaves = options.range >= 3 && options.instrument === 'piano' ? 2 : 1
+interface LineNote {
+  degree: number
+  ascending: boolean
+  finger?: number
+}
+
+function scaleOctaves(options: ExerciseOptions): number {
+  return options.range >= 3 && options.instrument === 'piano' ? 2 : 1
+}
+
+/** Up and down the scale. */
+function scaleNotes(octaves: number): LineNote[] {
   const top = 7 * octaves
-  const degrees = [...Array.from({ length: top + 1 }, (_, i) => i), ...Array.from({ length: top }, (_, i) => top - 1 - i)]
+  return [
+    ...Array.from({ length: top + 1 }, (_, i) => ({ degree: i, ascending: true })),
+    ...Array.from({ length: top }, (_, i) => ({ degree: top - 1 - i, ascending: false })),
+  ]
+}
+
+/** Arpeggio fingering going up, for each hand and number of octaves; going down it is played backwards. */
+const ARPEGGIO_FINGERS: Record<'treble' | 'bass', Record<number, number[]>> = {
+  treble: { 1: [1, 2, 3, 5], 2: [1, 2, 3, 1, 2, 3, 5] },
+  bass: { 1: [5, 4, 2, 1], 2: [5, 4, 2, 1, 4, 2, 1] },
+}
+
+/**
+ * Up and down the tonic chord. Piano arpeggios on a white-key tonic carry the usual fingering
+ * (right hand 1 2 3 5, left hand 5 4 2 1); those starting on a black key are fingered differently
+ * from key to key, so they are left without it.
+ */
+function arpeggioNotes(octaves: number, pitches: Pitches, clef: 'treble' | 'bass', fingered: boolean): LineNote[] {
+  const up = Array.from({ length: 3 * octaves + 1 }, (_, i) => 7 * Math.floor(i / 3) + [0, 2, 4][i % 3])
+  const whiteTonic = LETTER_SEMITONES.includes(((pitches.tonicMidi % 12) + 12) % 12)
+  const fingers = fingered && whiteTonic ? ARPEGGIO_FINGERS[clef][octaves] : undefined
+  return [
+    ...up.map((degree, i) => ({ degree, ascending: true, finger: fingers?.[i] })),
+    ...up.slice(0, -1).reverse().map((degree, i) => ({ degree, ascending: false, finger: fingers?.[up.length - 2 - i] })),
+  ]
+}
+
+/** The notes of a scale or arpeggio exercise. Scale and arpeggio share the tonic between them. */
+function lineNotes(options: ExerciseOptions, pitches: Pitches, clef: 'treble' | 'bass'): LineNote[] {
+  const octaves = scaleOctaves(options)
+  const fingered = options.instrument === 'piano'
+  if (options.kind === 'arpeggio') return arpeggioNotes(octaves, pitches, clef, fingered)
+  if (options.kind === 'scale-arpeggio') return [...scaleNotes(octaves).slice(0, -1), ...arpeggioNotes(octaves, pitches, clef, fingered)]
+  return scaleNotes(octaves)
+}
+
+/** Even notes up and down, ending on a long tonic. Two octaves for the wide range. */
+function scaleLine(options: ExerciseOptions, pitches: Pitches, clef: 'treble' | 'bass'): ExerciseEvent[][] {
+  const notes = lineNotes(options, pitches, clef)
   const noteLength = scaleNoteLength(options.time, options.rhythm)
   const length = measureLength(options.time)
   const measures: ExerciseEvent[][] = []
@@ -402,16 +451,20 @@ function scaleLine(options: ExerciseOptions, pitches: Pitches): ExerciseEvent[][
       position = 0
     }
   }
-  degrees.forEach((degree, i) => {
-    const ascending = i <= top
-    if (i < degrees.length - 1) return push({ duration: noteLength, degree, midi: pitches.midi(degree, ascending) })
+  notes.forEach(({ degree, ascending, finger }, i) => {
+    const note = { degree, midi: pitches.midi(degree, ascending), ...(finger ? { finger } : {}) }
+    if (i < notes.length - 1) return push({ duration: noteLength, ...note })
     // The last tonic lasts until the end of the measure (or a whole measure on the downbeat).
     const remaining = position === 0 ? length : length - position
     const [first, ...rest] = writableDurations(remaining)
-    push({ duration: first, degree, midi: pitches.midi(degree, ascending) })
+    push({ duration: first, ...note })
     for (const d of rest) push({ duration: d, degree: null, midi: null })
   })
   return measures
+}
+
+const LINE_TITLES: Record<Exclude<ExerciseKind, 'reading'>, string> = {
+  scale: 'Escala', arpeggio: 'Arpegio', 'scale-arpeggio': 'Escala y arpegio',
 }
 
 export function generateExercise(options: ExerciseOptions, seed: number): Exercise {
@@ -421,13 +474,14 @@ export function generateExercise(options: ExerciseOptions, seed: number): Exerci
   const opts = { ...options, clef, minor: options.minor ?? 'harmonic', maxInterval: options.maxInterval ?? defaultMaxInterval(options.range) }
   const name = key.mode === 'minor' ? `${key.name} ${MINOR_SCALE_NAMES[opts.minor]}` : key.name
   const staves: ExerciseStaff[] = []
-  const tempo = opts.time === '6/8' ? 90 : opts.kind === 'scale' ? 72 : 80
+  const tempo = opts.time === '6/8' ? 90 : opts.kind !== 'reading' ? 72 : 80
 
-  if (opts.kind === 'scale') {
+  if (opts.kind !== 'reading') {
     for (const staffClef of clef === 'grand' ? (['treble', 'bass'] as const) : [clef]) {
-      staves.push({ clef: staffClef, measures: scaleLine(opts, new Pitches(key, staffClef, opts.minor)) })
+      staves.push({ clef: staffClef, measures: scaleLine(opts, new Pitches(key, staffClef, opts.minor), staffClef) })
     }
-    return { title: `Escala · ${name}`, options: opts, staves, tempo }
+    // The arpeggio alone is the same in every minor scale.
+    return { title: `${LINE_TITLES[opts.kind]} · ${opts.kind === 'arpeggio' ? key.name : name}`, options: opts, staves, tempo }
   }
 
   const melodyClef = clef === 'bass' ? 'bass' : 'treble'
@@ -482,8 +536,11 @@ function noteXml(event: ExerciseEvent, pitches: Pitches, staff: number, beamTags
     const { step, alter, octave } = pitches.spell(event.degree, event.midi!)
     head = `<pitch><step>${step}</step>${alter ? `<alter>${alter}</alter>` : ''}<octave>${octave}</octave></pitch>`
   }
+  const fingering = event.finger
+    ? `<notations><technical><fingering placement="${staff === 1 ? 'above' : 'below'}">${event.finger}</fingering></technical></notations>`
+    : ''
   return `<note>${head}<duration>${event.duration}</duration><voice>${voice}</voice><type>${type}</type>${dot ? '<dot/>' : ''}`
-    + `<staff>${staff}</staff>${beamTags.join('')}</note>`
+    + `<staff>${staff}</staff>${beamTags.join('')}${fingering}</note>`
 }
 
 export function exerciseToMusicXml(exercise: Exercise): string {
