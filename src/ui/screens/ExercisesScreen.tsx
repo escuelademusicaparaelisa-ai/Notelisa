@@ -139,9 +139,9 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
             { value: true, label: 'Con silencios' },
           ]} />
         )}
-        <Choices label={scale ? 'Octavas' : 'Notas'} value={scale ? (options.range >= 3 && piano ? 4 : 1) : options.range} onChange={set('range')} choices={scale ? [
+        <Choices label={scale ? 'Octavas' : 'Notas'} value={scale ? (options.range >= 3 ? 4 : 1) : options.range} onChange={set('range')} choices={scale ? [
           { value: 1, label: 'Una octava' },
-          ...(piano ? [{ value: 4 as const, label: 'Dos octavas' }] : []),
+          { value: 4, label: 'Dos octavas' },
         ] : [
           { value: 0, label: '3 notas' },
           { value: 1, label: '5 notas' },

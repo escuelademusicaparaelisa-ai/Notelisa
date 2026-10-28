@@ -235,6 +235,14 @@ describe('arpeggios', () => {
     }
   })
 
+  it('plays two octaves on the flute too', () => {
+    const midis = (kind: ExerciseOptions['kind']) => generateExercise({ ...BASE, kind, instrument: 'flute', key: 'G', range: 4 }, 1)
+      .staves[0].measures.flat().flatMap(e => (e.midi === null ? [] : [e.midi]))
+    expect(midis('scale')).toHaveLength(29)
+    expect(Math.max(...midis('scale'))).toBe(91)
+    expect(midis('arpeggio')).toEqual([67, 71, 74, 79, 83, 86, 91, 86, 83, 79, 74, 71, 67])
+  })
+
   it('names the exercise', () => {
     expect(generateExercise({ ...BASE, kind: 'arpeggio', key: 'Dm' }, 1).title).toBe('Arpegio · Re menor')
     expect(generateExercise({ ...BASE, kind: 'scale-arpeggio', key: 'Dm', minor: 'harmonic' }, 1).title).toBe('Escala y arpegio · Re menor armónica')
