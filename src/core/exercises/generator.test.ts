@@ -194,3 +194,49 @@ describe('exerciseToMusicXml', () => {
     expect(xml).toContain('<beam number="1">end</beam>')
   })
 })
+
+describe('arpeggios', () => {
+  const notes = (options: Partial<ExerciseOptions>, staff = 0) =>
+    generateExercise({ ...BASE, kind: 'arpeggio', ...options }, 1).staves[staff].measures.flat().filter(e => e.midi !== null)
+
+  it('goes up and down the tonic chord', () => {
+    expect(notes({ key: 'C' }).map(e => e.midi)).toEqual([60, 64, 67, 72, 67, 64, 60])
+    expect(notes({ key: 'Am', minor: 'melodic' }).map(e => e.midi)).toEqual([69, 72, 76, 81, 76, 72, 69])
+    expect(notes({ key: 'G', clef: 'grand', range: 4 }).map(e => e.midi)).toEqual([67, 71, 74, 79, 83, 86, 91, 86, 83, 79, 74, 71, 67])
+  })
+
+  it('fingers each hand on the piano', () => {
+    expect(notes({ key: 'D' }).map(e => e.finger)).toEqual([1, 2, 3, 5, 3, 2, 1])
+    expect(notes({ key: 'D', clef: 'grand' }, 1).map(e => e.finger)).toEqual([5, 4, 2, 1, 2, 4, 5])
+    expect(notes({ key: 'C', clef: 'grand', range: 4 }, 1).map(e => e.finger)).toEqual([5, 4, 2, 1, 4, 2, 1, 2, 4, 1, 2, 4, 5])
+    const xml = exerciseToMusicXml(generateExercise({ ...BASE, kind: 'arpeggio' }, 1))
+    expect(xml).toContain('<technical><fingering placement="above">5</fingering></technical>')
+  })
+
+  it('leaves black-key and flute arpeggios without fingering', () => {
+    expect(notes({ key: 'Eb' }).every(e => e.finger === undefined)).toBe(true)
+    expect(notes({ instrument: 'flute' }).every(e => e.finger === undefined)).toBe(true)
+  })
+
+  it('plays the scale and then the arpeggio, sharing the tonic', () => {
+    const midis = generateExercise({ ...BASE, kind: 'scale-arpeggio' }, 1).staves[0].measures.flat().flatMap(e => (e.midi === null ? [] : [e.midi]))
+    expect(midis).toEqual([60, 62, 64, 65, 67, 69, 71, 72, 71, 69, 67, 65, 64, 62, 60, 64, 67, 72, 67, 64, 60])
+  })
+
+  it('fills every measure', () => {
+    for (const kind of ['arpeggio', 'scale-arpeggio'] as const) {
+      for (const time of TIMES) {
+        for (const rhythm of LEVELS) {
+          for (const staff of generateExercise({ ...BASE, kind, time, rhythm, clef: 'grand', range: 4 }, 1).staves) {
+            for (const measure of staff.measures) expect(sum(measure.map(e => e.duration))).toBe(measureLength(time))
+          }
+        }
+      }
+    }
+  })
+
+  it('names the exercise', () => {
+    expect(generateExercise({ ...BASE, kind: 'arpeggio', key: 'Dm' }, 1).title).toBe('Arpegio · Re menor')
+    expect(generateExercise({ ...BASE, kind: 'scale-arpeggio', key: 'Dm', minor: 'harmonic' }, 1).title).toBe('Escala y arpegio · Re menor armónica')
+  })
+})

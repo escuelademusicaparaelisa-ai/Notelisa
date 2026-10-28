@@ -128,7 +128,7 @@ export function LibraryScreen({ onOpen, onReview, onExercises }: Props) {
       </section>
       <button className="exercises-link" onClick={onExercises}>
         <span className="icon" aria-hidden="true"><Target /></span>
-        <span className="exercises-text"><strong>Ejercicios y escalas</strong>Crea un ejercicio nuevo de lectura o una escala</span>
+        <span className="exercises-text"><strong>Ejercicios y escalas</strong>Crea un ejercicio nuevo de lectura, una escala o un arpegio</span>
         <span className="exercises-go" aria-hidden="true"><ArrowRight /></span>
       </button>
       {school.state === 'locked' && <SchoolUnlock onUnlocked={() => void load()} />}
