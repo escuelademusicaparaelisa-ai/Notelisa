@@ -458,7 +458,9 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
                 {/* Piano: left hand first, as the hands sit on the keyboard. */}
                 {(instrument.id === 'piano' ? [...staffOptions].reverse() : staffOptions).map(i => (
                   <button key={i} className={`chip ${staff === i ? 'active' : ''}`} onClick={() => changeSetting(setStaff)(i)}>
-                    <StaffIcon instrument={instrument.id} staff={i} /> {staffLabel(instrument, i)}
+                    {instrument.id === 'piano' && i === 0
+                      ? <>{staffLabel(instrument, i)} <StaffIcon instrument={instrument.id} staff={i} /></>
+                      : <><StaffIcon instrument={instrument.id} staff={i} /> {staffLabel(instrument, i)}</>}
                   </button>
                 ))}
               </div>
