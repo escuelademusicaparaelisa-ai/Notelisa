@@ -314,6 +314,8 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
   color: var(--lila-deep); margin-bottom: 10px; padding: 0; }
 .exercise-choices { clear: both; display: flex; flex-wrap: wrap; gap: 8px; }
 .exercise-choices .chip { font-size: 1.05rem; padding: 10px 16px; }
+.exercise-hint { margin: 10px 0 0; color: var(--muted); font-size: 0.95rem; }
+.exercise-choices .chip:disabled { opacity: 0.4; cursor: not-allowed; }
 .create-exercise { width: 100%; max-width: 420px; min-height: 64px; }
 .key-rows { clear: both; display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: center; }
 .key-row-label { font-weight: 800; color: var(--muted); }

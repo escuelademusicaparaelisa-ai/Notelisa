@@ -6,8 +6,20 @@ export type Clef = 'treble' | 'bass' | 'grand'
 export type TimeSignature = '2/4' | '3/4' | '4/4' | '6/8'
 /** 1 whole/half notes, 2 + quarters, 3 + eighths, 4 + dotted figures and sixteenths. */
 export type RhythmLevel = 1 | 2 | 3 | 4
-/** 1 five notes, 2 one octave, 3 wider with leaps. */
-export type RangeLevel = 1 | 2 | 3
+/** 0 three notes, 1 five notes, 2 one octave, 3 wider with hand position changes, 4 two octaves. */
+export type RangeLevel = 0 | 1 | 2 | 3 | 4
+/** A melodic interval, named as in music: 2 is a step, 3 a third … 8 an octave. */
+export type Interval = 2 | 3 | 4 | 5 | 6 | 7 | 8
+
+export const INTERVALS: Interval[] = [2, 3, 4, 5, 6, 7, 8]
+
+/** Widest interval each range used before it could be chosen. */
+export function defaultMaxInterval(range: RangeLevel): Interval {
+  return range <= 1 ? 3 : range === 2 ? 5 : 8
+}
+
+/** Notes each range spans, counted like intervals (5 notes span a fifth). */
+export const RANGE_NOTES: Record<RangeLevel, number> = { 0: 3, 1: 5, 2: 8, 3: 13, 4: 15 }
 
 export interface ExerciseOptions {
   kind: ExerciseKind
@@ -18,6 +30,8 @@ export interface ExerciseOptions {
   rhythm: RhythmLevel
   rests: boolean
   range: RangeLevel
+  /** Widest interval between two notes of a reading exercise. */
+  maxInterval: Interval
   measures: number
   /** Which minor scale minor keys use. */
   minor: MinorScale
@@ -275,10 +289,17 @@ function writableDurations(length: number): number[] {
 const CLEF_RANGE = { treble: { low: 57, high: 81 }, bass: { low: 40, high: 64 } }
 
 function degreeRange(pitches: Pitches, clef: 'treble' | 'bass', range: RangeLevel, instrument: ExerciseOptions['instrument']): { low: number; high: number } {
-  let { low, high } = range === 1 ? { low: 0, high: 4 } : range === 2 ? { low: 0, high: 7 } : { low: -3, high: 9 }
+  let { low, high } = [{ low: 0, high: 2 }, { low: 0, high: 4 }, { low: 0, high: 7 }, { low: -3, high: 9 }, { low: -3, high: 11 }][range]
   const limits = instrument === 'flute' ? FLUTE_RANGE : CLEF_RANGE[clef]
-  while (pitches.midi(low) < limits.low) low++
-  while (pitches.midi(high) > limits.high) high--
+  // Notes cut off at one end of the staff are added at the other, so the range keeps its size.
+  while (pitches.midi(low) < limits.low) {
+    low++
+    if (pitches.midi(high + 1) <= limits.high) high++
+  }
+  while (pitches.midi(high) > limits.high) {
+    high--
+    if (pitches.midi(low - 1) >= limits.low) low--
+  }
   return { low, high }
 }
 
@@ -300,14 +321,15 @@ function mergeRests(events: ExerciseEvent[]): ExerciseEvent[] {
   return result
 }
 
-function nextDegree(current: number, low: number, high: number, range: RangeLevel, random: () => number): number {
-  const moves = [
-    { value: 0, weight: 1 },
-    { value: 1, weight: 5 }, { value: -1, weight: 5 },
-    { value: 2, weight: 2 }, { value: -2, weight: 2 },
-  ]
-  if (range >= 2) moves.push({ value: 3, weight: 1 }, { value: -3, weight: 1 }, { value: 4, weight: 1 }, { value: -4, weight: 1 })
-  if (range >= 3) moves.push({ value: 5, weight: 0.5 }, { value: -5, weight: 0.5 }, { value: 7, weight: 0.5 }, { value: -7, weight: 0.5 })
+/** How often each interval comes up; steps are the most common. */
+const INTERVAL_WEIGHTS: Record<Interval, number> = { 2: 5, 3: 2, 4: 1.5, 5: 1.5, 6: 1, 7: 1, 8: 1 }
+
+function nextDegree(current: number, low: number, high: number, maxInterval: Interval, random: () => number): number {
+  const moves = [{ value: 0, weight: 1 }]
+  for (const interval of INTERVALS.filter(i => i <= maxInterval)) {
+    const weight = INTERVAL_WEIGHTS[interval]
+    moves.push({ value: interval - 1, weight }, { value: 1 - interval, weight })
+  }
   const allowed = moves.filter(m => current + m.value >= low && current + m.value <= high)
   return current + pick(random, allowed)
 }
@@ -335,7 +357,7 @@ function readingMelody(options: ExerciseOptions, clef: 'treble' | 'bass', pitche
         return
       }
       const previous = degree
-      if (!first) degree = last ? closestTonic(degree, low, high) : nextDegree(degree, low, high, options.range, random)
+      if (!first) degree = last ? closestTonic(degree, low, high) : nextDegree(degree, low, high, options.maxInterval, random)
       events.push({ duration, degree, midi: pitches.midi(degree, degree >= previous) })
     })
     measures.push(mergeRests(events))
@@ -363,7 +385,7 @@ function scaleNoteLength(time: TimeSignature, level: RhythmLevel): number {
 
 /** Up and down the scale, ending on a long tonic. Two octaves for the wide range. */
 function scaleLine(options: ExerciseOptions, pitches: Pitches): ExerciseEvent[][] {
-  const octaves = options.range === 3 && options.instrument === 'piano' ? 2 : 1
+  const octaves = options.range >= 3 && options.instrument === 'piano' ? 2 : 1
   const top = 7 * octaves
   const degrees = [...Array.from({ length: top + 1 }, (_, i) => i), ...Array.from({ length: top }, (_, i) => top - 1 - i)]
   const noteLength = scaleNoteLength(options.time, options.rhythm)
@@ -396,7 +418,7 @@ export function generateExercise(options: ExerciseOptions, seed: number): Exerci
   const random = seededRandom(seed)
   const key = getKey(options.key)
   const clef: Clef = options.instrument === 'flute' ? 'treble' : options.clef
-  const opts = { ...options, clef, minor: options.minor ?? 'harmonic' }
+  const opts = { ...options, clef, minor: options.minor ?? 'harmonic', maxInterval: options.maxInterval ?? defaultMaxInterval(options.range) }
   const name = key.mode === 'minor' ? `${key.name} ${MINOR_SCALE_NAMES[opts.minor]}` : key.name
   const staves: ExerciseStaff[] = []
   const tempo = opts.time === '6/8' ? 90 : opts.kind === 'scale' ? 72 : 80

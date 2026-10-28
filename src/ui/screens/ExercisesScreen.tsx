@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { MAJOR_KEYS, MINOR_KEYS, MINOR_SCALE_NAMES, type ExerciseOptions, type MinorScale } from '../../core/exercises/generator'
+import {
+  INTERVALS, MAJOR_KEYS, MINOR_KEYS, MINOR_SCALE_NAMES, RANGE_NOTES, type ExerciseOptions, type MinorScale,
+} from '../../core/exercises/generator'
 import { saveExerciseOptions } from '../../core/exercises/savedOptions'
 import { ArrowLeft, FileMusic, Flute, Piano, Scale, Sparkles } from '../icons'
 
@@ -13,13 +15,15 @@ interface Choice<T> {
   value: T
   label: string
   icon?: React.ReactNode
+  disabled?: boolean
 }
 
-function Choices<T extends string | number | boolean>({ label, value, choices, onChange }: {
+function Choices<T extends string | number | boolean>({ label, value, choices, onChange, hint }: {
   label: string
   value: T
   choices: Choice<T>[]
   onChange(value: T): void
+  hint?: string
 }) {
   return (
     <fieldset className="exercise-option">
@@ -27,11 +31,12 @@ function Choices<T extends string | number | boolean>({ label, value, choices, o
       <div className="exercise-choices">
         {choices.map(choice => (
           <button key={String(choice.value)} type="button" className={`chip ${choice.value === value ? 'active' : ''}`}
-            aria-pressed={choice.value === value} onClick={() => onChange(choice.value)}>
+            aria-pressed={choice.value === value} disabled={choice.disabled} onClick={() => onChange(choice.value)}>
             {choice.icon}{choice.label}
           </button>
         ))}
       </div>
+      {hint && <p className="exercise-hint">{hint}</p>}
     </fieldset>
   )
 }
@@ -130,14 +135,22 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
             { value: true, label: 'Con silencios' },
           ]} />
         )}
-        <Choices label={scale ? 'Octavas' : 'Notas'} value={scale ? (options.range === 3 && piano ? 3 : 1) : options.range} onChange={set('range')} choices={scale ? [
+        <Choices label={scale ? 'Octavas' : 'Notas'} value={scale ? (options.range >= 3 && piano ? 4 : 1) : options.range} onChange={set('range')} choices={scale ? [
           { value: 1, label: 'Una octava' },
-          ...(piano ? [{ value: 3 as const, label: 'Dos octavas' }] : []),
+          ...(piano ? [{ value: 4 as const, label: 'Dos octavas' }] : []),
         ] : [
+          { value: 0, label: '3 notas' },
           { value: 1, label: '5 notas' },
           { value: 2, label: 'Una octava' },
           { value: 3, label: 'Con saltos' },
+          { value: 4, label: 'Dos octavas' },
         ]} />
+        {!scale && (
+          // Intervals wider than the chosen notes cannot come up, so they are greyed out.
+          <Choices label="Intervalo máximo" value={Math.min(options.maxInterval, RANGE_NOTES[options.range]) as ExerciseOptions['maxInterval']}
+            onChange={set('maxInterval')} hint="El salto más grande que puede aparecer entre dos notas seguidas."
+            choices={INTERVALS.map(i => ({ value: i, label: i === 2 ? '2ª · por grados' : `${i}ª`, disabled: i > RANGE_NOTES[options.range] }))} />
+        )}
         {!scale && (
           <Choices label="Compases" value={options.measures} onChange={set('measures')} choices={[
             { value: 4, label: '4' },

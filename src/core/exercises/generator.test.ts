@@ -5,7 +5,7 @@ import {
 } from './generator'
 
 const BASE: ExerciseOptions = {
-  kind: 'reading', instrument: 'piano', clef: 'treble', key: 'C', time: '4/4', rhythm: 2, rests: false, range: 1, measures: 8, minor: 'harmonic',
+  kind: 'reading', instrument: 'piano', clef: 'treble', key: 'C', time: '4/4', rhythm: 2, rests: false, range: 1, maxInterval: 3, measures: 8, minor: 'harmonic',
 }
 const TIMES: TimeSignature[] = ['2/4', '3/4', '4/4', '6/8']
 const LEVELS: RhythmLevel[] = [1, 2, 3, 4]
@@ -81,6 +81,39 @@ describe('generateExercise', () => {
       expect(Math.max(...midis)).toBeLessThanOrEqual(64)
       expect(Math.min(...midis)).toBeGreaterThanOrEqual(40)
     }
+  })
+
+  it('moves only by step when the widest interval is a second', () => {
+    for (const range of [0, 1, 2, 3, 4] as const) {
+      const exercise = generateExercise({ ...BASE, range, maxInterval: 2, rhythm: 4, measures: 12 }, 4)
+      const degrees = exercise.staves[0].measures.flat().flatMap(e => (e.degree === null ? [] : [e.degree]))
+      // The final tonic may be reached from anywhere.
+      for (let i = 1; i < degrees.length - 1; i++) expect(Math.abs(degrees[i] - degrees[i - 1])).toBeLessThanOrEqual(1)
+    }
+  })
+
+  it('never leaps wider than the chosen interval', () => {
+    for (const maxInterval of [3, 4, 5, 6, 7, 8] as const) {
+      const exercise = generateExercise({ ...BASE, range: 4, maxInterval, rhythm: 4, measures: 12 }, 6)
+      const degrees = exercise.staves[0].measures.flat().flatMap(e => (e.degree === null ? [] : [e.degree]))
+      const moves = degrees.slice(1, -1).map((d, i) => Math.abs(d - degrees[i]))
+      expect(Math.max(...moves)).toBeLessThanOrEqual(maxInterval - 1)
+    }
+  })
+
+  it('keeps three-note exercises between the tonic and the third', () => {
+    const exercise = generateExercise({ ...BASE, range: 0, rhythm: 4 }, 5)
+    const midis = exercise.staves[0].measures.flat().flatMap(e => (e.midi === null ? [] : [e.midi]))
+    expect(Math.min(...midis)).toBeGreaterThanOrEqual(60)
+    expect(Math.max(...midis)).toBeLessThanOrEqual(64)
+  })
+
+  it('spans two octaves when there is room on the staff', () => {
+    const exercise = generateExercise({ ...BASE, range: 4, maxInterval: 8, rhythm: 4, measures: 12 }, 1)
+    const midis = exercise.staves[0].measures.flat().flatMap(e => (e.midi === null ? [] : [e.midi]))
+    expect(Math.max(...midis) - Math.min(...midis)).toBeGreaterThan(12)
+    expect(Math.min(...midis)).toBeGreaterThanOrEqual(57)
+    expect(Math.max(...midis)).toBeLessThanOrEqual(81)
   })
 
   it('only adds rests when asked', () => {
