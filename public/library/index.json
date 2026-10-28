@@ -53,70 +53,6 @@
       "file": "libre/el-puente-de-londres.mxl"
     },
     {
-      "id": "libre-minueto-sol-mayor-bwv-anh-114",
-      "title": "Minueto en Sol mayor (BWV Anh. 114)",
-      "composer": "C. Petzold",
-      "level": 2,
-      "instrument": "piano",
-      "file": "libre/minueto-sol-mayor-bwv-anh-114.mxl"
-    },
-    {
-      "id": "libre-minueto-sol-menor-bwv-anh-115",
-      "title": "Minueto en sol menor (BWV Anh. 115)",
-      "composer": "C. Petzold",
-      "level": 2,
-      "instrument": "piano",
-      "file": "libre/minueto-sol-menor-bwv-anh-115.mxl"
-    },
-    {
-      "id": "libre-minueto-fa-bwv-anh-113",
-      "title": "Minueto en Fa mayor (BWV Anh. 113)",
-      "composer": "Anónimo (Cuaderno de Anna Magdalena Bach)",
-      "level": 2,
-      "instrument": "piano",
-      "file": "libre/minueto-fa-bwv-anh-113.mxl"
-    },
-    {
-      "id": "libre-minueto-sol-bwv-anh-116",
-      "title": "Minueto en Sol mayor (BWV Anh. 116)",
-      "composer": "Anónimo (Cuaderno de Anna Magdalena Bach)",
-      "level": 2,
-      "instrument": "piano",
-      "file": "libre/minueto-sol-bwv-anh-116.mxl"
-    },
-    {
-      "id": "libre-musette-bwv-anh-126",
-      "title": "Musette en Re mayor (BWV Anh. 126)",
-      "composer": "Anónimo (Cuaderno de Anna Magdalena Bach)",
-      "level": 2,
-      "instrument": "piano",
-      "file": "libre/musette-bwv-anh-126.mxl"
-    },
-    {
-      "id": "libre-mozart-minueto-kv2",
-      "title": "Minueto en Fa mayor (KV 2)",
-      "composer": "W. A. Mozart",
-      "level": 2,
-      "instrument": "piano",
-      "file": "libre/mozart-minueto-kv2.mxl"
-    },
-    {
-      "id": "libre-schumann-melodia",
-      "title": "Melodía (Álbum para la juventud, op. 68 n.º 1)",
-      "composer": "R. Schumann",
-      "level": 2,
-      "instrument": "piano",
-      "file": "libre/schumann-melodia.mxl"
-    },
-    {
-      "id": "libre-schumann-marcha-soldados",
-      "title": "Marcha de los soldados (op. 68 n.º 2)",
-      "composer": "R. Schumann",
-      "level": 2,
-      "instrument": "piano",
-      "file": "libre/schumann-marcha-soldados.mxl"
-    },
-    {
       "id": "libre-burgmuller-la-candidez",
       "title": "La candidez (op. 100 n.º 1)",
       "composer": "F. Burgmüller",
@@ -161,6 +97,46 @@
       "file": "libre/oh-abeto.mxl"
     },
     {
+      "id": "libre-minueto-fa-bwv-anh-113",
+      "title": "Minueto en Fa mayor (BWV Anh. 113)",
+      "composer": "Anónimo (Cuaderno de Anna Magdalena Bach)",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/minueto-fa-bwv-anh-113.mxl"
+    },
+    {
+      "id": "libre-minueto-sol-bwv-anh-116",
+      "title": "Minueto en Sol mayor (BWV Anh. 116)",
+      "composer": "Anónimo (Cuaderno de Anna Magdalena Bach)",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/minueto-sol-bwv-anh-116.mxl"
+    },
+    {
+      "id": "libre-musette-bwv-anh-126",
+      "title": "Musette en Re mayor (BWV Anh. 126)",
+      "composer": "Anónimo (Cuaderno de Anna Magdalena Bach)",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/musette-bwv-anh-126.mxl"
+    },
+    {
+      "id": "libre-schumann-melodia",
+      "title": "Melodía (Álbum para la juventud, op. 68 n.º 1)",
+      "composer": "R. Schumann",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/schumann-melodia.mxl"
+    },
+    {
+      "id": "libre-schumann-marcha-soldados",
+      "title": "Marcha de los soldados (op. 68 n.º 2)",
+      "composer": "R. Schumann",
+      "level": 3,
+      "instrument": "piano",
+      "file": "libre/schumann-marcha-soldados.mxl"
+    },
+    {
       "id": "libre-os-deseamos-feliz-navidad",
       "title": "Os deseamos feliz Navidad (We Wish You a Merry Christmas)",
       "composer": "Popular (Inglaterra)",
@@ -186,6 +162,30 @@
       "level": 3,
       "instrument": "piano",
       "file": "libre/al-mundo-paz.mxl"
+    },
+    {
+      "id": "libre-minueto-sol-mayor-bwv-anh-114",
+      "title": "Minueto en Sol mayor (BWV Anh. 114)",
+      "composer": "C. Petzold",
+      "level": 4,
+      "instrument": "piano",
+      "file": "libre/minueto-sol-mayor-bwv-anh-114.mxl"
+    },
+    {
+      "id": "libre-minueto-sol-menor-bwv-anh-115",
+      "title": "Minueto en sol menor (BWV Anh. 115)",
+      "composer": "C. Petzold",
+      "level": 4,
+      "instrument": "piano",
+      "file": "libre/minueto-sol-menor-bwv-anh-115.mxl"
+    },
+    {
+      "id": "libre-mozart-minueto-kv2",
+      "title": "Minueto en Fa mayor (KV 2)",
+      "composer": "W. A. Mozart",
+      "level": 4,
+      "instrument": "piano",
+      "file": "libre/mozart-minueto-kv2.mxl"
     },
     {
       "id": "libre-schumann-jinete-salvaje",
