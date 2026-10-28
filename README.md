@@ -223,7 +223,7 @@ se añaden a la hoja solas, y las que borres de la carpeta desaparecen de la bib
 
 Las filas cuyo archivo empieza por `libre/` son las partituras libres que trae la app
 (`public/library/libre/`). No hace falta tenerlas en la carpeta: se quedan en la hoja y
-de ellas solo se usa el **Nivel**, que se aplica a `public/library/index.json` al ejecutar
+de ellas solo se usan el **Título** y el **Nivel**, que se aplican a `public/library/index.json` al ejecutar
 el comando (luego hay que subir ese cambio a GitHub como el resto).
 
 ## Ejercicios y escalas

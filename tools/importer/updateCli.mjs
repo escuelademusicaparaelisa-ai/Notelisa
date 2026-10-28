@@ -18,7 +18,7 @@ nivel, publicar), la actualiza con las partituras nuevas y publica la biblioteca
 const result = await updateLibrary(folder, password, { onLog: line => console.log(line) })
 console.log(`\n✅ ${result.published.length} piezas publicadas.`)
 if (result.added.length) console.log(`Nuevas en la hoja: ${result.added.join(', ')}`)
-if (result.freeLevels) console.log(`Niveles cambiados en las partituras libres: ${result.freeLevels}`)
+if (result.freeLevels) console.log(`Partituras libres con título o nivel cambiado: ${result.freeLevels}`)
 if (result.removed.length) console.log(`Quitadas (ya no están en la carpeta): ${result.removed.join(', ')}`)
 if (result.failed.length) {
   console.log('No se han podido convertir:')

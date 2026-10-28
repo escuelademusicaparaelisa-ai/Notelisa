@@ -45,23 +45,26 @@ function guessInstrument(file) {
 }
 
 // Rows for the free pieces that ship with the app (public/library/libre/). Their files
-// are not in the teacher's folder; the sheet is only used to set their level.
+// are not in the teacher's folder; the sheet is only used to set their title and level.
 const isFreeRow = row => row.file.startsWith('libre/')
 
 /**
- * Applies the levels written in the sheet to the free pieces of index.json, keeping
+ * Applies the titles and levels written in the sheet to the free pieces of index.json, keeping
  * them sorted by level. Returns how many changed.
  */
 function applyFreeLevels(libraryDir, rows) {
   const path = join(libraryDir, 'index.json')
   if (!existsSync(path) || rows.length === 0) return 0
   const index = JSON.parse(readFileSync(path, 'utf8'))
-  const levels = new Map(rows.filter(r => r.level).map(r => [r.file, r.level]))
+  const byFile = new Map(rows.map(r => [r.file, r]))
   let changed = 0
   for (const piece of index.pieces) {
-    const level = levels.get(piece.file)
-    if (level && level !== piece.level) {
-      piece.level = level
+    const row = byFile.get(piece.file)
+    if (!row) continue
+    const title = row.title || piece.title
+    const level = row.level || piece.level
+    if (title !== piece.title || level !== piece.level) {
+      Object.assign(piece, { title, level })
       changed++
     }
   }
