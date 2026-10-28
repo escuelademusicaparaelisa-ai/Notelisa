@@ -66,7 +66,7 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
     <main className="library exercises">
       <header className="app-bar">
         <button className="big-button ghost" onClick={onBack}><ArrowLeft /> Biblioteca</button>
-        <img className="app-logo small" src={`${import.meta.env.BASE_URL}brand/logo-n.png`} alt="Notelisa" />
+        <img className="app-logo" src={`${import.meta.env.BASE_URL}brand/logo-notelisa.png`} alt="Notelisa" />
       </header>
       <section className="library-hero">
         <h1>Ejercicios y escalas</h1>
