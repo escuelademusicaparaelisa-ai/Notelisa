@@ -22,6 +22,8 @@ export class ScoreController {
       drawLyricist: true,
       drawCredits: true,
       drawPartNames: false,
+      // Only the first measure of each line is numbered: numbers in between get mixed up with fingerings.
+      drawMeasureNumbersOnlyAtSystemStart: true,
       followCursor: true,
       cursorsOptions: [{ type: 0, color: '#a457bd', alpha: 0.35, follow: true }],
     })
