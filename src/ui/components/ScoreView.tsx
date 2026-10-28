@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { forwardRef, type MouseEvent, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { ScoreController } from '../../core/score/ScoreController'
 import type { Timeline } from '../../core/score/timeline'
 
@@ -13,9 +13,11 @@ export interface ScoreViewHandle {
 interface Props {
   source: string
   onLoaded(timeline: Timeline): void
+  /** Called with the measure index (0-based) when a measure is clicked or tapped. */
+  onMeasureClick?(measure: number): void
 }
 
-export const ScoreView = forwardRef<ScoreViewHandle, Props>(function ScoreView({ source, onLoaded }, ref) {
+export const ScoreView = forwardRef<ScoreViewHandle, Props>(function ScoreView({ source, onLoaded, onMeasureClick }, ref) {
   const containerRef = useRef<HTMLDivElement>(null)
   const controllerRef = useRef<ScoreController | null>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
@@ -56,11 +58,18 @@ export const ScoreView = forwardRef<ScoreViewHandle, Props>(function ScoreView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source])
 
+  // 'click' also fires on a tap, but not when a finger scrolls the score.
+  const handleClick = (event: MouseEvent) => {
+    if (!onMeasureClick) return
+    const measure = controllerRef.current?.measureAt(event.clientX, event.clientY)
+    if (measure !== null && measure !== undefined) onMeasureClick(measure)
+  }
+
   return (
     <div className="score-view">
       {status === 'loading' && <p className="score-message">Cargando partitura…</p>}
       {status === 'error' && <p className="score-message error">No se ha podido abrir esta partitura.</p>}
-      <div ref={containerRef} className="score-canvas" />
+      <div ref={containerRef} className={`score-canvas ${onMeasureClick ? 'clickable' : ''}`} onClick={handleClick} />
     </div>
   )
 })

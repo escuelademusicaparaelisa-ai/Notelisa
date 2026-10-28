@@ -1,4 +1,4 @@
-import { OpenSheetMusicDisplay, type GraphicalNote } from 'opensheetmusicdisplay'
+import { OpenSheetMusicDisplay, PointF2D, type BoundingBox, type GraphicalNote } from 'opensheetmusicdisplay'
 import { extractTimeline } from './osmdTimeline'
 import type { Timeline } from './timeline'
 
@@ -64,6 +64,34 @@ export class ScoreController {
     }
   }
 
+  /**
+   * Index of the measure drawn under a point of the screen (clientX/clientY), or null
+   * when the point is outside every measure (margins, title, space between lines).
+   */
+  measureAt(clientX: number, clientY: number): number | null {
+    const sheet = this.osmd.GraphicSheet
+    if (!sheet) return null
+    const point = sheet.svgToOsmd(sheet.domToSvg(new PointF2D(clientX, clientY)))
+    const measures = this.osmd.Sheet.SourceMeasures
+    // Taps a little above or below the staves (fingerings, dynamics) still count.
+    const margin = 2
+    let best: { index: number; distance: number } | null = null
+    for (const staves of sheet.MeasureList) {
+      const measure = staves.find(m => m?.ParentMusicSystem)
+      if (!measure) continue
+      const box = measure.PositionAndShape
+      const left = box.AbsolutePosition.x + box.BorderLeft
+      const right = box.AbsolutePosition.x + box.BorderRight
+      if (point.x < left || point.x > right) continue
+      const system = measure.ParentMusicSystem.PositionAndShape
+      const distance = distanceOutside(point.y, edge(system, 'top'), edge(system, 'bottom'))
+      if (distance > margin || (best && best.distance <= distance)) continue
+      const index = measures.indexOf(measure.parentSourceMeasure)
+      if (index >= 0) best = { index, distance }
+    }
+    return best?.index ?? null
+  }
+
   private collectNotes(): void {
     const cursor = this.osmd.cursor
     this.stepNotes = []
@@ -123,4 +151,13 @@ export class ScoreController {
     this.disposed = true
     this.osmd.clear()
   }
+}
+
+function edge(box: BoundingBox, side: 'top' | 'bottom'): number {
+  return box.AbsolutePosition.y + (side === 'top' ? box.BorderTop : box.BorderBottom)
+}
+
+/** How far a value lies outside a range (0 when inside). */
+function distanceOutside(value: number, from: number, to: number): number {
+  return value < from ? from - value : value > to ? value - to : 0
 }
