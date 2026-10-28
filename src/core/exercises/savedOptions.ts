@@ -1,17 +1,21 @@
 // The last exercise choices, remembered on this device.
 
-import type { ExerciseOptions } from './generator'
+import { defaultMaxInterval, type ExerciseOptions } from './generator'
 
 const OPTIONS_KEY = 'notelisa.exerciseOptions'
 
 export const DEFAULT_EXERCISE: ExerciseOptions = {
-  kind: 'reading', instrument: 'piano', clef: 'treble', key: 'C', time: '4/4', rhythm: 2, rests: false, range: 1, measures: 8, minor: 'harmonic',
+  kind: 'reading', instrument: 'piano', clef: 'treble', key: 'C', time: '4/4', rhythm: 2, rests: false, range: 1, maxInterval: 3, measures: 8, minor: 'harmonic',
 }
 
 export function savedExerciseOptions(): ExerciseOptions {
   try {
     const saved = localStorage.getItem(OPTIONS_KEY)
-    return saved ? { ...DEFAULT_EXERCISE, ...(JSON.parse(saved) as Partial<ExerciseOptions>) } : DEFAULT_EXERCISE
+    if (!saved) return DEFAULT_EXERCISE
+    const parsed = JSON.parse(saved) as Partial<ExerciseOptions>
+    const options = { ...DEFAULT_EXERCISE, ...parsed }
+    // Choices saved before the interval could be chosen keep the one their range used.
+    return parsed.maxInterval ? options : { ...options, maxInterval: defaultMaxInterval(options.range) }
   } catch {
     return DEFAULT_EXERCISE
   }
