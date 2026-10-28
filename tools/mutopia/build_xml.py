@@ -221,8 +221,15 @@ def build(events, title, composer, rights, default_tempo, score=1, arranger=None
                             obj.expressions.append(EXPR[a]())
                     fs = fings.get(k, [])
                     if fs and len(fs) <= len(pitches):
-                        for d in fs[:1] if len(pitches) == 1 else []:
-                            obj.articulations.append(articulations.Fingering(d))
+                        if len(pitches) == 1:
+                            obj.articulations.append(articulations.Fingering(fs[0]))
+                        elif len(fs) == len(pitches):
+                            # Chord: one finger per note, lowest finger on the lowest note (right-hand fingering).
+                            by_pitch = sorted(range(len(obj.notes)), key=lambda i: obj.notes[i].pitch.ps)
+                            for i, d in zip(by_pitch, sorted(fs)):
+                                f = articulations.Fingering(d)
+                                f.noteNum = i + 1
+                                obj.articulations.append(f)
                     m21_of[k] = (obj, ns)
                     items.append((t, g, obj, ln if g == 0 else 0))
                 for r in vr:
