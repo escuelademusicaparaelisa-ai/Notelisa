@@ -391,8 +391,9 @@ interface LineNote {
   finger?: number
 }
 
+/** Two octaves on the flute go from the tonic in the low octave up to the third octave (as high as B6). */
 function scaleOctaves(options: ExerciseOptions): number {
-  return options.range >= 3 && options.instrument === 'piano' ? 2 : 1
+  return options.range >= 3 ? 2 : 1
 }
 
 /** Up and down the scale. */
