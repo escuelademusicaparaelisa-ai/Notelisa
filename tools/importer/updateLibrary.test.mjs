@@ -56,14 +56,15 @@ describe('updateLibrary', () => {
     ] }))
     await writeSheet(join(folder, SHEET_NAME), [
       { file: 'libre/a.mxl', title: 'A', composer: '', arranger: '', instrument: 'piano', level: 4, publish: true },
-      { file: 'libre/b.mxl', title: 'B', composer: '', arranger: '', instrument: 'piano', publish: true },
+      { file: 'libre/b.mxl', title: 'B nuevo', composer: '', arranger: '', instrument: 'piano', publish: true },
     ])
 
     const result = await updateLibrary(folder, 'clave', { libraryDir })
     expect(result.removed).toEqual([])
-    expect(result.freeLevels).toBe(1)
+    expect(result.freeLevels).toBe(2)
     const index = JSON.parse(readFileSync(join(libraryDir, 'index.json'), 'utf8'))
     expect(index.pieces.map(p => [p.id, p.level])).toEqual([['demo', 1], ['libre-b', 3], ['libre-a', 4]])
+    expect(index.pieces.find(p => p.id === 'libre-b').title).toBe('B nuevo')
     const sheet = await readSheet(join(folder, SHEET_NAME))
     expect(sheet.map(r => r.file)).toEqual(['Una.musicxml', 'libre/a.mxl', 'libre/b.mxl'])
   })
