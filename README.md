@@ -7,6 +7,11 @@ instrumento mientras la app les escucha y les corrige.
 Funciona en el navegador de móvil, tablet y ordenador, y se puede "instalar" como una
 app (PWA).
 
+Dirección pública: **https://notelisa.paraelisa.es** (GitHub Pages con dominio propio).
+El dominio se gestiona en DonDominio con un registro `CNAME` `notelisa` →
+`escuelademusicaparaelisa-ai.github.io`, y está indicado en *Settings → Pages → Custom
+domain* del repositorio (el archivo `public/CNAME` solo lo deja anotado).
+
 ## Estado
 
 | Fase | Contenido | Estado |
