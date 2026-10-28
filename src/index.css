@@ -41,6 +41,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, label:focus-wit
 /* Icons sit inline with the text and take its colour. */
 .lucide { width: 1.2em; height: 1.2em; flex: none; vertical-align: -0.22em; }
 h1 .lucide, h2 .lucide { vertical-align: -0.15em; margin-right: 4px; }
+.lucide.mirrored { transform: scaleX(-1); }
+.toggle .lucide { color: var(--lila-dark); }
 .with-icon { display: flex; align-items: center; gap: 8px; }
 .with-icon .lucide { color: var(--verde); }
 .calibration-step .lucide { color: var(--lila); margin-right: 4px; }

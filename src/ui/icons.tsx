@@ -1,9 +1,9 @@
 // The app's icons: Lucide (rounded line icons) plus a few music ones Lucide lacks, drawn in the same style.
-import { Piano, type LucideProps } from 'lucide-react'
+import { Hand, Piano, type LucideProps } from 'lucide-react'
 
 export {
   ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, CircleCheck, Download, Ear, FileMusic, FolderOpen, Footprints,
-  KeyRound, Lock, Metronome, Mic, Music, PartyPopper, Piano, Play, RefreshCw, Repeat, RotateCcw, Search, Settings,
+  KeyboardMusic, KeyRound, Lock, Metronome, Mic, Music, PartyPopper, Piano, Play, RefreshCw, Repeat, RotateCcw, Search, Settings,
   SkipBack, Sparkles, Square, Target, Timer, Trash2, TriangleAlert, Upload, Volume2,
 } from 'lucide-react'
 
@@ -65,4 +65,10 @@ export function StarFilled(props: LucideProps) {
       <path d="M11.5 2.9a.6.6 0 0 1 1 0l2.6 5.3 5.8.8a.6.6 0 0 1 .3 1l-4.2 4.1 1 5.8a.6.6 0 0 1-.8.6L12 17.8l-5.2 2.7a.6.6 0 0 1-.8-.6l1-5.8-4.2-4.1a.6.6 0 0 1 .3-1l5.8-.8Z" />
     </LineIcon>
   )
+}
+
+/** What each staff is played with: right or left hand on the piano, the flute for flute parts. */
+export function StaffIcon({ instrument, staff }: { instrument: string; staff: number }) {
+  if (instrument === 'flute') return <Flute />
+  return <Hand className={staff === 1 ? 'mirrored' : ''} />
 }
