@@ -1,14 +1,14 @@
 import { useState } from 'react'
-import { sendPhotoRequest, type PhotoRequest } from '../../library/photoRequest'
+import { requestText, sendPhotoRequest, type PhotoRequest } from '../../library/photoRequest'
 import { Choices } from '../components/Choices'
-import { ArrowLeft, Flute, ImagePlus, Piano, Send, Stars, X } from '../icons'
+import { ArrowLeft, Copy, Flute, ImagePlus, Piano, Send, Stars, X } from '../icons'
 
 interface Props {
   photos: File[]
   onBack(): void
 }
 
-type Sent = 'shared' | 'downloaded' | 'failed' | null
+type Sent = 'shared' | 'downloaded' | 'copied' | 'failed' | 'copy-failed' | null
 
 const withPreview = (file: File) => ({ file, url: URL.createObjectURL(file) })
 
@@ -27,7 +27,6 @@ export function PhotoScreen({ photos: initial, onBack }: Props) {
   const [sent, setSent] = useState<Sent>(null)
   const set = <K extends keyof PhotoRequest>(key: K) => (value: PhotoRequest[K]) => setRequest(r => ({ ...r, [key]: value }))
 
-
   const addPhotos = (files: FileList | null) => {
     if (files?.length) setPhotos(p => [...p, ...Array.from(files, withPreview)])
     setSent(null)
@@ -43,6 +42,16 @@ export function PhotoScreen({ photos: initial, onBack }: Props) {
       setSent('failed')
     } finally {
       setSending(false)
+    }
+  }
+
+  // To paste the details next to the photo in a chat the share menu cannot open.
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(requestText(request, photos.length))
+      setSent('copied')
+    } catch {
+      setSent('copy-failed')
     }
   }
 
@@ -109,12 +118,19 @@ export function PhotoScreen({ photos: initial, onBack }: Props) {
       {sent === 'downloaded' && (
         <p className="notice">Se ha descargado la foto y los datos están copiados. Pégalos junto a la foto en el chat de Claude.</p>
       )}
+      {sent === 'copied' && <p className="notice">Datos copiados. Pégalos junto a la foto en el proyecto Notelise.</p>}
       {sent === 'failed' && <p className="notice warn">No se ha podido preparar la foto. Prueba con otra imagen.</p>}
-      <button className="big-button primary create-exercise" onClick={() => void send()}
-        disabled={sending || photos.length === 0 || !request.title.trim()}>
-        <Send /> {sending ? 'Preparando…' : 'Enviar foto'}
-      </button>
-      {photos.length > 0 && !request.title.trim() && <p className="exercise-hint">Escribe el título para poder enviarla.</p>}
+      {sent === 'copy-failed' && <p className="notice warn">No se han podido copiar los datos en este navegador.</p>}
+      <div className="photo-actions">
+        <button className="big-button primary create-exercise" onClick={() => void send()}
+          disabled={sending || photos.length === 0 || !request.title.trim()}>
+          <Send /> {sending ? 'Preparando…' : 'Enviar foto'}
+        </button>
+        <button className="big-button" onClick={() => void copy()} disabled={!request.title.trim()}>
+          <Copy /> Copiar datos
+        </button>
+      </div>
+      {!request.title.trim() && <p className="exercise-hint">Escribe el título para poder enviarla.</p>}
     </main>
   )
 }

@@ -349,3 +349,5 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
 .photo-fields input:focus, .photo-notes:focus { outline: none; border-color: var(--lila); }
 .optional { font-weight: 400; color: var(--muted); font-size: 0.95rem; }
 .photo-request .notice { margin-bottom: 16px; }
+.photo-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.photo-actions .big-button:not(.primary) { min-height: 64px; padding: 0 24px; }

@@ -2,7 +2,7 @@
 import { Hand, Piano, type LucideProps } from 'lucide-react'
 
 export {
-  ArrowLeft, ArrowRight, Camera, ChevronLeft, ChevronRight, CircleCheck, Download, Ear, FileMusic, FolderOpen, Footprints, ImagePlus,
+  ArrowLeft, ArrowRight, Camera, ChevronLeft, ChevronRight, CircleCheck, Copy, Download, Ear, FileMusic, FolderOpen, Footprints, ImagePlus,
   KeyboardMusic, KeyRound, Lock, Metronome, Mic, Music, PartyPopper, Piano, Play, RefreshCw, Repeat, RotateCcw, Search, Settings,
   Send, SkipBack, Sparkles, Square, Target, Timer, Trash2, TriangleAlert, Upload, Volume2, X,
 } from 'lucide-react'
