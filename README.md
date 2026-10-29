@@ -135,6 +135,19 @@ En la biblioteca, **📂 Abrir partitura del dispositivo** carga un archivo Musi
 (`.musicxml`, `.xml` o `.mxl`) desde el ordenador o la tablet sin subirlo a ningún sitio.
 En MuseScore se exporta con *Archivo → Exportar → MusicXML*.
 
+### Pieza nueva desde una foto
+
+En la biblioteca, **📷 Foto partitura** abre la cámara o la galería del móvil (se pueden
+elegir varias páginas). Después se escriben el título, el autor, el nivel y el
+instrumento, y se elige si mantener o quitar la letra y la digitación. **Enviar foto**
+abre el menú de compartir del móvil con la foto (reducida) y un texto con esos datos,
+para mandarla al chat de Claude o por correo y pasarla a limpio a la biblioteca de la
+escuela. En un ordenador sin menú de compartir, la foto se descarga y los datos se
+copian para pegarlos.
+
+La app todavía no reconoce la foto por sí misma: para eso haría falta un servicio aparte
+(por ejemplo una IA con visión o Audiveris en un servidor).
+
 ## Añadir partituras (fase 4: importación)
 
 El formato interno es **MusicXML** (`.musicxml`, `.xml` o `.mxl`).
