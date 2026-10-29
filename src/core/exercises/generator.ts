@@ -6,8 +6,8 @@ export type Clef = 'treble' | 'bass' | 'grand'
 export type TimeSignature = '2/4' | '3/4' | '4/4' | '6/8'
 /** 1 whole/half notes, 2 + quarters, 3 + eighths, 4 + dotted figures and sixteenths. */
 export type RhythmLevel = 1 | 2 | 3 | 4
-/** 0 three notes, 1 five notes, 2 one octave, 3 wider with hand position changes, 4 two octaves. */
-export type RangeLevel = 0 | 1 | 2 | 3 | 4
+/** 0 three notes, 1 five notes, 2 one octave, 3 wider with hand position changes, 4 two octaves, 5 notes chosen one by one. */
+export type RangeLevel = 0 | 1 | 2 | 3 | 4 | 5
 /** A melodic interval, named as in music: 2 is a step, 3 a third … 8 an octave. */
 export type Interval = 2 | 3 | 4 | 5 | 6 | 7 | 8
 
@@ -19,7 +19,7 @@ export function defaultMaxInterval(range: RangeLevel): Interval {
 }
 
 /** Notes each range spans, counted like intervals (5 notes span a fifth). */
-export const RANGE_NOTES: Record<RangeLevel, number> = { 0: 3, 1: 5, 2: 8, 3: 13, 4: 15 }
+export const RANGE_NOTES: Record<Exclude<RangeLevel, 5>, number> = { 0: 3, 1: 5, 2: 8, 3: 13, 4: 15 }
 
 export interface ExerciseOptions {
   kind: ExerciseKind
@@ -30,6 +30,8 @@ export interface ExerciseOptions {
   rhythm: RhythmLevel
   rests: boolean
   range: RangeLevel
+  /** Notes chosen one by one (range 5), as staff positions: 7 × octave + letter (C4 is 28). */
+  notes: number[]
   /** Widest interval between two notes of a reading exercise. */
   maxInterval: Interval
   measures: number
@@ -202,13 +204,25 @@ class Pitches {
     return this.tonicMidi + 12 * octave + steps[degree - 7 * octave]
   }
 
+  /** The tonic's own octave: the tonic letter written below its sounding pitch. */
+  private get tonicOctave(): number {
+    return Math.floor((this.tonicMidi - this.key.alter) / 12) - 1
+  }
+
+  /** Staff position (7 × octave + letter) of a degree, and back. */
+  position(degree: number): number {
+    return 7 * this.tonicOctave + this.key.letter + degree
+  }
+
+  degree(position: number): number {
+    return position - 7 * this.tonicOctave - this.key.letter
+  }
+
   /** MusicXML spelling of a degree sounding at `midi`. */
   spell(degree: number, midi: number): { step: string; alter: number; octave: number } {
     const total = this.key.letter + degree
     const letter = ((total % 7) + 7) % 7
-    // The tonic's own octave: the tonic letter written below its sounding pitch.
-    const tonicOctave = Math.floor((this.tonicMidi - this.key.alter) / 12) - 1
-    const octave = tonicOctave + Math.floor(total / 7)
+    const octave = this.tonicOctave + Math.floor(total / 7)
     const alter = midi - (12 * (octave + 1) + LETTER_SEMITONES[letter])
     return { step: LETTER_NAMES[letter], alter, octave }
   }
@@ -290,9 +304,9 @@ function writableDurations(length: number): number[] {
 /** Lowest and highest notes for each clef: up to two ledger lines. */
 const CLEF_RANGE = { treble: { low: 57, high: 81 }, bass: { low: 40, high: 64 } }
 
-function degreeRange(pitches: Pitches, clef: 'treble' | 'bass', range: RangeLevel, instrument: ExerciseOptions['instrument']): { low: number; high: number } {
+function degreeRange(pitches: Pitches, clef: 'treble' | 'bass', range: Exclude<RangeLevel, 5>, instrument: ExerciseOptions['instrument']): { low: number; high: number } {
   let { low, high } = [{ low: 0, high: 2 }, { low: 0, high: 4 }, { low: 0, high: 7 }, { low: -3, high: 9 }, { low: -3, high: 11 }][range]
-  const limits = instrument === 'flute' ? FLUTE_RANGE : CLEF_RANGE[clef]
+  const limits = melodyLimits(clef, instrument)
   // Notes cut off at one end of the staff are added at the other, so the range keeps its size.
   while (pitches.midi(low) < limits.low) {
     low++
@@ -326,27 +340,78 @@ function mergeRests(events: ExerciseEvent[]): ExerciseEvent[] {
 /** How often each interval comes up; steps are the most common. */
 const INTERVAL_WEIGHTS: Record<Interval, number> = { 2: 5, 3: 2, 4: 1.5, 5: 1.5, 6: 1, 7: 1, 8: 1 }
 
-function nextDegree(current: number, low: number, high: number, maxInterval: Interval, random: () => number): number {
+function nextDegree(current: number, pool: number[], maxInterval: Interval, random: () => number): number {
   const moves = [{ value: 0, weight: 1 }]
   for (const interval of INTERVALS.filter(i => i <= maxInterval)) {
     const weight = INTERVAL_WEIGHTS[interval]
     moves.push({ value: interval - 1, weight }, { value: 1 - interval, weight })
   }
-  const allowed = moves.filter(m => current + m.value >= low && current + m.value <= high)
+  const allowed = moves.filter(m => pool.includes(current + m.value))
+  // Chosen notes further apart than the widest interval: move to the next one up or down anyway.
+  if (allowed.length === 1) {
+    const i = pool.indexOf(current)
+    for (const neighbour of [pool[i - 1], pool[i + 1]]) if (neighbour !== undefined) allowed.push({ value: neighbour - current, weight: 5 })
+  }
   return current + pick(random, allowed)
 }
 
-/** The tonic (or its octave) closest to a degree, inside the range. */
-function closestTonic(degree: number, low: number, high: number): number {
-  const candidates = [-7, 0, 7, 14].filter(d => d >= low && d <= high)
-  if (candidates.length === 0) return 0
+/** The tonic (or its octave) closest to a degree among the notes in use; the first note if none is a tonic. */
+function closestTonic(degree: number, pool: number[]): number {
+  const candidates = pool.filter(d => ((d % 7) + 7) % 7 === 0)
+  if (candidates.length === 0) return pool[0]
   return candidates.reduce((best, d) => (Math.abs(d - degree) < Math.abs(best - degree) ? d : best))
 }
 
+/** Lowest and highest notes the melody may use. */
+function melodyLimits(clef: 'treble' | 'bass', instrument: ExerciseOptions['instrument']): { low: number; high: number } {
+  return instrument === 'flute' ? FLUTE_RANGE : CLEF_RANGE[clef]
+}
+
+export interface SelectableNote {
+  position: number
+  /** Spanish name with its octave, e.g. "Fa♯4". */
+  name: string
+}
+
+/** Notes of the key that fit on the melody's staff (or the flute), low to high, to choose from one by one. */
+export function selectableNotes(options: ExerciseOptions): SelectableNote[] {
+  const clef = options.instrument === 'piano' && options.clef === 'bass' ? 'bass' : 'treble'
+  const pitches = new Pitches(getKey(options.key), clef, options.minor)
+  const { low, high } = melodyLimits(clef, options.instrument)
+  const notes: SelectableNote[] = []
+  for (let degree = -14; degree <= 21; degree++) {
+    const midi = pitches.midi(degree)
+    if (midi < low || midi > high) continue
+    const { step, alter, octave } = pitches.spell(degree, midi)
+    const name = LETTER_NAMES_ES[LETTER_NAMES.indexOf(step)] + (alter > 0 ? '♯'.repeat(alter) : '♭'.repeat(-alter)) + octave
+    notes.push({ position: pitches.position(degree), name })
+  }
+  return notes
+}
+
+/** Staff positions of the tonic and the two notes above it: what "Elegir notas" starts with. */
+export function defaultChosenNotes(options: ExerciseOptions): number[] {
+  const clef = options.instrument === 'piano' && options.clef === 'bass' ? 'bass' : 'treble'
+  const pitches = new Pitches(getKey(options.key), clef, options.minor)
+  return [0, 1, 2].map(d => pitches.position(d))
+}
+
+/** Degrees the melody may use, low to high. Fewer than two chosen notes that fit falls back to five notes. */
+function melodyPool(options: ExerciseOptions, clef: 'treble' | 'bass', pitches: Pitches): number[] {
+  if (options.range === 5) {
+    const { low, high } = melodyLimits(clef, options.instrument)
+    const chosen = [...new Set(options.notes ?? [])].map(p => pitches.degree(p))
+      .filter(d => pitches.midi(d) >= low && pitches.midi(d) <= high).sort((a, b) => a - b)
+    if (chosen.length >= 2) return chosen
+  }
+  const { low, high } = degreeRange(pitches, clef, options.range === 5 ? 1 : options.range, options.instrument)
+  return Array.from({ length: high - low + 1 }, (_, i) => low + i)
+}
+
 function readingMelody(options: ExerciseOptions, clef: 'treble' | 'bass', pitches: Pitches, random: () => number): ExerciseEvent[][] {
-  const { low, high } = degreeRange(pitches, clef, options.range, options.instrument)
+  const pool = melodyPool(options, clef, pitches)
   const length = measureLength(options.time)
-  let degree = 0
+  let degree = pool.includes(0) ? 0 : closestTonic(0, pool)
   const measures: ExerciseEvent[][] = []
   for (let m = 0; m < options.measures; m++) {
     const last = m === options.measures - 1
@@ -359,7 +424,7 @@ function readingMelody(options: ExerciseOptions, clef: 'treble' | 'bass', pitche
         return
       }
       const previous = degree
-      if (!first) degree = last ? closestTonic(degree, low, high) : nextDegree(degree, low, high, options.maxInterval, random)
+      if (!first) degree = last ? closestTonic(degree, pool) : nextDegree(degree, pool, options.maxInterval, random)
       events.push({ duration, degree, midi: pitches.midi(degree, degree >= previous) })
     })
     measures.push(mergeRests(events))
@@ -393,7 +458,7 @@ interface LineNote {
 
 /** Two octaves on the flute go from the tonic in the low octave up to the third octave (as high as B6). */
 function scaleOctaves(options: ExerciseOptions): number {
-  return options.range >= 3 ? 2 : 1
+  return options.range === 3 || options.range === 4 ? 2 : 1
 }
 
 /** Up and down the scale. */

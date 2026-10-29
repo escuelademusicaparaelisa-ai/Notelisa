@@ -5,7 +5,7 @@ import { defaultMaxInterval, type ExerciseOptions } from './generator'
 const OPTIONS_KEY = 'notelisa.exerciseOptions'
 
 export const DEFAULT_EXERCISE: ExerciseOptions = {
-  kind: 'reading', instrument: 'piano', clef: 'treble', key: 'C', time: '4/4', rhythm: 2, rests: false, range: 1, maxInterval: 3, measures: 8, minor: 'harmonic',
+  kind: 'reading', instrument: 'piano', clef: 'treble', key: 'C', time: '4/4', rhythm: 2, rests: false, range: 1, notes: [], maxInterval: 3, measures: 8, minor: 'harmonic',
 }
 
 export function savedExerciseOptions(): ExerciseOptions {

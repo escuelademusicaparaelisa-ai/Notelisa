@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
-  exerciseToMusicXml, generateExercise, KEYS, measureLength, rhythmForMeasure, seededRandom,
+  defaultChosenNotes, exerciseToMusicXml, selectableNotes, generateExercise, KEYS, measureLength, rhythmForMeasure, seededRandom,
   type ExerciseOptions, type RhythmLevel, type TimeSignature,
 } from './generator'
 
 const BASE: ExerciseOptions = {
-  kind: 'reading', instrument: 'piano', clef: 'treble', key: 'C', time: '4/4', rhythm: 2, rests: false, range: 1, maxInterval: 3, measures: 8, minor: 'harmonic',
+  kind: 'reading', instrument: 'piano', clef: 'treble', key: 'C', time: '4/4', rhythm: 2, rests: false, range: 1, notes: [], maxInterval: 3, measures: 8, minor: 'harmonic',
 }
 const TIMES: TimeSignature[] = ['2/4', '3/4', '4/4', '6/8']
 const LEVELS: RhythmLevel[] = [1, 2, 3, 4]
@@ -246,5 +246,43 @@ describe('arpeggios', () => {
   it('names the exercise', () => {
     expect(generateExercise({ ...BASE, kind: 'arpeggio', key: 'Dm' }, 1).title).toBe('Arpegio · Re menor')
     expect(generateExercise({ ...BASE, kind: 'scale-arpeggio', key: 'Dm', minor: 'harmonic' }, 1).title).toBe('Escala y arpegio · Re menor armónica')
+  })
+})
+
+describe('chosen notes', () => {
+  // Staff positions: 7 × octave + letter, so G4 is 32.
+  const G4 = 32, A4 = 33, B4 = 34
+  const midis = (options: Partial<ExerciseOptions>, seed = 1) =>
+    generateExercise({ ...BASE, range: 5, rhythm: 4, measures: 12, ...options }, seed).staves[0].measures.flat().flatMap(e => (e.midi === null ? [] : [e.midi]))
+
+  it('uses only the chosen notes', () => {
+    for (let seed = 1; seed < 20; seed++) {
+      const used = new Set(midis({ notes: [G4, A4, B4] }, seed))
+      for (const midi of used) expect([67, 69, 71]).toContain(midi)
+    }
+    expect(new Set(midis({ notes: [G4, A4, B4] })).size).toBe(3)
+  })
+
+  it('follows the key signature', () => {
+    // Fa♯ in G major: F4 (position 31) sounds as F♯4.
+    expect(new Set(midis({ key: 'G', notes: [31, G4, A4] }))).toEqual(new Set([66, 67, 69]))
+  })
+
+  it('reaches notes further apart than the widest interval', () => {
+    const used = new Set(midis({ notes: [28, 35], maxInterval: 2 }))
+    expect(used).toEqual(new Set([60, 72]))
+  })
+
+  it('falls back to five notes with fewer than two notes', () => {
+    expect(midis({ notes: [G4] })).toEqual(midis({ range: 1 }))
+  })
+
+  it('names the notes with their octave and the key signature', () => {
+    const names = selectableNotes({ ...BASE, key: 'G' }).map(n => n.name)
+    expect(names[0]).toBe('La3')
+    expect(names).toContain('Fa♯4')
+    expect(names[names.length - 1]).toBe('La5')
+    expect(selectableNotes({ ...BASE, clef: 'bass' }).map(n => n.name)).toContain('Do3')
+    expect(defaultChosenNotes({ ...BASE, key: 'C' })).toEqual([28, 29, 30])
   })
 })
