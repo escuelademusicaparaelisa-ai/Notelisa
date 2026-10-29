@@ -3,12 +3,13 @@ import { getInstrument, instruments } from '../../instruments'
 import { isPlayable, loadLibrary, pieceFromFile, type Piece } from '../../library/catalog'
 import { matchesQuery } from '../../library/search'
 import { loadSchoolLibrary, lockSchoolLibrary, openSchoolPiece, unlockSchoolLibrary, type SchoolLibrary } from '../../library/school'
-import { ArrowRight, FileMusic, FolderOpen, InstrumentIcon, KeyRound, Lock, Search, Stars, Target } from '../icons'
+import { ArrowRight, Camera, FileMusic, FolderOpen, InstrumentIcon, KeyRound, Lock, Search, Stars, Target } from '../icons'
 
 interface Props {
   onOpen(piece: Piece): void
   onReview(): void
   onExercises(): void
+  onPhotos(photos: File[]): void
 }
 
 // Card covers cycle through the colours of the logo.
@@ -33,7 +34,7 @@ function saveFilter(value: string | null): void {
   }
 }
 
-export function LibraryScreen({ onOpen, onReview, onExercises }: Props) {
+export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos }: Props) {
   const [pieces, setPieces] = useState<Piece[] | null>(null)
   const [fileError, setFileError] = useState(false)
 
@@ -111,6 +112,12 @@ export function LibraryScreen({ onOpen, onReview, onExercises }: Props) {
             <FolderOpen /> Abrir partitura
             <input id="open-file" type="file" accept=".musicxml,.xml,.mxl" hidden
               onChange={e => openFile(e.target.files?.[0])} />
+          </label>
+          <label className="chip open-file">
+            <Camera /> Foto partitura
+            {/* On phones this offers the camera or the gallery. */}
+            <input id="open-photo" type="file" accept="image/*" multiple hidden
+              onChange={e => { if (e.target.files?.length) onPhotos(Array.from(e.target.files)) }} />
           </label>
           {toReview > 0 && (
             <button className="chip review-link" onClick={onReview}><FileMusic /> Revisar importaciones ({toReview})</button>

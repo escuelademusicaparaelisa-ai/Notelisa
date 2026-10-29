@@ -3,42 +3,13 @@ import {
   INTERVALS, MAJOR_KEYS, MINOR_KEYS, MINOR_SCALE_NAMES, RANGE_NOTES, type ExerciseOptions, type MinorScale,
 } from '../../core/exercises/generator'
 import { saveExerciseOptions } from '../../core/exercises/savedOptions'
+import { Choices } from '../components/Choices'
 import { Arpeggio, ArrowLeft, FileMusic, Flute, Piano, Scale, ScaleArpeggio, Sparkles } from '../icons'
 
 interface Props {
   options: ExerciseOptions
   onCreate(options: ExerciseOptions): void
   onBack(): void
-}
-
-interface Choice<T> {
-  value: T
-  label: string
-  icon?: React.ReactNode
-  disabled?: boolean
-}
-
-function Choices<T extends string | number | boolean>({ label, value, choices, onChange, hint }: {
-  label: string
-  value: T
-  choices: Choice<T>[]
-  onChange(value: T): void
-  hint?: string
-}) {
-  return (
-    <fieldset className="exercise-option">
-      <legend>{label}</legend>
-      <div className="exercise-choices">
-        {choices.map(choice => (
-          <button key={String(choice.value)} type="button" className={`chip ${choice.value === value ? 'active' : ''}`}
-            aria-pressed={choice.value === value} disabled={choice.disabled} onClick={() => onChange(choice.value)}>
-            {choice.icon}{choice.label}
-          </button>
-        ))}
-      </div>
-      {hint && <p className="exercise-hint">{hint}</p>}
-    </fieldset>
-  )
 }
 
 /** Key chips show just the tonic ("Sol", "Si♭"); the row says major or minor. */

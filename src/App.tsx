@@ -4,6 +4,7 @@ import type { Piece } from './library/catalog'
 import { savedExerciseOptions } from './core/exercises/savedOptions'
 import { ExercisesScreen } from './ui/screens/ExercisesScreen'
 import { LibraryScreen } from './ui/screens/LibraryScreen'
+import { PhotoScreen } from './ui/screens/PhotoScreen'
 import { PracticeScreen } from './ui/screens/PracticeScreen'
 import { ReviewScreen } from './ui/screens/ReviewScreen'
 
@@ -12,6 +13,7 @@ type View =
   | { name: 'practice'; piece: Piece }
   | { name: 'review' }
   | { name: 'exercises' }
+  | { name: 'photo'; photos: File[] }
   | { name: 'exercise'; piece: Piece; options: ExerciseOptions }
 
 function newExercise(options: ExerciseOptions): Piece {
@@ -33,6 +35,8 @@ export default function App() {
       return <PracticeScreen piece={view.piece} onBack={toLibrary} />
     case 'review':
       return <ReviewScreen onBack={toLibrary} />
+    case 'photo':
+      return <PhotoScreen photos={view.photos} onBack={toLibrary} />
     case 'exercises':
       return <ExercisesScreen options={exerciseOptions} onCreate={startExercise} onBack={toLibrary} />
     case 'exercise':
@@ -43,7 +47,7 @@ export default function App() {
     default:
       return (
         <LibraryScreen onOpen={piece => setView({ name: 'practice', piece })} onReview={() => setView({ name: 'review' })}
-          onExercises={() => setView({ name: 'exercises' })} />
+          onExercises={() => setView({ name: 'exercises' })} onPhotos={photos => setView({ name: 'photo', photos })} />
       )
   }
 }

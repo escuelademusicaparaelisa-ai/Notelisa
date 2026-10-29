@@ -2,9 +2,9 @@
 import { Hand, Piano, type LucideProps } from 'lucide-react'
 
 export {
-  ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, CircleCheck, Download, Ear, FileMusic, FolderOpen, Footprints,
+  ArrowLeft, ArrowRight, Camera, ChevronLeft, ChevronRight, CircleCheck, Download, Ear, FileMusic, FolderOpen, Footprints, ImagePlus,
   KeyboardMusic, KeyRound, Lock, Metronome, Mic, Music, PartyPopper, Piano, Play, RefreshCw, Repeat, RotateCcw, Search, Settings,
-  SkipBack, Sparkles, Square, Target, Timer, Trash2, TriangleAlert, Upload, Volume2,
+  Send, SkipBack, Sparkles, Square, Target, Timer, Trash2, TriangleAlert, Upload, Volume2, X,
 } from 'lucide-react'
 
 function LineIcon({ size = 24, strokeWidth = 2, className = '', children, ...rest }: LucideProps) {

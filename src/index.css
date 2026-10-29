@@ -329,3 +329,23 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
   .exercises-link .icon .lucide { width: 30px; height: 30px; }
   .exercises-link strong { font-size: 1.35rem; }
 }
+
+/* New piece from a photo */
+.photo-previews { clear: both; display: flex; flex-wrap: wrap; gap: 12px; }
+.photo-preview { position: relative; margin: 0; width: 120px; height: 160px; border-radius: 14px; overflow: hidden;
+  border: 2px solid var(--line); background: var(--bg); }
+.photo-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-remove { position: absolute; top: 6px; right: 6px; width: 32px; height: 32px; border-radius: 50%; border: none;
+  display: flex; align-items: center; justify-content: center; background: rgba(46, 20, 64, 0.7); color: #fff; }
+.photo-remove .lucide { width: 18px; height: 18px; }
+.photo-add { width: 120px; height: 160px; border-radius: 14px; border: 2px dashed var(--lila); color: var(--lila-dark);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 8px;
+  text-align: center; font-weight: 700; cursor: pointer; background: var(--lila-soft); }
+.photo-fields { clear: both; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.photo-fields label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; }
+.photo-fields input, .photo-notes { width: 100%; min-width: 0; font: inherit; font-size: 1.1rem; padding: 10px 16px;
+  border: 2px solid var(--line); border-radius: 14px; background: var(--bg); color: var(--ink); }
+.photo-notes { clear: both; display: block; resize: vertical; }
+.photo-fields input:focus, .photo-notes:focus { outline: none; border-color: var(--lila); }
+.optional { font-weight: 400; color: var(--muted); font-size: 0.95rem; }
+.photo-request .notice { margin-bottom: 16px; }
