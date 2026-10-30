@@ -31,6 +31,8 @@ export const ROLE_NAMES: Record<Role, string> = { admin: 'Administrador', teache
 
 export const MIN_PASSWORD = 6
 
+export const EMPTY_REGISTRATION: Registration = { nombre: '', apellidos: '', telefono: '', email: '', password: '', role: 'student' }
+
 let client: SupabaseClient | null = null
 
 /** The connection to the accounts server, or null when the app runs without accounts. */
@@ -90,6 +92,30 @@ export async function register(form: Registration): Promise<{ error: string | nu
   // With email confirmation on, an existing email comes back as a user without identities.
   if (result.user && result.user.identities?.length === 0) return { error: errorMessage({ code: 'user_already_exists', message: '' }), needsEmail: false }
   return { error: null, needsEmail: !result.session }
+}
+
+/**
+ * The administrator creates an account that can be used straight away. A second
+ * connection that keeps no session, so the administrator stays signed in.
+ */
+export async function createAccount(form: Registration): Promise<string | null> {
+  const separate = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'notelisa.newAccount' },
+  })
+  const { email, password, ...data } = form
+  const { data: result, error } = await separate.auth.signUp({
+    email: email.trim(),
+    password,
+    options: { data: { nombre: data.nombre.trim(), apellidos: data.apellidos.trim(), telefono: data.telefono.trim(), role: data.role } },
+  })
+  if (error) return errorMessage(error)
+  if (!result.user || result.user.identities?.length === 0) return errorMessage({ code: 'user_already_exists', message: '' })
+  try {
+    await answerRequest(result.user.id, { status: 'approved', role: data.role })
+  } catch {
+    return 'La cuenta se ha creado pero no se ha podido aceptar. Acéptala en la lista de solicitudes.'
+  }
+  return null
 }
 
 export async function signOut(): Promise<void> {

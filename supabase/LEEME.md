@@ -28,6 +28,8 @@ funciona como siempre, sin cuentas.
    ```
 
 Desde entonces, el botón **Solicitudes** de la biblioteca muestra las peticiones de
-acceso para aceptarlas (como alumno o profesor) o rechazarlas.
+acceso para aceptarlas (como alumno o profesor) o rechazarlas, y **Crear cuenta** para dar
+de alta directamente a un alumno o profesor (entra al momento si *Confirm email* está
+desactivado).
 
 Para probar en local, pon las mismas dos líneas en `.env.local`.

@@ -1,13 +1,11 @@
 import { useState } from 'react'
-import { MIN_PASSWORD, register, registrationProblem, signIn, signOut, fullName, type Profile, type Registration } from '../../account/account'
+import { EMPTY_REGISTRATION, MIN_PASSWORD, register, registrationProblem, signIn, signOut, fullName, type Profile, type Registration } from '../../account/account'
 import { LogIn, RefreshCw, UserPlus } from '../icons'
-
-const EMPTY: Registration = { nombre: '', apellidos: '', telefono: '', email: '', password: '', role: 'student' }
 
 /** Entry to the app: sign in, or ask the administrator for access. */
 export function LoginScreen() {
   const [mode, setMode] = useState<'signIn' | 'register'>('signIn')
-  const [form, setForm] = useState<Registration>(EMPTY)
+  const [form, setForm] = useState<Registration>(EMPTY_REGISTRATION)
   const [busy, setBusy] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
   const [checkEmail, setCheckEmail] = useState(false)
@@ -53,20 +51,7 @@ export function LoginScreen() {
             {mode === 'register' && (
               <>
                 <p className="account-intro">Rellena tus datos. La escuela revisará tu solicitud y te dará acceso.</p>
-                <div className="account-roles" role="radiogroup" aria-label="Soy">
-                  <span>Soy</span>
-                  {(['student', 'teacher'] as const).map(role => (
-                    <button key={role} type="button" role="radio" aria-checked={form.role === role}
-                      className={`chip${form.role === role ? ' active' : ''}`} onClick={() => setForm({ ...form, role })}>
-                      {role === 'student' ? 'Alumno' : 'Profesor'}
-                    </button>
-                  ))}
-                </div>
-                <div className="account-row">
-                  <label>Nombre<input autoComplete="given-name" value={form.nombre} onChange={set('nombre')} /></label>
-                  <label>Apellidos<input autoComplete="family-name" value={form.apellidos} onChange={set('apellidos')} /></label>
-                </div>
-                <label>Teléfono<input type="tel" autoComplete="tel" value={form.telefono} onChange={set('telefono')} /></label>
+                <RegistrationFields form={form} onChange={setForm} />
               </>
             )}
             <label>Email<input type="email" autoComplete="email" autoCapitalize="none" value={form.email} onChange={set('email')} /></label>
@@ -82,6 +67,29 @@ export function LoginScreen() {
         )}
       </form>
     </main>
+  )
+}
+
+/** Who the account is for: student or teacher, name, surnames and phone. */
+export function RegistrationFields({ form, onChange, roleLabel = 'Soy' }: { form: Registration; onChange(form: Registration): void; roleLabel?: string }) {
+  const set = (field: keyof Registration) => (event: React.ChangeEvent<HTMLInputElement>) => onChange({ ...form, [field]: event.target.value })
+  return (
+    <>
+      <div className="account-roles" role="radiogroup" aria-label={roleLabel}>
+        <span>{roleLabel}</span>
+        {(['student', 'teacher'] as const).map(role => (
+          <button key={role} type="button" role="radio" aria-checked={form.role === role}
+            className={`chip${form.role === role ? ' active' : ''}`} onClick={() => onChange({ ...form, role })}>
+            {role === 'student' ? 'Alumno' : 'Profesor'}
+          </button>
+        ))}
+      </div>
+      <div className="account-row">
+        <label>Nombre<input autoComplete="given-name" value={form.nombre} onChange={set('nombre')} /></label>
+        <label>Apellidos<input autoComplete="family-name" value={form.apellidos} onChange={set('apellidos')} /></label>
+      </div>
+      <label>Teléfono<input type="tel" autoComplete="tel" value={form.telefono} onChange={set('telefono')} /></label>
+    </>
   )
 }
 

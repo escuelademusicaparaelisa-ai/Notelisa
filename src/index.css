@@ -434,3 +434,7 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
 .request-actions > span { margin-right: 2px; }
 .request-actions .chip.approve { margin-left: auto; }
 @media (max-width: 560px) { .request-actions .chip.approve { margin-left: 0; } }
+.account-card.new-account { max-width: none; margin-bottom: 16px; }
+.new-account h2 { margin: 0; color: var(--lila-deep); display: flex; align-items: center; gap: 8px; }
+.new-account .big-button.primary { align-self: auto; }
+.notice.account-created { max-width: none; margin-bottom: 16px; border-color: var(--verde); background: #e6f6ec; }
