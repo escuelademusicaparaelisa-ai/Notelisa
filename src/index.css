@@ -483,6 +483,13 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
 .assignment-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 8px 8px 14px; border-radius: 14px; background: var(--bg); }
 .assignment-title { flex: 1 1 180px; font-weight: 700; }
 .assignment-homework { font-weight: 700; font-size: 0.95rem; }
+.assignment-progress { display: inline-flex; gap: 12px; font-weight: 700; font-size: 0.95rem; }
+.assignment-progress > span { display: inline-flex; align-items: center; gap: 4px; }
+.assignment-progress .lucide { color: var(--verde); width: 1.05em; height: 1.05em; }
+.assignment-progress.muted { color: var(--muted); font-weight: 400; }
+.teacher-progress { margin: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--ink); }
+.teacher-progress > span { display: inline-flex; align-items: center; gap: 6px; }
+.teacher-progress .lucide { color: var(--lila); }
 
 /* Choosing what to assign */
 .chooser { display: flex; flex-direction: column; }
@@ -516,3 +523,12 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
 .notebook-school { display: block; margin-top: 4px; font-size: 0.8rem; font-weight: 800; color: var(--lila-dark); }
 .notebook-error { max-width: none; margin-bottom: 12px; }
 .notebook-card.active .notebook-school { color: inherit; opacity: 0.85; }
+
+/* Student's page */
+.student-week { display: flex; align-items: center; gap: 8px; }
+.student-week strong { color: var(--lila-deep); }
+.student-notice { max-width: none; margin-bottom: 16px; }
+.student .section-title { margin-top: 24px; }
+.piece-progress { display: flex; flex-wrap: wrap; gap: 4px 14px; font-weight: 700; color: var(--ink); font-size: 0.95rem; }
+.piece-progress > span { display: inline-flex; align-items: center; gap: 4px; }
+.piece-progress .lucide { color: var(--verde); width: 1.05em; height: 1.05em; }

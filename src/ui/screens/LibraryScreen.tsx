@@ -358,7 +358,7 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
 }
 
 /** Asks for the school password the first time the library is used on a device. */
-function SchoolUnlock({ onUnlocked }: { onUnlocked(): void }) {
+export function SchoolUnlock({ onUnlocked }: { onUnlocked(): void }) {
   const [password, setPassword] = useState('')
   const [checking, setChecking] = useState(false)
   const [wrong, setWrong] = useState(false)

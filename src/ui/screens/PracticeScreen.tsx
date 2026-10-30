@@ -21,13 +21,15 @@ import { ScoreView, type ScoreViewHandle } from '../components/ScoreView'
 import { SummaryCard } from '../components/SummaryCard'
 import { ArrowLeft, ChevronLeft, ChevronRight, Footprints, KeyboardMusic, Metronome, StaffIcon, Music, PartyPopper, Play, RefreshCw, RotateCcw, Settings, SkipBack, Square, Volume2 } from '../icons'
 
-interface Props {
+export interface PracticeProps {
   piece: Piece
   onBack(): void
   /** Text of the back button. */
   backLabel?: string
   /** Shown for generated exercises: replaces the piece with a new one. */
   onAnother?(): void
+  /** Each time the piece is played to the end (to save the student's progress). */
+  onSummary?(summary: PracticeSummary): void
 }
 
 type Mode = 'listen' | 'wait' | 'tempo'
@@ -80,7 +82,7 @@ function clicksFor(timeline: Timeline, steps: ScoreStep[], startAt: number, temp
   return clicks
 }
 
-export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnother }: Props) {
+export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnother, onSummary }: PracticeProps) {
   const scoreRef = useRef<ScoreViewHandle>(null)
   const [timeline, setTimeline] = useState<Timeline | null>(null)
   const [step, setStep] = useState(0)
@@ -102,6 +104,8 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
   const [tempoRun, setTempoRun] = useState<TempoRun | null>(null)
   const [countdown, setCountdown] = useState<number | null>(null)
   const [summary, setSummary] = useState<PracticeSummary | null>(null)
+  const onSummaryRef = useRef(onSummary)
+  useEffect(() => { onSummaryRef.current = onSummary }, [onSummary])
   const [expected, setExpected] = useState<number[]>([])
   const [feedback, setFeedback] = useState<Feedback>({ kind: 'idle' })
   const [held, setHeld] = useState<Set<number>>(new Set())
@@ -205,7 +209,7 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
         case 'finished':
           metronome.stop()
           setFeedback({ kind: 'finished' })
-          setSummary(summarize(s.stats, false))
+          { const result = summarize(s.stats, false); setSummary(result); onSummaryRef.current?.(result) }
           setSession(null)
           break
       }
@@ -270,7 +274,7 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
           setTempoRun(null)
           setExpected([])
           setFeedback({ kind: 'finished' })
-          setSummary(summarize(s.stats, true))
+          { const result = summarize(s.stats, true); setSummary(result); onSummaryRef.current?.(result) }
           break
       }
     }
