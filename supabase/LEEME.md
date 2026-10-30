@@ -9,7 +9,8 @@ funciona como siempre, sin cuentas.
 1. Crea una cuenta en supabase.com y un proyecto `notelisa` en Europa.
 2. **Authentication → Sign In / Providers → Email**: desactiva *Confirm email*. La
    escuela ya revisa cada solicitud, así nadie tiene que esperar a un correo.
-3. **SQL Editor**: pega el contenido de `01-cuentas.sql` y pulsa *Run*.
+3. **SQL Editor**: pega el contenido de `01-cuentas.sql` y pulsa *Run*. Después haz lo
+   mismo con `02-alumnos-de-cada-profesor.sql`.
 4. Copia *Project URL* y la clave *anon public* (*Project Settings → API*) en el
    archivo `.env.production` de la raíz del repositorio:
 
@@ -27,9 +28,10 @@ funciona como siempre, sin cuentas.
    update public.profiles set role = 'admin', status = 'approved' where email = 'admin@ejemplo.es';
    ```
 
-Desde entonces, el botón **Solicitudes** de la biblioteca muestra las peticiones de
-acceso para aceptarlas (como alumno o profesor) o rechazarlas, y **Crear cuenta** para dar
+Desde entonces, el botón **Administración** de la biblioteca abre el panel del admin. En
+**Solicitudes** están las peticiones de acceso para aceptarlas (como alumno o profesor) o rechazarlas, y **Crear cuenta** para dar
 de alta directamente a un alumno o profesor (entra al momento si *Confirm email* está
-desactivado).
+desactivado). En **Alumnos** y **Profesores** se asigna a cada alumno su profesor (o
+varios) y se puede quitar el acceso a una cuenta.
 
 Para probar en local, pon las mismas dos líneas en `.env.local`.

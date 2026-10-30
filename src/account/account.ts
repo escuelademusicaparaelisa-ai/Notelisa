@@ -42,7 +42,7 @@ export function accounts(): SupabaseClient | null {
   return client
 }
 
-function server(): SupabaseClient {
+export function server(): SupabaseClient {
   const supabase = accounts()
   if (!supabase) throw new Error('Notelisa no tiene cuentas configuradas')
   return supabase
@@ -116,6 +116,14 @@ export async function createAccount(form: Registration): Promise<string | null> 
     return 'La cuenta se ha creado pero no se ha podido aceptar. Acéptala en la lista de solicitudes.'
   }
   return null
+}
+
+/** Changes the signed-in person's password; null when done, or what went wrong. */
+export async function changePassword(password: string): Promise<string | null> {
+  if (password.length < MIN_PASSWORD) return `La contraseña necesita al menos ${MIN_PASSWORD} caracteres.`
+  const { error } = await server().auth.updateUser({ password })
+  if (error?.code === 'same_password') return 'Esa ya es tu contraseña. Escribe una distinta.'
+  return error ? errorMessage(error) : null
 }
 
 export async function signOut(): Promise<void> {
