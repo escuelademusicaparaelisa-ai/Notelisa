@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { pendingRequests, signOut, type Profile } from '../../account/account'
-import { LogOut, Users } from '../icons'
+import { changePassword, fullName, MIN_PASSWORD, pendingRequests, ROLE_NAMES, signOut, type Profile } from '../../account/account'
+import { Check, KeyRound, LogOut, UserRound, Users, X } from '../icons'
 
-/** The signed-in person in the library bar: their name, the admin panel (admin) and «Salir». */
+/** The signed-in person in the library bar: the admin panel (admin) and their account. */
 export function AccountBar({ profile, pending, onPending, onAdmin }: {
   profile: Profile
   /** Requests waiting for the admin; null until known. */
@@ -11,7 +11,7 @@ export function AccountBar({ profile, pending, onPending, onAdmin }: {
   onAdmin(): void
 }) {
   const isAdmin = profile.role === 'admin'
-  const [confirm, setConfirm] = useState(false)
+  const [open, setOpen] = useState(false)
 
   useEffect(() => {
     if (isAdmin && pending === null) pendingRequests().then(list => onPending(list.length), () => {})
@@ -24,13 +24,58 @@ export function AccountBar({ profile, pending, onPending, onAdmin }: {
           <Users /> Administración{pending ? ` (${pending})` : ''}
         </button>
       )}
-      {confirm ? (
-        <button className="chip danger" onClick={() => void signOut()} onBlur={() => setConfirm(false)} autoFocus>
-          <LogOut /> ¿Salir, {profile.nombre}?
-        </button>
-      ) : (
-        <button className="chip" onClick={() => setConfirm(true)} title={profile.email}><LogOut /> {profile.nombre || 'Salir'}</button>
-      )}
+      <button className="chip" onClick={() => setOpen(true)} title={profile.email}><UserRound /> {profile.nombre || 'Mi cuenta'}</button>
+      {open && <MyAccount profile={profile} onClose={() => setOpen(false)} />}
     </>
+  )
+}
+
+/** Who is signed in, changing the password and signing out. */
+function MyAccount({ profile, onClose }: { profile: Profile; onClose(): void }) {
+  const [password, setPassword] = useState('')
+  const [repeat, setRepeat] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [problem, setProblem] = useState<string | null>(null)
+  const [changed, setChanged] = useState(false)
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (password !== repeat) {
+      setProblem('Las dos contraseñas no coinciden.')
+      return
+    }
+    setBusy(true)
+    const error = await changePassword(password)
+    setBusy(false)
+    setProblem(error)
+    if (!error) {
+      setChanged(true)
+      setPassword('')
+      setRepeat('')
+    }
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <section className="modal my-account" role="dialog" aria-label="Mi cuenta" onClick={e => e.stopPropagation()}>
+        <button className="chip modal-close" onClick={onClose} aria-label="Cerrar"><X /></button>
+        <h2>{fullName(profile) || profile.email}</h2>
+        <p>{ROLE_NAMES[profile.role]} · {profile.email}</p>
+        <form className="account-card my-account-password" onSubmit={submit} noValidate>
+          <h3><KeyRound /> Cambiar contraseña</h3>
+          <label>Nueva contraseña
+            <input type="password" autoComplete="new-password" value={password} placeholder={`Mínimo ${MIN_PASSWORD} caracteres`}
+              onChange={e => { setPassword(e.target.value); setChanged(false) }} />
+          </label>
+          <label>Repítela
+            <input type="password" autoComplete="new-password" value={repeat} onChange={e => { setRepeat(e.target.value); setChanged(false) }} />
+          </label>
+          {problem && <p className="notice warn" role="alert">{problem}</p>}
+          {changed && <p className="notice account-created"><Check /> Contraseña cambiada. La próxima vez entra con la nueva.</p>}
+          <button className="big-button primary" type="submit" disabled={busy || !password}>{busy ? 'Guardando…' : 'Guardar'}</button>
+        </form>
+        <button className="chip" onClick={() => void signOut()}><LogOut /> Salir</button>
+      </section>
+    </div>
   )
 }

@@ -453,3 +453,10 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
 .admin-name { padding: 4px 12px; border-radius: 999px; background: var(--lila-soft); color: var(--lila-dark); }
 .admin-remove { margin-left: auto; display: inline-flex; gap: 8px; }
 .admin-more { margin: 16px 0 12px; }
+
+/* My account */
+.my-account > .chip:last-child { align-self: flex-start; }
+.my-account-password { padding: 18px; background: var(--bg); box-shadow: none; }
+.my-account-password h3 { margin: 0; color: var(--lila-deep); display: flex; align-items: center; gap: 8px; }
+.my-account-password input { background: var(--surface); }
+.my-account .notice.account-created { margin: 0; }

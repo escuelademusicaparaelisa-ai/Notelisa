@@ -118,6 +118,14 @@ export async function createAccount(form: Registration): Promise<string | null> 
   return null
 }
 
+/** Changes the signed-in person's password; null when done, or what went wrong. */
+export async function changePassword(password: string): Promise<string | null> {
+  if (password.length < MIN_PASSWORD) return `La contraseña necesita al menos ${MIN_PASSWORD} caracteres.`
+  const { error } = await server().auth.updateUser({ password })
+  if (error?.code === 'same_password') return 'Esa ya es tu contraseña. Escribe una distinta.'
+  return error ? errorMessage(error) : null
+}
+
 export async function signOut(): Promise<void> {
   await server().auth.signOut()
 }
