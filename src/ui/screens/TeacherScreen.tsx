@@ -7,15 +7,16 @@ import { matchesPerson } from '../../account/admin'
 import { getInstrument, instruments } from '../../instruments'
 import { loadAllPieces } from '../../library/allPieces'
 import type { Piece } from '../../library/catalog'
-import { savedNotebooks } from '../../library/notebooks'
+import type { Notebook, NotebookStore } from '../../library/notebooks'
 import { matchesQuery } from '../../library/search'
 import { ArrowLeft, BookOpen, Check, GraduationCap, InstrumentIcon, Plus, Search, Stars, Trash2 } from '../icons'
 
 /** The teacher gives each of their students pieces: as homework or to play for fun. */
-export function TeacherScreen({ me, onBack }: { me: Profile; onBack(): void }) {
+export function TeacherScreen({ me, notebookStore, onBack }: { me: Profile; notebookStore: NotebookStore; onBack(): void }) {
   const [students, setStudents] = useState<Profile[] | null>(null)
   const [assignments, setAssignments] = useState<Assignment[]>([])
   const [pieces, setPieces] = useState<Piece[]>([])
+  const [notebooks, setNotebooks] = useState<Notebook[]>([])
   const [schoolLocked, setSchoolLocked] = useState(false)
   const [studentId, setStudentId] = useState<string | null>(null)
   const [choosing, setChoosing] = useState(false)
@@ -23,6 +24,7 @@ export function TeacherScreen({ me, onBack }: { me: Profile; onBack(): void }) {
   const [query, setQuery] = useState('')
 
   useEffect(() => {
+    notebookStore.load().then(setNotebooks, () => setFailed(true))
     void loadAllPieces().then(({ pieces, school }) => {
       setPieces(pieces)
       setSchoolLocked(school.state === 'locked')
@@ -34,7 +36,7 @@ export function TeacherScreen({ me, onBack }: { me: Profile; onBack(): void }) {
         if (list.length === 1) setStudentId(list[0].id)
       })
       .catch(() => setFailed(true))
-  }, [me])
+  }, [me, notebookStore])
 
   /** Shows a change straight away and saves it; on failure, tells and reloads. */
   const save = async (run: () => Promise<void>, next: Assignment[]) => {
@@ -68,7 +70,7 @@ export function TeacherScreen({ me, onBack }: { me: Profile; onBack(): void }) {
       {students === null ? (!failed && <p className="score-message">Cargando…</p>)
         : students.length === 0 ? <p className="score-message">Todavía no tienes alumnos. El administrador te los asigna desde su panel.</p>
         : choosing && student ? (
-          <Chooser pieces={pieces} assigned={theirs} onCancel={() => setChoosing(false)} onAssign={async (chosen, homework) => {
+          <Chooser pieces={pieces} notebooks={notebooks} assigned={theirs} onCancel={() => setChoosing(false)} onAssign={async (chosen, homework) => {
             setFailed(false)
             try {
               const saved = await assign(me, student.id, chosen, homework)
@@ -141,13 +143,13 @@ export function TeacherScreen({ me, onBack }: { me: Profile; onBack(): void }) {
 type Tab = 'notebooks' | 'levels' | 'pieces'
 
 /** Ticks whole notebooks, whole levels and single pieces, then gives them all at once. */
-function Chooser({ pieces, assigned, onCancel, onAssign }: {
+function Chooser({ pieces, notebooks, assigned, onCancel, onAssign }: {
   pieces: Piece[]
+  notebooks: Notebook[]
   assigned: Assignment[]
   onCancel(): void
   onAssign(chosen: { piece: Piece; source: string }[], homework: boolean): Promise<void>
 }) {
-  const notebooks = savedNotebooks()
   const [tab, setTab] = useState<Tab>(notebooks.length ? 'notebooks' : 'levels')
   const [selection, setSelection] = useState<Selection>(EMPTY_SELECTION)
   const [instrument, setInstrument] = useState<string | null>(null)
@@ -188,7 +190,7 @@ function Chooser({ pieces, assigned, onCancel, onAssign }: {
 
       {tab === 'notebooks' && (
         notebooks.length === 0
-          ? <p className="score-message">No tienes cuadernos en este dispositivo. Créalos en la biblioteca con «Crear cuaderno».</p>
+          ? <p className="score-message">Todavía no hay cuadernos. Créalos en la biblioteca con «Crear cuaderno».</p>
           : <ul className="pick-grid">
             {notebooks.map(n => {
               const on = selection.notebookIds.includes(n.id)
@@ -197,7 +199,7 @@ function Chooser({ pieces, assigned, onCancel, onAssign }: {
                   <button className={`pick-card${on ? ' on' : ''}`} aria-pressed={on} onClick={() => toggle('notebookIds', n.id)}>
                     <span className="pick-box">{on && <Check />}</span>
                     <BookOpen className="pick-icon" />
-                    <span><strong>{n.name}</strong><small>{n.pieceIds.length === 1 ? '1 canción' : `${n.pieceIds.length} canciones`}</small></span>
+                    <span><strong>{n.name}</strong><small>{n.pieceIds.length === 1 ? '1 canción' : `${n.pieceIds.length} canciones`}{n.school && ' · De la escuela'}</small></span>
                   </button>
                 </li>
               )

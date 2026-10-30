@@ -10,7 +10,8 @@ funciona como siempre, sin cuentas.
 2. **Authentication → Sign In / Providers → Email**: desactiva *Confirm email*. La
    escuela ya revisa cada solicitud, así nadie tiene que esperar a un correo.
 3. **SQL Editor**: pega el contenido de `01-cuentas.sql` y pulsa *Run*. Después haz lo
-   mismo con `02-alumnos-de-cada-profesor.sql` y `03-tareas.sql`.
+   mismo con `02-alumnos-de-cada-profesor.sql` `03-tareas.sql` y
+   `04-cuadernos.sql`.
 4. Copia *Project URL* y la clave *anon public* (*Project Settings → API*) en el
    archivo `.env.production` de la raíz del repositorio:
 
@@ -38,3 +39,7 @@ Para probar en local, pon las mismas dos líneas en `.env.local`.
 
 Los profesores tienen el botón **Mis alumnos** (el admin, **Tareas**) para asignar a cada
 alumno canciones sueltas, cuadernos enteros o niveles enteros, de deberes o por gusto.
+
+Los cuadernos de profesores y admin se guardan en el servidor. Los del admin son «de la
+escuela»: todos los profesores los ven y los pueden asignar, pero solo el admin los cambia.
+Los cuadernos que hubiera en el dispositivo se suben solos la primera vez que se entra.

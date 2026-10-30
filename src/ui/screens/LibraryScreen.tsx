@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { getInstrument, instruments } from '../../instruments'
 import { loadAllPieces } from '../../library/allPieces'
 import { pieceFromFile, type Piece } from '../../library/catalog'
-import { newNotebookId, removeNotebook, savedNotebooks, saveNotebooks, togglePiece, upsertNotebook, type Notebook } from '../../library/notebooks'
+import { deviceNotebooks, newNotebookId, removeNotebook, togglePiece, upsertNotebook, type Notebook, type NotebookStore } from '../../library/notebooks'
 import { matchesQuery } from '../../library/search'
 import { lockSchoolLibrary, openSchoolPiece, unlockSchoolLibrary, type SchoolLibrary } from '../../library/school'
 import { ArrowLeft, ArrowRight, BookOpen, Camera, Check, FileMusic, FolderOpen, InstrumentIcon, KeyRound, Lock, Pencil, Plus, Search, Stars, Target, Trash2 } from '../icons'
@@ -17,6 +17,8 @@ interface Props {
   onNotebook(id: string | null): void
   /** Who is signed in and their buttons, when the app has accounts. */
   accountBar?: ReactNode
+  /** Where notebooks are kept; this device when not given. */
+  notebookStore?: NotebookStore
 }
 
 // Card covers cycle through the colours of the logo.
@@ -41,7 +43,7 @@ function saveFilter(value: string | null): void {
   }
 }
 
-export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, notebookId, onNotebook, accountBar }: Props) {
+export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, notebookId, onNotebook, accountBar, notebookStore = deviceNotebooks }: Props) {
   const [pieces, setPieces] = useState<Piece[] | null>(null)
   const [fileError, setFileError] = useState(false)
 
@@ -64,7 +66,8 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
   const [query, setQuery] = useState('')
   // Difficulty shown; null = all.
   const [level, setLevel] = useState<number | null>(null)
-  const [notebooks, setNotebooks] = useState<Notebook[]>(savedNotebooks)
+  const [notebooks, setNotebooks] = useState<Notebook[]>([])
+  const [notebookError, setNotebookError] = useState(false)
   // The notebook being created or edited, with its pieces ticked in the library.
   const [draft, setDraft] = useState<Notebook | null>(null)
   const [onlyChosen, setOnlyChosen] = useState(false)
@@ -79,6 +82,10 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
   useEffect(() => {
     void load()
   }, [])
+
+  useEffect(() => {
+    notebookStore.load().then(setNotebooks, () => setNotebookError(true))
+  }, [notebookStore])
 
   const open = async (piece: Piece) => {
     if (!piece.encrypted) return onOpen(piece)
@@ -103,9 +110,15 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
     saveFilter(value)
   }
 
-  const changeNotebooks = (next: Notebook[]) => {
+  /** Shows the change straight away and saves it; on failure, tells and goes back. */
+  const changeNotebooks = (next: Notebook[], run: () => Promise<void>) => {
+    const before = notebooks
     setNotebooks(next)
-    saveNotebooks(next)
+    setNotebookError(false)
+    run().catch(() => {
+      setNotebooks(before)
+      setNotebookError(true)
+    })
   }
 
   const edit = (notebook: Notebook) => {
@@ -122,14 +135,15 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
 
   const saveDraft = () => {
     if (!draft || !draft.name.trim()) return
-    changeNotebooks(upsertNotebook(notebooks, draft))
+    changeNotebooks(upsertNotebook(notebooks, draft), () => notebookStore.save(draft))
     onNotebook(draft.id)
     closeEditor()
   }
 
   const deleteDraft = () => {
     if (!draft) return
-    changeNotebooks(removeNotebook(notebooks, draft.id))
+    const id = draft.id
+    changeNotebooks(removeNotebook(notebooks, id), () => notebookStore.remove(id))
     onNotebook(null)
     closeEditor()
   }
@@ -214,6 +228,7 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
       {!!pieces?.length && (
         <>
           <h2 className="section-title">Cuadernos</h2>
+          {notebookError && <p className="notice warn notebook-error">No se han podido cargar o guardar los cuadernos. Revisa la conexión y vuelve a probar.</p>}
           <ul className="notebook-list">
             {notebooks.map(n => {
               const count = notebookPieces(n).length
@@ -225,6 +240,7 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
                     <span className="notebook-text">
                       <strong>{n.name}</strong>
                       {count === 1 ? '1 canción' : `${count} canciones`}
+                      {n.school && <span className="notebook-school">De la escuela</span>}
                     </span>
                   </button>
                 </li>
@@ -243,7 +259,7 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
       {!!pieces?.length && !editing && (notebook ? (
         <div className="section-head">
           <h2 className="section-title"><BookOpen /> {notebook.name}</h2>
-          <button className="chip" onClick={() => edit(notebook)}><Pencil /> Editar cuaderno</button>
+          {!notebook.readOnly && <button className="chip" onClick={() => edit(notebook)}><Pencil /> Editar cuaderno</button>}
           <button className="chip" onClick={() => onNotebook(null)}><ArrowLeft /> Toda la biblioteca</button>
         </div>
       ) : <h2 className="section-title">Biblioteca</h2>)}
