@@ -4,17 +4,19 @@ import {
   assign, EMPTY_SELECTION, loadAssignments, myStudents, selectedPieces, setHomework, unassign, type Assignment, type Selection,
 } from '../../account/assignments'
 import { matchesPerson } from '../../account/admin'
+import { formatDuration, loadPractice, progressByPiece, secondsSince, startOfWeek, type PieceProgress, type PracticeLog } from '../../account/progress'
 import { getInstrument, instruments } from '../../instruments'
 import { loadAllPieces } from '../../library/allPieces'
 import type { Piece } from '../../library/catalog'
 import type { Notebook, NotebookStore } from '../../library/notebooks'
 import { matchesQuery } from '../../library/search'
-import { ArrowLeft, BookOpen, Check, GraduationCap, InstrumentIcon, Plus, Search, Stars, Trash2 } from '../icons'
+import { ArrowLeft, BookOpen, Check, CircleCheck, GraduationCap, InstrumentIcon, Plus, Search, Stars, Target, Timer, Trash2 } from '../icons'
 
 /** The teacher gives each of their students pieces: as homework or to play for fun. */
 export function TeacherScreen({ me, notebookStore, onBack }: { me: Profile; notebookStore: NotebookStore; onBack(): void }) {
   const [students, setStudents] = useState<Profile[] | null>(null)
   const [assignments, setAssignments] = useState<Assignment[]>([])
+  const [logs, setLogs] = useState<PracticeLog[]>([])
   const [pieces, setPieces] = useState<Piece[]>([])
   const [notebooks, setNotebooks] = useState<Notebook[]>([])
   const [schoolLocked, setSchoolLocked] = useState(false)
@@ -33,6 +35,8 @@ export function TeacherScreen({ me, notebookStore, onBack }: { me: Profile; note
       .then(async list => {
         setStudents(list)
         setAssignments(await loadAssignments(list.map(s => s.id)))
+        // Without the progress table yet, the rest still works.
+        loadPractice(list.map(s => s.id)).then(setLogs, () => {})
         if (list.length === 1) setStudentId(list[0].id)
       })
       .catch(() => setFailed(true))
@@ -53,6 +57,10 @@ export function TeacherScreen({ me, notebookStore, onBack }: { me: Profile; note
 
   const student = students?.find(s => s.id === studentId) ?? null
   const theirs = assignments.filter(a => a.student_id === studentId)
+  const theirLogs = logs.filter(l => l.student_id === studentId)
+  const progress = progressByPiece(theirLogs.filter(l => l.kind === 'piece'))
+  const exerciseSeconds = theirLogs.filter(l => l.kind === 'exercise').reduce((sum, l) => sum + l.seconds, 0)
+  const lastDay = theirLogs.at(-1)?.created_at
   const shownStudents = students?.filter(s => matchesPerson(s, query)) ?? []
 
   return (
@@ -106,6 +114,11 @@ export function TeacherScreen({ me, notebookStore, onBack }: { me: Profile; note
                   <h2>{fullName(student)}</h2>
                   <button className="big-button primary" onClick={() => setChoosing(true)}><Plus /> Asignar canciones</button>
                 </div>
+                <p className="teacher-progress">
+                  <span><Timer /> Esta semana: <strong>{formatDuration(secondsSince(theirLogs, startOfWeek()))}</strong></span>
+                  <span><Target /> Ejercicios y escalas: <strong>{formatDuration(exerciseSeconds)}</strong></span>
+                  <span>{lastDay ? <>Último estudio: <strong>{new Date(lastDay).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</strong></> : 'Todavía no ha estudiado con la app'}</span>
+                </p>
                 {theirs.length === 0 && <p className="score-message">Todavía no tiene canciones. Pulsa «Asignar canciones».</p>}
                 {[true, false].map(homework => {
                   const list = theirs.filter(a => a.homework === homework)
@@ -118,6 +131,7 @@ export function TeacherScreen({ me, notebookStore, onBack }: { me: Profile; note
                           <li key={a.id}>
                             <span className="assignment-title">{a.piece_title || a.piece_id}</span>
                             {a.source && <span className="status">{a.source}</span>}
+                            <AssignmentProgress progress={progress.get(a.piece_id)} />
                             <label className="toggle assignment-homework">
                               <input type="checkbox" checked={a.homework}
                                 onChange={e => save(() => setHomework(a.id, e.target.checked),
@@ -263,5 +277,16 @@ function Chooser({ pieces, notebooks, assigned, onCancel, onAssign }: {
         }}><Check /> {busy ? 'Asignando…' : 'Asignar'}</button>
       </div>
     </section>
+  )
+}
+
+/** Time spent on an assigned piece and the best result, or that it is not started. */
+function AssignmentProgress({ progress }: { progress?: PieceProgress }) {
+  if (!progress) return <span className="assignment-progress muted">Sin empezar</span>
+  return (
+    <span className="assignment-progress">
+      <span><Timer /> {formatDuration(progress.seconds)}</span>
+      {progress.best !== null && <span title="Mejor resultado"><CircleCheck /> {progress.best}%</span>}
+    </span>
   )
 }

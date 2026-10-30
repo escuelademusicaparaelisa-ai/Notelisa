@@ -6,12 +6,13 @@ import type { Piece } from './library/catalog'
 import { deviceNotebooks } from './library/notebooks'
 import { savedExerciseOptions } from './core/exercises/savedOptions'
 import { AccountBar } from './ui/components/AccountBar'
+import { LoggedPractice } from './ui/components/LoggedPractice'
 import { AdminScreen } from './ui/screens/AdminScreen'
 import { ExercisesScreen } from './ui/screens/ExercisesScreen'
 import { LibraryScreen } from './ui/screens/LibraryScreen'
 import { LoginScreen, WaitingScreen } from './ui/screens/LoginScreen'
 import { PhotoScreen } from './ui/screens/PhotoScreen'
-import { PracticeScreen } from './ui/screens/PracticeScreen'
+import { StudentScreen } from './ui/screens/StudentScreen'
 import { TeacherScreen } from './ui/screens/TeacherScreen'
 import { ReviewScreen } from './ui/screens/ReviewScreen'
 
@@ -42,6 +43,8 @@ export default function App() {
   const profile = account.state === 'signedIn' && account.profile?.status === 'approved' ? account.profile : null
   // Teachers and the administrator keep their notebooks on the server; students, on the device.
   const staff = profile && profile.role !== 'student' ? profile : null
+  // Only students' practice is saved, so their teacher can follow it.
+  const student = profile?.role === 'student' ? profile : null
   const notebookStore = useMemo(() => (staff ? accountNotebooks(staff) : deviceNotebooks), [staff])
   const toLibrary = () => setView({ name: 'library' })
   const startExercise = (options: ExerciseOptions) => {
@@ -59,7 +62,7 @@ export default function App() {
     case 'admin':
       return <AdminScreen onBack={toLibrary} onPending={setPending} />
     case 'practice':
-      return <PracticeScreen piece={view.piece} onBack={toLibrary} />
+      return <LoggedPractice log={!!student} kind="piece" piece={view.piece} onBack={toLibrary} />
     case 'review':
       return <ReviewScreen onBack={toLibrary} />
     case 'photo':
@@ -68,17 +71,22 @@ export default function App() {
       return <ExercisesScreen options={exerciseOptions} onCreate={startExercise} onBack={toLibrary} />
     case 'exercise':
       return (
-        <PracticeScreen key={view.piece.id} piece={view.piece} backLabel="Ejercicios"
+        <LoggedPractice key={view.piece.id} log={!!student} kind="exercise" piece={view.piece} backLabel="Ejercicios"
           onBack={() => setView({ name: 'exercises' })} onAnother={() => startExercise(view.options)} />
       )
-    default:
+    default: {
+      const accountBar = profile && (
+        <AccountBar profile={profile} pending={pending} onPending={setPending} onAdmin={() => setView({ name: 'admin' })} onTeacher={() => setView({ name: 'teacher' })} />
+      )
+      if (student) {
+        return <StudentScreen me={student} onOpen={piece => setView({ name: 'practice', piece })} onExercises={() => setView({ name: 'exercises' })} accountBar={accountBar} />
+      }
       return (
         <LibraryScreen onOpen={piece => setView({ name: 'practice', piece })} onReview={() => setView({ name: 'review' })}
           onExercises={() => setView({ name: 'exercises' })} onPhotos={photos => setView({ name: 'photo', photos })}
           notebookId={notebookId} onNotebook={setNotebookId} notebookStore={notebookStore}
-          accountBar={profile && (
-            <AccountBar profile={profile} pending={pending} onPending={setPending} onAdmin={() => setView({ name: 'admin' })} onTeacher={() => setView({ name: 'teacher' })} />
-          )} />
+          accountBar={accountBar} />
       )
+    }
   }
 }

@@ -10,8 +10,8 @@ funciona como siempre, sin cuentas.
 2. **Authentication → Sign In / Providers → Email**: desactiva *Confirm email*. La
    escuela ya revisa cada solicitud, así nadie tiene que esperar a un correo.
 3. **SQL Editor**: pega el contenido de `01-cuentas.sql` y pulsa *Run*. Después haz lo
-   mismo con `02-alumnos-de-cada-profesor.sql` `03-tareas.sql` y
-   `04-cuadernos.sql`.
+   mismo con `02-alumnos-de-cada-profesor.sql`, `03-tareas.sql`,
+   `04-cuadernos.sql` y `05-progreso.sql`.
 4. Copia *Project URL* y la clave *anon public* (*Project Settings → API*) en el
    archivo `.env.production` de la raíz del repositorio:
 
