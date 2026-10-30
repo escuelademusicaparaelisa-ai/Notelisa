@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { EMPTY_REGISTRATION, MIN_PASSWORD, register, registrationProblem, signIn, signOut, fullName, type Profile, type Registration } from '../../account/account'
 import { LogIn, RefreshCw, UserPlus } from '../icons'
+import { PasswordInput } from '../components/PasswordInput'
 
 /** Entry to the app: sign in, or ask the administrator for access. */
 export function LoginScreen() {
@@ -56,7 +57,7 @@ export function LoginScreen() {
             )}
             <label>Email<input type="email" autoComplete="email" autoCapitalize="none" value={form.email} onChange={set('email')} /></label>
             <label>Contraseña
-              <input type="password" autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'} value={form.password} onChange={set('password')}
+              <PasswordInput autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'} value={form.password} onChange={set('password')}
                 placeholder={mode === 'register' ? `Mínimo ${MIN_PASSWORD} caracteres` : undefined} />
             </label>
             {problem && <p className="notice warn" role="alert">{problem}</p>}
