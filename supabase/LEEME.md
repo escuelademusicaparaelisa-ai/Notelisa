@@ -10,7 +10,7 @@ funciona como siempre, sin cuentas.
 2. **Authentication → Sign In / Providers → Email**: desactiva *Confirm email*. La
    escuela ya revisa cada solicitud, así nadie tiene que esperar a un correo.
 3. **SQL Editor**: pega el contenido de `01-cuentas.sql` y pulsa *Run*. Después haz lo
-   mismo con `02-alumnos-de-cada-profesor.sql`.
+   mismo con `02-alumnos-de-cada-profesor.sql` y `03-tareas.sql`.
 4. Copia *Project URL* y la clave *anon public* (*Project Settings → API*) en el
    archivo `.env.production` de la raíz del repositorio:
 
@@ -35,3 +35,6 @@ desactivado). En **Alumnos** y **Profesores** se asigna a cada alumno su profeso
 varios) y se puede quitar el acceso a una cuenta.
 
 Para probar en local, pon las mismas dos líneas en `.env.local`.
+
+Los profesores tienen el botón **Mis alumnos** (el admin, **Tareas**) para asignar a cada
+alumno canciones sueltas, cuadernos enteros o niveles enteros, de deberes o por gusto.

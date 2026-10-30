@@ -1,9 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { getInstrument, instruments } from '../../instruments'
-import { isPlayable, loadLibrary, pieceFromFile, type Piece } from '../../library/catalog'
+import { loadAllPieces } from '../../library/allPieces'
+import { pieceFromFile, type Piece } from '../../library/catalog'
 import { newNotebookId, removeNotebook, savedNotebooks, saveNotebooks, togglePiece, upsertNotebook, type Notebook } from '../../library/notebooks'
 import { matchesQuery } from '../../library/search'
-import { loadSchoolLibrary, lockSchoolLibrary, openSchoolPiece, unlockSchoolLibrary, type SchoolLibrary } from '../../library/school'
+import { lockSchoolLibrary, openSchoolPiece, unlockSchoolLibrary, type SchoolLibrary } from '../../library/school'
 import { ArrowLeft, ArrowRight, BookOpen, Camera, Check, FileMusic, FolderOpen, InstrumentIcon, KeyRound, Lock, Pencil, Plus, Search, Stars, Target, Trash2 } from '../icons'
 
 interface Props {
@@ -69,11 +70,8 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
   const [onlyChosen, setOnlyChosen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const load = () => Promise.all([loadLibrary(), loadSchoolLibrary()]).then(([all, schoolLibrary]) => {
-    const playable = all.filter(isPlayable)
-    // On the teacher's computer the same pieces exist unencrypted too.
-    const schoolPieces = schoolLibrary.state === 'open' ? schoolLibrary.pieces.filter(p => !playable.some(l => l.id === p.id)) : []
-    setPieces([...playable, ...schoolPieces])
+  const load = () => loadAllPieces().then(({ pieces: playable, all, school: schoolLibrary }) => {
+    setPieces(playable)
     setSchool(schoolLibrary)
     setToReview(all.filter(p => p.review && p.review.status !== 'approved' && p.review.status !== 'rejected').length)
   })

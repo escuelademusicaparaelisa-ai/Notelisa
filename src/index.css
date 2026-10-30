@@ -460,3 +460,56 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
 .my-account-password h3 { margin: 0; color: var(--lila-deep); display: flex; align-items: center; gap: 8px; }
 .my-account-password input { background: var(--surface); }
 .my-account .notice.account-created { margin: 0; }
+
+/* Teacher's panel: students and what they practise */
+.teacher-notice { max-width: none; margin-bottom: 16px; }
+.teacher-layout { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: 18px; align-items: start; }
+@media (max-width: 760px) { .teacher-layout { grid-template-columns: 1fr; } }
+.teacher-students { display: flex; flex-direction: column; gap: 8px; }
+.teacher-students .admin-search { margin-bottom: 4px; }
+.teacher-student { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 16px; border-radius: 16px; text-align: left;
+  border: 2px solid var(--line); background: var(--surface); font-weight: 700; font-size: 1.05rem; }
+.teacher-student .lucide { color: var(--lila); }
+.teacher-student.active { border-color: var(--lila); background: var(--lila); color: var(--accent-ink); }
+.teacher-student.active .lucide { color: inherit; }
+.teacher-student-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.count { min-width: 1.6em; padding: 0 6px; border-radius: 999px; background: var(--lila-soft); color: var(--lila-dark); font-size: 0.9rem; text-align: center; }
+.teacher-student.active .count { background: rgba(255, 255, 255, 0.25); color: inherit; }
+.teacher-work { padding: 20px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 14px; }
+.teacher-work-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.teacher-work-head h2 { margin: 0; color: var(--lila-deep); }
+.teacher-group h3 { margin: 4px 0 8px; color: var(--lila-deep); display: flex; align-items: center; gap: 8px; }
+.assignment-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.assignment-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 8px 8px 14px; border-radius: 14px; background: var(--bg); }
+.assignment-title { flex: 1 1 180px; font-weight: 700; }
+.assignment-homework { font-weight: 700; font-size: 0.95rem; }
+
+/* Choosing what to assign */
+.chooser { display: flex; flex-direction: column; }
+.pick-grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.pick-card, .pick-row { width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; border: 2px solid var(--line);
+  background: var(--surface); border-radius: 18px; padding: 14px 16px; }
+.pick-card small, .pick-row small { display: block; color: var(--muted); font-weight: 400; }
+.pick-card strong { font-size: 1.1rem; }
+.pick-card.on, .pick-row.on { border-color: var(--lila); background: var(--lila-tint); }
+.pick-box { flex: none; width: 28px; height: 28px; border-radius: 8px; border: 2px solid var(--line); background: #fff;
+  display: inline-flex; align-items: center; justify-content: center; color: #fff; }
+.on .pick-box { background: var(--lila); border-color: var(--lila); }
+.pick-box .lucide { width: 18px; height: 18px; }
+.pick-icon { color: var(--lila); }
+.pick-card .stars-inline { color: var(--amarillo-dark); }
+.pick-row .stars-inline { color: var(--amarillo-dark); }
+.pick-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.pick-row { padding: 10px 14px; border-radius: 14px; }
+.pick-text { flex: 1; min-width: 0; }
+.chooser-mode { display: flex; gap: 6px; }
+
+/* Editing someone's details (administrator) */
+.admin-edit { margin-left: auto; font-size: 0.95rem; padding: 6px 14px; }
+.edit-person { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 16px; background: var(--bg); }
+.edit-person label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; min-width: 0; }
+.edit-person input { width: 100%; min-width: 0; font-size: 1.1rem; padding: 10px 14px; border: 2px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); }
+.edit-person input:focus { outline: none; border-color: var(--lila); }
+.edit-person input:disabled { color: var(--muted); }
+.edit-person .notice { max-width: none; }
+.edit-person .big-button.primary { min-height: 52px; }
