@@ -4,12 +4,12 @@ import { exerciseToMusicXml, generateExercise, type ExerciseOptions } from './co
 import type { Piece } from './library/catalog'
 import { savedExerciseOptions } from './core/exercises/savedOptions'
 import { AccountBar } from './ui/components/AccountBar'
+import { AdminScreen } from './ui/screens/AdminScreen'
 import { ExercisesScreen } from './ui/screens/ExercisesScreen'
 import { LibraryScreen } from './ui/screens/LibraryScreen'
 import { LoginScreen, WaitingScreen } from './ui/screens/LoginScreen'
 import { PhotoScreen } from './ui/screens/PhotoScreen'
 import { PracticeScreen } from './ui/screens/PracticeScreen'
-import { RequestsScreen } from './ui/screens/RequestsScreen'
 import { ReviewScreen } from './ui/screens/ReviewScreen'
 
 type View =
@@ -19,7 +19,7 @@ type View =
   | { name: 'exercises' }
   | { name: 'photo'; photos: File[] }
   | { name: 'exercise'; piece: Piece; options: ExerciseOptions }
-  | { name: 'requests' }
+  | { name: 'admin' }
 
 function newExercise(options: ExerciseOptions): Piece {
   const seed = Math.floor(Math.random() * 2 ** 31)
@@ -47,8 +47,8 @@ export default function App() {
   }
   const profile = account.state === 'signedIn' ? account.profile : null
   switch (view.name) {
-    case 'requests':
-      return <RequestsScreen onBack={toLibrary} onChange={setPending} />
+    case 'admin':
+      return <AdminScreen onBack={toLibrary} onPending={setPending} />
     case 'practice':
       return <PracticeScreen piece={view.piece} onBack={toLibrary} />
     case 'review':
@@ -68,7 +68,7 @@ export default function App() {
           onExercises={() => setView({ name: 'exercises' })} onPhotos={photos => setView({ name: 'photo', photos })}
           notebookId={notebookId} onNotebook={setNotebookId}
           accountBar={profile && (
-            <AccountBar profile={profile} pending={pending} onPending={setPending} onRequests={() => setView({ name: 'requests' })} />
+            <AccountBar profile={profile} pending={pending} onPending={setPending} onAdmin={() => setView({ name: 'admin' })} />
           )} />
       )
   }

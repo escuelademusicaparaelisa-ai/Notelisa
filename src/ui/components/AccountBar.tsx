@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react'
 import { pendingRequests, signOut, type Profile } from '../../account/account'
 import { LogOut, Users } from '../icons'
 
-/** The signed-in person in the library bar: their name, requests (admin) and «Salir». */
-export function AccountBar({ profile, pending, onPending, onRequests }: {
+/** The signed-in person in the library bar: their name, the admin panel (admin) and «Salir». */
+export function AccountBar({ profile, pending, onPending, onAdmin }: {
   profile: Profile
   /** Requests waiting for the admin; null until known. */
   pending: number | null
   onPending(count: number): void
-  onRequests(): void
+  onAdmin(): void
 }) {
   const isAdmin = profile.role === 'admin'
   const [confirm, setConfirm] = useState(false)
@@ -20,8 +20,8 @@ export function AccountBar({ profile, pending, onPending, onRequests }: {
   return (
     <>
       {isAdmin && (
-        <button className={`chip${pending ? ' requests-waiting' : ''}`} onClick={onRequests}>
-          <Users /> Solicitudes{pending ? ` (${pending})` : ''}
+        <button className={`chip${pending ? ' requests-waiting' : ''}`} onClick={onAdmin}>
+          <Users /> Administración{pending ? ` (${pending})` : ''}
         </button>
       )}
       {confirm ? (

@@ -438,3 +438,18 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
 .new-account h2 { margin: 0; color: var(--lila-deep); display: flex; align-items: center; gap: 8px; }
 .new-account .big-button.primary { align-self: auto; }
 .notice.account-created { max-width: none; margin-bottom: 16px; border-color: var(--verde); background: #e6f6ec; }
+
+/* Administrator's panel */
+.admin-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.admin-tabs .chip { font-size: 1.05rem; padding: 10px 18px; }
+.admin-tabs .count { min-width: 1.6em; padding: 0 6px; border-radius: 999px; background: var(--lila-soft); color: var(--lila-dark); font-size: 0.9rem; text-align: center; }
+.admin-tabs .chip.active .count { background: rgba(255, 255, 255, 0.25); color: inherit; }
+.admin-search { background: var(--surface); }
+.admin-choose .admin-search { margin: 4px 0 10px; background: var(--bg); }
+.admin-choose { display: flex; flex-direction: column; gap: 10px; }
+.admin-choose .big-button.primary { align-self: flex-start; }
+.admin-role-icon { color: var(--lila); }
+.admin-empty { color: var(--muted); font-weight: 400; }
+.admin-name { padding: 4px 12px; border-radius: 999px; background: var(--lila-soft); color: var(--lila-dark); }
+.admin-remove { margin-left: auto; display: inline-flex; gap: 8px; }
+.admin-more { margin: 16px 0 12px; }

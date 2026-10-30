@@ -42,7 +42,7 @@ export function accounts(): SupabaseClient | null {
   return client
 }
 
-function server(): SupabaseClient {
+export function server(): SupabaseClient {
   const supabase = accounts()
   if (!supabase) throw new Error('Notelisa no tiene cuentas configuradas')
   return supabase
