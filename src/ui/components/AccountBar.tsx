@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { changePassword, fullName, MIN_PASSWORD, pendingRequests, ROLE_NAMES, signOut, type Profile } from '../../account/account'
 import { Check, GraduationCap, KeyRound, LogOut, UserRound, Users, X } from '../icons'
 
@@ -30,7 +31,8 @@ export function AccountBar({ profile, pending, onPending, onAdmin, onTeacher }: 
         <button className="chip" onClick={onTeacher}><GraduationCap /> {isAdmin ? 'Tareas' : 'Mis alumnos'}</button>
       )}
       <button className="chip" onClick={() => setOpen(true)} title={profile.email}><UserRound /> {profile.nombre || 'Mi cuenta'}</button>
-      {open && <MyAccount profile={profile} onClose={() => setOpen(false)} />}
+      {/* Outside the bar, so it still shows when the bar's menu closes. */}
+      {open && createPortal(<MyAccount profile={profile} onClose={() => setOpen(false)} />, document.body)}
     </>
   )
 }
