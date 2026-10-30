@@ -28,3 +28,8 @@ create policy "el admin desasigna" on public.teacher_students for delete using (
 -- El profesor ve la ficha de sus alumnos.
 drop policy if exists "el profesor ve a sus alumnos" on public.profiles;
 create policy "el profesor ve a sus alumnos" on public.profiles for select using (public.is_my_student(id));
+
+-- Permisos de la app (las reglas de arriba deciden qué filas ve cada cuenta).
+-- Hacen falta si el proyecto se creó sin «Automatically expose new tables».
+grant select, update, delete on public.profiles to authenticated;
+grant select, insert, delete on public.teacher_students to authenticated;
