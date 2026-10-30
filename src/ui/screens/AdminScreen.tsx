@@ -6,6 +6,7 @@ import {
 import { isLinked, loadSchool, matchesPerson, members, setTeacherStudent, unlinkEveryone, withLink, type School } from '../../account/admin'
 import { ArrowLeft, Check, GraduationCap, Mail, Pencil, Phone, Search, UserPlus, Users, X } from '../icons'
 import { RegistrationFields } from './LoginScreen'
+import { PasswordInput } from '../components/PasswordInput'
 
 type Tab = 'requests' | 'students' | 'teachers'
 
@@ -313,8 +314,8 @@ function NewAccount({ onCancel, onCreated }: { onCancel(): void; onCreated(name:
       <RegistrationFields form={form} onChange={setForm} roleLabel="Es" />
       <div className="account-row">
         <label>Email<input type="email" autoComplete="off" autoCapitalize="none" value={form.email} onChange={set('email')} /></label>
-        {/* Visible so the administrator can pass it on. */}
-        <label>Contraseña<input type="text" autoComplete="off" autoCapitalize="none" spellCheck={false} value={form.password} onChange={set('password')}
+        {/* Shown at first so the administrator can pass it on. */}
+        <label>Contraseña<PasswordInput initiallyVisible autoComplete="off" value={form.password} onChange={set('password')}
           placeholder={`Mínimo ${MIN_PASSWORD} caracteres`} /></label>
       </div>
       {problem && <p className="notice warn" role="alert">{problem}</p>}

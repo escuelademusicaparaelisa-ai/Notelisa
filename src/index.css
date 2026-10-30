@@ -413,6 +413,12 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
 .account-card input { width: 100%; min-width: 0; font-size: 1.15rem; padding: 10px 16px; border: 2px solid var(--line);
   border-radius: 14px; background: var(--bg); color: var(--ink); }
 .account-card input:focus { outline: none; border-color: var(--lila); }
+.password-input { position: relative; display: block; font-weight: 400; }
+.account-card .password-input input { padding-right: 56px; }
+.password-eye { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); width: 44px; height: 44px; padding: 0;
+  display: grid; place-items: center; border: none; border-radius: 12px; background: none; color: var(--muted); cursor: pointer; }
+.password-eye:hover, .password-eye[aria-pressed="true"] { color: var(--lila-deep); }
+.password-eye:focus-visible { outline: 2px solid var(--lila); }
 .account-card .big-button.primary { align-self: stretch; }
 .account-tabs { display: flex; gap: 8px; }
 .account-tabs .chip { flex: 1; justify-content: center; font-size: 1.05rem; padding: 10px 12px; white-space: nowrap; }

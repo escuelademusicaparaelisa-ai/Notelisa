@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { changePassword, fullName, MIN_PASSWORD, pendingRequests, ROLE_NAMES, signOut, type Profile } from '../../account/account'
 import { Check, GraduationCap, KeyRound, LogOut, UserRound, Users, X } from '../icons'
+import { PasswordInput } from './PasswordInput'
 
 /** The signed-in person in the library bar: the admin panel, their students (teachers) and their account. */
 export function AccountBar({ profile, pending, onPending, onAdmin, onTeacher }: {
@@ -69,11 +70,11 @@ function MyAccount({ profile, onClose }: { profile: Profile; onClose(): void }) 
         <form className="account-card my-account-password" onSubmit={submit} noValidate>
           <h3><KeyRound /> Cambiar contraseña</h3>
           <label>Nueva contraseña
-            <input type="password" autoComplete="new-password" value={password} placeholder={`Mínimo ${MIN_PASSWORD} caracteres`}
+            <PasswordInput autoComplete="new-password" value={password} placeholder={`Mínimo ${MIN_PASSWORD} caracteres`}
               onChange={e => { setPassword(e.target.value); setChanged(false) }} />
           </label>
           <label>Repítela
-            <input type="password" autoComplete="new-password" value={repeat} onChange={e => { setRepeat(e.target.value); setChanged(false) }} />
+            <PasswordInput autoComplete="new-password" value={repeat} onChange={e => { setRepeat(e.target.value); setChanged(false) }} />
           </label>
           {problem && <p className="notice warn" role="alert">{problem}</p>}
           {changed && <p className="notice account-created"><Check /> Contraseña cambiada. La próxima vez entra con la nueva.</p>}
