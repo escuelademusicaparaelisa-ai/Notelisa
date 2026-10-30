@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react'
 import { getInstrument, instruments } from '../../instruments'
 import { isPlayable, loadLibrary, pieceFromFile, type Piece } from '../../library/catalog'
+import { newNotebookId, removeNotebook, savedNotebooks, saveNotebooks, togglePiece, upsertNotebook, type Notebook } from '../../library/notebooks'
 import { matchesQuery } from '../../library/search'
 import { loadSchoolLibrary, lockSchoolLibrary, openSchoolPiece, unlockSchoolLibrary, type SchoolLibrary } from '../../library/school'
-import { ArrowRight, Camera, FileMusic, FolderOpen, InstrumentIcon, KeyRound, Lock, Search, Stars, Target } from '../icons'
+import { ArrowLeft, ArrowRight, BookOpen, Camera, Check, FileMusic, FolderOpen, InstrumentIcon, KeyRound, Lock, Pencil, Plus, Search, Stars, Target, Trash2 } from '../icons'
 
 interface Props {
   onOpen(piece: Piece): void
   onReview(): void
   onExercises(): void
   onPhotos(photos: File[]): void
+  /** The notebook being looked at; null = the whole library. */
+  notebookId: string | null
+  onNotebook(id: string | null): void
 }
 
 // Card covers cycle through the colours of the logo.
@@ -34,7 +38,7 @@ function saveFilter(value: string | null): void {
   }
 }
 
-export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos }: Props) {
+export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, notebookId, onNotebook }: Props) {
   const [pieces, setPieces] = useState<Piece[] | null>(null)
   const [fileError, setFileError] = useState(false)
 
@@ -57,6 +61,11 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos }: Props
   const [query, setQuery] = useState('')
   // Difficulty shown; null = all.
   const [level, setLevel] = useState<number | null>(null)
+  const [notebooks, setNotebooks] = useState<Notebook[]>(savedNotebooks)
+  // The notebook being created or edited, with its pieces ticked in the library.
+  const [draft, setDraft] = useState<Notebook | null>(null)
+  const [onlyChosen, setOnlyChosen] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const load = () => Promise.all([loadLibrary(), loadSchoolLibrary()]).then(([all, schoolLibrary]) => {
     const playable = all.filter(isPlayable)
@@ -94,12 +103,51 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos }: Props
     saveFilter(value)
   }
 
+  const changeNotebooks = (next: Notebook[]) => {
+    setNotebooks(next)
+    saveNotebooks(next)
+  }
+
+  const edit = (notebook: Notebook) => {
+    setDraft(notebook)
+    setOnlyChosen(false)
+    setConfirmDelete(false)
+    window.scrollTo(0, 0)
+  }
+
+  const closeEditor = () => {
+    setDraft(null)
+    window.scrollTo(0, 0)
+  }
+
+  const saveDraft = () => {
+    if (!draft || !draft.name.trim()) return
+    changeNotebooks(upsertNotebook(notebooks, draft))
+    onNotebook(draft.id)
+    closeEditor()
+  }
+
+  const deleteDraft = () => {
+    if (!draft) return
+    changeNotebooks(removeNotebook(notebooks, draft.id))
+    onNotebook(null)
+    closeEditor()
+  }
+
+  const byId = new Map(pieces?.map(p => [p.id, p]))
+  // Pieces of a notebook that this device can show (school pieces need the password).
+  const notebookPieces = (notebook: Notebook) => notebook.pieceIds.map(id => byId.get(id)).filter((p): p is Piece => !!p)
+  const editing = draft !== null
+  const isNew = editing && !notebooks.some(n => n.id === draft.id)
+  const notebook = editing ? null : notebooks.find(n => n.id === notebookId) ?? null
+  const inView = editing && onlyChosen ? notebookPieces(draft) : notebook ? notebookPieces(notebook) : pieces
+
   // Only instruments that have pieces get a button.
   const available = Object.values(instruments).filter(inst => pieces?.some(p => getInstrument(p.instrument).id === inst.id))
   const activeFilter = available.some(inst => inst.id === filter) ? filter : null
   const levels = [...new Set(pieces?.map(p => p.level).filter((l): l is number => !!l))].sort((a, b) => a - b)
   const activeLevel = level !== null && levels.includes(level) ? level : null
-  const shown = pieces?.filter(p => (!activeFilter || getInstrument(p.instrument).id === activeFilter)
+  const shown = inView?.filter(p => (!activeFilter || getInstrument(p.instrument).id === activeFilter)
     && (activeLevel === null || p.level === activeLevel)
     && matchesQuery(p, query))
 
@@ -107,7 +155,7 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos }: Props
     <main className="library">
       <header className="app-bar">
         <img className="app-logo" src={`${import.meta.env.BASE_URL}brand/logo-notelisa.png`} alt="Notelisa" />
-        <div className="app-bar-actions">
+        {!editing && <div className="app-bar-actions">
           <label className="chip open-file">
             <FolderOpen /> Abrir partitura
             <input id="open-file" type="file" accept=".musicxml,.xml,.mxl" hidden
@@ -125,8 +173,29 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos }: Props
           {school.state === 'open' && (
             <button className="chip" onClick={lock} title="Para usar otra clave en este dispositivo"><Lock /> Cerrar biblioteca</button>
           )}
-        </div>
+        </div>}
       </header>
+      {editing && (
+        <section className="notebook-editor">
+          <h1>{isNew ? 'Nuevo cuaderno' : 'Editar cuaderno'}</h1>
+          <label className="notebook-name">
+            Nombre del cuaderno
+            <input id="notebook-name" type="text" placeholder="Por ejemplo: Nivel 1, Navidad…" value={draft.name} maxLength={60}
+              onChange={e => setDraft({ ...draft, name: e.target.value })} autoFocus={isNew} />
+          </label>
+          <p>Toca las canciones que quieras en este cuaderno. Si tocas otra vez, se quitan. Una canción puede estar en varios cuadernos.</p>
+          {!isNew && (confirmDelete ? (
+            <div className="notebook-delete">
+              <span>¿Borrar «{draft.name.trim() || 'este cuaderno'}»? Las canciones siguen en la biblioteca.</span>
+              <button className="chip danger" onClick={deleteDraft}><Trash2 /> Sí, borrar</button>
+              <button className="chip" onClick={() => setConfirmDelete(false)}>No</button>
+            </div>
+          ) : (
+            <button className="chip" onClick={() => setConfirmDelete(true)}><Trash2 /> Borrar cuaderno</button>
+          ))}
+        </section>
+      )}
+      {!editing && <>
       <section className="library-hero">
         <h1>¿Qué quieres practicar hoy?</h1>
         <p>Elige una pieza de la biblioteca o crea un ejercicio nuevo.</p>
@@ -141,13 +210,58 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos }: Props
       {school.state === 'locked' && <SchoolUnlock onUnlocked={() => void load()} />}
       {pieces === null && <p className="score-message">Cargando biblioteca…</p>}
       {pieces?.length === 0 && <p className="score-message">Todavía no hay piezas en la biblioteca.</p>}
-      {!!pieces?.length && <h2 className="section-title">Biblioteca</h2>}
+      {!!pieces?.length && (
+        <>
+          <h2 className="section-title">Cuadernos</h2>
+          <ul className="notebook-list">
+            {notebooks.map(n => {
+              const count = notebookPieces(n).length
+              return (
+                <li key={n.id}>
+                  <button className={`notebook-card ${notebook?.id === n.id ? 'active' : ''}`} aria-pressed={notebook?.id === n.id}
+                    onClick={() => onNotebook(notebook?.id === n.id ? null : n.id)}>
+                    <span className="notebook-icon" aria-hidden="true"><BookOpen /></span>
+                    <span className="notebook-text">
+                      <strong>{n.name}</strong>
+                      {count === 1 ? '1 canción' : `${count} canciones`}
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+            <li>
+              <button className="notebook-card new" onClick={() => edit({ id: newNotebookId(), name: '', pieceIds: [] })}>
+                <span className="notebook-icon" aria-hidden="true"><Plus /></span>
+                <span className="notebook-text"><strong>Crear cuaderno</strong>Elige canciones de la biblioteca</span>
+              </button>
+            </li>
+          </ul>
+        </>
+      )}
+      </>}
+      {!!pieces?.length && !editing && (notebook ? (
+        <div className="section-head">
+          <h2 className="section-title"><BookOpen /> {notebook.name}</h2>
+          <button className="chip" onClick={() => edit(notebook)}><Pencil /> Editar cuaderno</button>
+          <button className="chip" onClick={() => onNotebook(null)}><ArrowLeft /> Toda la biblioteca</button>
+        </div>
+      ) : <h2 className="section-title">Biblioteca</h2>)}
       {!!pieces?.length && (
         <label className="library-search">
           <Search />
           <input type="search" placeholder="Buscar por título o autor"
             value={query} onChange={e => setQuery(e.target.value)} aria-label="Buscar pieza" />
         </label>
+      )}
+      {editing && (
+        <div className="instrument-filter" role="group" aria-label="Qué canciones ver">
+          <button className={`chip ${!onlyChosen ? 'active' : ''}`} onClick={() => setOnlyChosen(false)} aria-pressed={!onlyChosen}>
+            Toda la biblioteca
+          </button>
+          <button className={`chip ${onlyChosen ? 'active' : ''}`} onClick={() => setOnlyChosen(true)} aria-pressed={onlyChosen}>
+            <Check /> Elegidas ({notebookPieces(draft).length})
+          </button>
+        </div>
       )}
       {levels.length > 1 && (
         <div className="instrument-filter" role="group" aria-label="Dificultad">
@@ -175,14 +289,24 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos }: Props
           ))}
         </div>
       )}
-      {!!pieces?.length && shown?.length === 0 && <p className="score-message">No hay piezas que coincidan con la búsqueda.</p>}
+      {!!pieces?.length && shown?.length === 0 && (
+        <p className="score-message">
+          {editing && onlyChosen && !notebookPieces(draft).length ? 'Todavía no has elegido ninguna canción.'
+            : notebook && !notebook.pieceIds.length ? 'Este cuaderno está vacío. Pulsa «Editar cuaderno» para añadir canciones.'
+            : 'No hay piezas que coincidan con la búsqueda.'}
+        </p>
+      )}
       <ul className="piece-grid">
-        {shown?.map((piece, i) => (
+        {shown?.map((piece, i) => {
+          const chosen = editing && draft.pieceIds.includes(piece.id)
+          return (
           <li key={piece.id}>
-            <button className="piece-card" onClick={() => void open(piece)} disabled={opening !== null}>
+            <button className={`piece-card ${chosen ? 'chosen' : ''}`} disabled={opening !== null} aria-pressed={editing ? chosen : undefined}
+              onClick={() => editing ? setDraft({ ...draft, pieceIds: togglePiece(draft.pieceIds, piece.id) }) : void open(piece)}>
               <span className={`piece-cover cover-${COVERS[i % COVERS.length]}`} aria-hidden="true">
                 <span className="piece-icon"><InstrumentIcon id={getInstrument(piece.instrument).id} strokeWidth={1.6} /></span>
                 {piece.level ? <span className="piece-level"><Stars count={piece.level} /></span> : null}
+                {editing && <span className="piece-check" aria-hidden="true">{chosen && <Check strokeWidth={3} />}</span>}
               </span>
               <span className="piece-body">
                 <span className="piece-title">{piece.title}</span>
@@ -199,8 +323,19 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos }: Props
               </span>
             </button>
           </li>
-        ))}
+          )
+        })}
       </ul>
+      {editing && (
+        <div className="notebook-bar">
+          <span className="notebook-count">
+            <strong>{notebookPieces(draft).length}</strong> {notebookPieces(draft).length === 1 ? 'canción elegida' : 'canciones elegidas'}
+          </span>
+          <button className="big-button ghost" onClick={closeEditor}>Cancelar</button>
+          <button className="big-button primary" onClick={saveDraft} disabled={!draft.name.trim()}
+            title={draft.name.trim() ? undefined : 'Escribe un nombre para el cuaderno'}><Check /> Guardar</button>
+        </div>
+      )}
     </main>
   )
 }
