@@ -25,6 +25,8 @@ function newExercise(options: ExerciseOptions): Piece {
 export default function App() {
   const [view, setView] = useState<View>({ name: 'library' })
   const [exerciseOptions, setExerciseOptions] = useState(savedExerciseOptions)
+  // Kept here so coming back from a piece shows the same notebook.
+  const [notebookId, setNotebookId] = useState<string | null>(null)
   const toLibrary = () => setView({ name: 'library' })
   const startExercise = (options: ExerciseOptions) => {
     setExerciseOptions(options)
@@ -47,7 +49,8 @@ export default function App() {
     default:
       return (
         <LibraryScreen onOpen={piece => setView({ name: 'practice', piece })} onReview={() => setView({ name: 'review' })}
-          onExercises={() => setView({ name: 'exercises' })} onPhotos={photos => setView({ name: 'photo', photos })} />
+          onExercises={() => setView({ name: 'exercises' })} onPhotos={photos => setView({ name: 'photo', photos })}
+          notebookId={notebookId} onNotebook={setNotebookId} />
       )
   }
 }
