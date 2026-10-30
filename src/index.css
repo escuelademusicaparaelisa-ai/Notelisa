@@ -55,6 +55,21 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
   margin-bottom: 28px; }
 .app-logo { height: 76px; width: auto; display: block; }
 .app-bar-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.nav-menu { position: relative; }
+.nav-menu-button { font-size: 1.05rem; padding: 10px 18px; }
+.nav-menu-button .lucide { transition: transform 0.15s; }
+.nav-menu-button[aria-expanded="true"] { border-color: var(--lila); }
+.nav-menu-button[aria-expanded="true"] .lucide { transform: rotate(180deg); }
+/* Requests waiting for the admin also show on the closed menu. */
+.nav-menu:has(.requests-waiting) .nav-menu-button { background: var(--amarillo); border-color: var(--amarillo); }
+.nav-menu-list { position: absolute; top: calc(100% + 8px); right: 0; z-index: 10; min-width: 250px; max-width: calc(100vw - 32px);
+  display: flex; flex-direction: column; gap: 4px; padding: 8px; background: var(--surface); border: 2px solid var(--line);
+  border-radius: 20px; box-shadow: 0 12px 32px rgba(46, 20, 64, 0.18); }
+.nav-menu-list[hidden] { display: none; }
+.nav-menu-list .chip { width: 100%; justify-content: flex-start; gap: 10px; border-color: transparent; border-radius: 14px;
+  padding: 12px 14px; font-size: 1.05rem; cursor: pointer; text-align: left; }
+.nav-menu-list .chip:hover { background: var(--lila-soft); }
+.nav-menu-list .chip.requests-waiting { background: var(--amarillo); border-color: var(--amarillo); }
 
 /* Library */
 .library { max-width: 1100px; margin: 0 auto; padding: 20px 16px 48px; }

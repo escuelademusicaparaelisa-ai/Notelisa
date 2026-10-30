@@ -2,7 +2,7 @@
 import { Hand, Piano, type LucideProps } from 'lucide-react'
 
 export {
-  ArrowLeft, ArrowRight, BookOpen, Camera, Check, ChevronLeft, ChevronRight, CircleCheck, Copy, Download, Ear, FileMusic, FolderOpen, Footprints, GraduationCap,
+  ArrowLeft, ArrowRight, BookOpen, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, CircleCheck, Copy, Download, Ear, FileMusic, FolderOpen, Footprints, GraduationCap,
   ImagePlus, KeyboardMusic, KeyRound, Lock, LogIn, LogOut, Mail, Metronome, Mic, Music, PartyPopper, Pencil, Phone, Piano, Play, Plus, RefreshCw, Repeat, RotateCcw, Search, Settings,
   Eye, EyeOff, Send, SkipBack, Sparkles, Square, Target, Timer, Trash2, TriangleAlert, Upload, UserPlus, UserRound, Users, Volume2, X,
 } from 'lucide-react'

@@ -5,6 +5,7 @@ import { pieceFromFile, type Piece } from '../../library/catalog'
 import { deviceNotebooks, newNotebookId, removeNotebook, togglePiece, upsertNotebook, type Notebook, type NotebookStore } from '../../library/notebooks'
 import { matchesQuery } from '../../library/search'
 import { lockSchoolLibrary, openSchoolPiece, unlockSchoolLibrary, type SchoolLibrary } from '../../library/school'
+import { NavMenu } from '../components/NavMenu'
 import { ArrowLeft, ArrowRight, BookOpen, Camera, Check, FileMusic, FolderOpen, InstrumentIcon, KeyRound, Lock, Pencil, Plus, Search, Stars, Target, Trash2 } from '../icons'
 
 interface Props {
@@ -169,7 +170,7 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
     <main className="library">
       <header className="app-bar">
         <img className="app-logo" src={`${import.meta.env.BASE_URL}brand/logo-notelisa.png`} alt="Notelisa" />
-        {!editing && <div className="app-bar-actions">
+        {!editing && <NavMenu>
           <label className="chip open-file">
             <FolderOpen /> Abrir partitura
             <input id="open-file" type="file" accept=".musicxml,.xml,.mxl" hidden
@@ -188,7 +189,7 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
             <button className="chip" onClick={lock} title="Para usar otra clave en este dispositivo"><Lock /> Cerrar biblioteca</button>
           )}
           {accountBar}
-        </div>}
+        </NavMenu>}
       </header>
       {editing && (
         <section className="notebook-editor">
