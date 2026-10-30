@@ -59,3 +59,9 @@ export function matchesPerson(profile: Profile, query: string): boolean {
   const text = plain(`${fullName(profile)} ${profile.email} ${profile.telefono.replace(/\s/g, '')}`)
   return words.every(word => text.includes(word))
 }
+
+/** Removes every teacher–student pair of one person, when they change between student and teacher. */
+export async function unlinkEveryone(id: string): Promise<void> {
+  const { error } = await server().from('teacher_students').delete().or(`teacher_id.eq.${id},student_id.eq.${id}`)
+  if (error) throw error
+}

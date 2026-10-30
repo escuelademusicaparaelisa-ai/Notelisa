@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import {
-  answerRequest, createAccount, EMPTY_REGISTRATION, fullName, MIN_PASSWORD, registrationProblem, ROLE_NAMES,
-  type Profile, type Registration, type Role,
+  answerRequest, changesProblem, createAccount, EMPTY_REGISTRATION, fullName, MIN_PASSWORD, registrationProblem, ROLE_NAMES,
+  updateProfile, type Profile, type ProfileChanges, type Registration, type Role,
 } from '../../account/account'
-import { isLinked, loadSchool, matchesPerson, members, setTeacherStudent, withLink, type School } from '../../account/admin'
-import { ArrowLeft, Check, GraduationCap, Mail, Phone, Search, UserPlus, Users, X } from '../icons'
+import { isLinked, loadSchool, matchesPerson, members, setTeacherStudent, unlinkEveryone, withLink, type School } from '../../account/admin'
+import { ArrowLeft, Check, GraduationCap, Mail, Pencil, Phone, Search, UserPlus, Users, X } from '../icons'
 import { RegistrationFields } from './LoginScreen'
 
 type Tab = 'requests' | 'students' | 'teachers'
@@ -49,6 +49,18 @@ export function AdminScreen({ onBack, onPending }: { onBack(): void; onPending(c
     return change(() => setTeacherStudent(pair, linked), withLink(school!, pair, linked))
   }
 
+  const edit = (profile: Profile, changes: ProfileChanges) => {
+    const roleChanged = changes.role !== profile.role
+    return change(async () => {
+      await updateProfile(profile.id, changes)
+      // A student who becomes a teacher (or the other way round) starts with no pairs.
+      if (roleChanged) await unlinkEveryone(profile.id)
+    }, {
+      profiles: school!.profiles.map(p => (p.id === profile.id ? { ...p, ...changes } : p)),
+      links: roleChanged ? school!.links.filter(l => l.teacher_id !== profile.id && l.student_id !== profile.id) : school!.links,
+    })
+  }
+
   const pending = school?.profiles.filter(p => p.status === 'pending') ?? []
   const students = school ? members(school, 'student') : []
   const teachers = school ? members(school, 'teacher') : []
@@ -80,8 +92,8 @@ export function AdminScreen({ onBack, onPending }: { onBack(): void; onPending(c
       </nav>
       {!school ? (!failed && <p className="score-message">Cargando…</p>)
         : tab === 'requests' ? <Requests school={school} onAnswer={setStatus} />
-        : tab === 'students' ? <Students school={school} teachers={teachers} students={students} onLink={link} onRemove={p => setStatus(p, 'rejected')} />
-        : <Teachers school={school} teachers={teachers} students={students} onLink={link} onRemove={p => setStatus(p, 'rejected')} />}
+        : tab === 'students' ? <Students school={school} teachers={teachers} students={students} onLink={link} onRemove={p => setStatus(p, 'rejected')} onEdit={edit} />
+        : <Teachers school={school} teachers={teachers} students={students} onLink={link} onRemove={p => setStatus(p, 'rejected')} onEdit={edit} />}
     </main>
   )
 }
@@ -152,6 +164,7 @@ interface PeopleProps {
   students: Profile[]
   onLink(teacherId: string, studentId: string, linked: boolean): void
   onRemove(profile: Profile): void
+  onEdit(profile: Profile, changes: ProfileChanges): void
 }
 
 function SearchBox({ value, onChange, placeholder }: { value: string; onChange(value: string): void; placeholder: string }) {
@@ -175,8 +188,9 @@ function RemoveAccess({ profile, onRemove }: { profile: Profile; onRemove(profil
 }
 
 /** Each student with the teachers they have; a tap on a teacher assigns or unassigns them. */
-function Students({ school, teachers, students, onLink, onRemove }: PeopleProps) {
+function Students({ school, teachers, students, onLink, onRemove, onEdit }: PeopleProps) {
   const [query, setQuery] = useState('')
+  const [editing, setEditing] = useState<string | null>(null)
   const shown = students.filter(p => matchesPerson(p, query))
   if (students.length === 0) return <p className="score-message">Todavía no hay alumnos. Crea una cuenta o acepta una solicitud.</p>
   return (
@@ -185,7 +199,13 @@ function Students({ school, teachers, students, onLink, onRemove }: PeopleProps)
       <ul className="request-list">
         {shown.map(student => (
           <li key={student.id} className="request-card">
-            <div className="request-who"><GraduationCap className="admin-role-icon" /><strong>{fullName(student) || student.email}</strong></div>
+            <div className="request-who">
+              <GraduationCap className="admin-role-icon" /><strong>{fullName(student) || student.email}</strong>
+              {editing !== student.id && <button className="chip admin-edit" onClick={() => setEditing(student.id)}><Pencil /> Editar</button>}
+            </div>
+            {editing === student.id ? (
+              <EditPerson profile={student} onCancel={() => setEditing(null)} onSave={changes => { onEdit(student, changes); setEditing(null) }} />
+            ) : <>
             <Contact profile={student} />
             <div className="request-actions">
               <span>Profesores</span>
@@ -201,6 +221,7 @@ function Students({ school, teachers, students, onLink, onRemove }: PeopleProps)
               })}
               <RemoveAccess profile={student} onRemove={onRemove} />
             </div>
+            </>}
           </li>
         ))}
       </ul>
@@ -209,8 +230,9 @@ function Students({ school, teachers, students, onLink, onRemove }: PeopleProps)
 }
 
 /** Each teacher with their students; «Elegir alumnos» opens every student to tick. */
-function Teachers({ school, teachers, students, onLink, onRemove }: PeopleProps) {
+function Teachers({ school, teachers, students, onLink, onRemove, onEdit }: PeopleProps) {
   const [query, setQuery] = useState('')
+  const [editing, setEditing] = useState<string | null>(null)
   const [choosing, setChoosing] = useState<string | null>(null)
   const [studentQuery, setStudentQuery] = useState('')
   const shown = teachers.filter(p => matchesPerson(p, query))
@@ -227,9 +249,12 @@ function Teachers({ school, teachers, students, onLink, onRemove }: PeopleProps)
               <div className="request-who">
                 <Users className="admin-role-icon" /><strong>{fullName(teacher) || teacher.email}</strong>
                 <span className="status">{mine.length === 1 ? '1 alumno' : `${mine.length} alumnos`}</span>
+                {editing !== teacher.id && <button className="chip admin-edit" onClick={() => setEditing(teacher.id)}><Pencil /> Editar</button>}
               </div>
-              <Contact profile={teacher} />
-              {open ? (
+              {editing === teacher.id ? (
+                <EditPerson profile={teacher} onCancel={() => setEditing(null)} onSave={changes => { onEdit(teacher, changes); setEditing(null) }} />
+              ) : <Contact profile={teacher} />}
+              {editing === teacher.id ? null : open ? (
                 <div className="admin-choose">
                   <SearchBox value={studentQuery} onChange={setStudentQuery} placeholder="Buscar alumno" />
                   <div className="request-actions">
@@ -295,6 +320,50 @@ function NewAccount({ onCancel, onCreated }: { onCancel(): void; onCreated(name:
       {problem && <p className="notice warn" role="alert">{problem}</p>}
       <div className="modal-actions">
         <button className="big-button primary" type="submit" disabled={busy}>{busy ? 'Creando…' : 'Crear cuenta'}</button>
+        <button className="chip" type="button" onClick={onCancel}>Cancelar</button>
+      </div>
+    </form>
+  )
+}
+
+/** The administrator corrects name, surnames and phone, or turns a student into a teacher (or back). */
+function EditPerson({ profile, onCancel, onSave }: { profile: Profile; onCancel(): void; onSave(changes: ProfileChanges): void }) {
+  const [form, setForm] = useState<ProfileChanges>({ nombre: profile.nombre, apellidos: profile.apellidos, telefono: profile.telefono, role: profile.role })
+  const [problem, setProblem] = useState<string | null>(null)
+  const set = (field: 'nombre' | 'apellidos' | 'telefono') => (event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [field]: event.target.value })
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault()
+    const formProblem = changesProblem(form)
+    setProblem(formProblem)
+    if (!formProblem) onSave(form)
+  }
+
+  return (
+    <form className="edit-person" onSubmit={submit} noValidate>
+      <div className="account-row">
+        <label>Nombre<input value={form.nombre} onChange={set('nombre')} /></label>
+        <label>Apellidos<input value={form.apellidos} onChange={set('apellidos')} /></label>
+      </div>
+      <div className="account-row">
+        <label>Teléfono<input type="tel" value={form.telefono} onChange={set('telefono')} /></label>
+        <label>Email<input value={profile.email} disabled title="El email no se puede cambiar desde aquí" /></label>
+      </div>
+      {profile.role !== 'admin' && (
+        <div className="account-roles" role="radiogroup" aria-label="Es">
+          <span>Es</span>
+          {(['student', 'teacher'] as const).map(role => (
+            <button key={role} type="button" role="radio" aria-checked={form.role === role}
+              className={`chip${form.role === role ? ' active' : ''}`} onClick={() => setForm({ ...form, role })}>{ROLE_NAMES[role]}</button>
+          ))}
+        </div>
+      )}
+      {form.role !== profile.role && (
+        <p className="notice warn">Al pasar a {ROLE_NAMES[form.role].toLowerCase()} se quitan sus parejas de profesor y alumno actuales.</p>
+      )}
+      {problem && <p className="notice warn" role="alert">{problem}</p>}
+      <div className="modal-actions">
+        <button className="big-button primary" type="submit"><Check /> Guardar</button>
         <button className="chip" type="button" onClick={onCancel}>Cancelar</button>
       </div>
     </form>

@@ -142,6 +142,22 @@ export async function pendingRequests(): Promise<Profile[]> {
   return (data ?? []) as Profile[]
 }
 
+export type ProfileChanges = Pick<Profile, 'nombre' | 'apellidos' | 'telefono' | 'role'>
+
+/** What is wrong with edited details; null if nothing. */
+export function changesProblem(changes: ProfileChanges): string | null {
+  if (!changes.nombre.trim() || !changes.apellidos.trim()) return 'Escribe el nombre y los apellidos.'
+  if (changes.telefono.replace(/\D/g, '').length < 9) return 'Escribe un teléfono de al menos 9 números.'
+  return null
+}
+
+/** The administrator corrects someone's details or changes them between student and teacher. */
+export async function updateProfile(id: string, changes: ProfileChanges): Promise<void> {
+  const clean = { ...changes, nombre: changes.nombre.trim(), apellidos: changes.apellidos.trim(), telefono: changes.telefono.trim() }
+  const { error } = await server().from('profiles').update(clean).eq('id', id)
+  if (error) throw error
+}
+
 export async function answerRequest(id: string, answer: { status: 'approved'; role: Role } | { status: 'rejected' }): Promise<void> {
   const { error } = await server().from('profiles').update(answer).eq('id', id)
   if (error) throw error

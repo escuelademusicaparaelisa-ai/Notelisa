@@ -503,3 +503,13 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
 .pick-row { padding: 10px 14px; border-radius: 14px; }
 .pick-text { flex: 1; min-width: 0; }
 .chooser-mode { display: flex; gap: 6px; }
+
+/* Editing someone's details (administrator) */
+.admin-edit { margin-left: auto; font-size: 0.95rem; padding: 6px 14px; }
+.edit-person { display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 16px; background: var(--bg); }
+.edit-person label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; min-width: 0; }
+.edit-person input { width: 100%; min-width: 0; font-size: 1.1rem; padding: 10px 14px; border: 2px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); }
+.edit-person input:focus { outline: none; border-color: var(--lila); }
+.edit-person input:disabled { color: var(--muted); }
+.edit-person .notice { max-width: none; }
+.edit-person .big-button.primary { min-height: 52px; }
