@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
 import { changePassword, fullName, MIN_PASSWORD, pendingRequests, ROLE_NAMES, signOut, type Profile } from '../../account/account'
-import { Check, KeyRound, LogOut, UserRound, Users, X } from '../icons'
+import { Check, GraduationCap, KeyRound, LogOut, UserRound, Users, X } from '../icons'
 
-/** The signed-in person in the library bar: the admin panel (admin) and their account. */
-export function AccountBar({ profile, pending, onPending, onAdmin }: {
+/** The signed-in person in the library bar: the admin panel, their students (teachers) and their account. */
+export function AccountBar({ profile, pending, onPending, onAdmin, onTeacher }: {
   profile: Profile
   /** Requests waiting for the admin; null until known. */
   pending: number | null
   onPending(count: number): void
   onAdmin(): void
+  /** The teacher's panel: their students and what they practise. */
+  onTeacher(): void
 }) {
   const isAdmin = profile.role === 'admin'
   const [open, setOpen] = useState(false)
@@ -23,6 +25,9 @@ export function AccountBar({ profile, pending, onPending, onAdmin }: {
         <button className={`chip${pending ? ' requests-waiting' : ''}`} onClick={onAdmin}>
           <Users /> Administración{pending ? ` (${pending})` : ''}
         </button>
+      )}
+      {(isAdmin || profile.role === 'teacher') && (
+        <button className="chip" onClick={onTeacher}><GraduationCap /> {isAdmin ? 'Tareas' : 'Mis alumnos'}</button>
       )}
       <button className="chip" onClick={() => setOpen(true)} title={profile.email}><UserRound /> {profile.nombre || 'Mi cuenta'}</button>
       {open && <MyAccount profile={profile} onClose={() => setOpen(false)} />}

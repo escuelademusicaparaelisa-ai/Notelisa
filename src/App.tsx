@@ -10,6 +10,7 @@ import { LibraryScreen } from './ui/screens/LibraryScreen'
 import { LoginScreen, WaitingScreen } from './ui/screens/LoginScreen'
 import { PhotoScreen } from './ui/screens/PhotoScreen'
 import { PracticeScreen } from './ui/screens/PracticeScreen'
+import { TeacherScreen } from './ui/screens/TeacherScreen'
 import { ReviewScreen } from './ui/screens/ReviewScreen'
 
 type View =
@@ -20,6 +21,7 @@ type View =
   | { name: 'photo'; photos: File[] }
   | { name: 'exercise'; piece: Piece; options: ExerciseOptions }
   | { name: 'admin' }
+  | { name: 'teacher' }
 
 function newExercise(options: ExerciseOptions): Piece {
   const seed = Math.floor(Math.random() * 2 ** 31)
@@ -47,6 +49,8 @@ export default function App() {
   }
   const profile = account.state === 'signedIn' ? account.profile : null
   switch (view.name) {
+    case 'teacher':
+      return profile ? <TeacherScreen me={profile} onBack={toLibrary} /> : null
     case 'admin':
       return <AdminScreen onBack={toLibrary} onPending={setPending} />
     case 'practice':
@@ -68,7 +72,7 @@ export default function App() {
           onExercises={() => setView({ name: 'exercises' })} onPhotos={photos => setView({ name: 'photo', photos })}
           notebookId={notebookId} onNotebook={setNotebookId}
           accountBar={profile && (
-            <AccountBar profile={profile} pending={pending} onPending={setPending} onAdmin={() => setView({ name: 'admin' })} />
+            <AccountBar profile={profile} pending={pending} onPending={setPending} onAdmin={() => setView({ name: 'admin' })} onTeacher={() => setView({ name: 'teacher' })} />
           )} />
       )
   }
