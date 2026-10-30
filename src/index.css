@@ -400,3 +400,41 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
   .notebook-bar .big-button.primary { min-width: 0; flex: 1; }
   .notebook-count { width: 100%; }
 }
+
+/* Accounts: sign in, ask for access, waiting for the school */
+.account-page { min-height: 100%; display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 32px 16px 48px; }
+.account-logo { height: 96px; width: auto; }
+.account-card { width: 100%; max-width: 520px; padding: 24px; border-radius: 28px; background: var(--surface); box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 14px; font-size: 1.1rem; }
+.account-card h1 { margin: 0; color: var(--lila-deep); font-size: 1.7rem; line-height: 1.15; }
+.account-card p { margin: 0; line-height: 1.45; }
+.account-card .notice { max-width: none; }
+.account-card label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; min-width: 0; }
+.account-card input { width: 100%; min-width: 0; font-size: 1.15rem; padding: 10px 16px; border: 2px solid var(--line);
+  border-radius: 14px; background: var(--bg); color: var(--ink); }
+.account-card input:focus { outline: none; border-color: var(--lila); }
+.account-card .big-button.primary { align-self: stretch; }
+.account-tabs { display: flex; gap: 8px; }
+.account-tabs .chip { flex: 1; justify-content: center; font-size: 1.05rem; padding: 10px 12px; white-space: nowrap; }
+.account-intro { color: var(--muted); }
+.account-roles { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 700; }
+.account-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 480px) { .account-row { grid-template-columns: 1fr; } }
+
+/* Requests for access (administrator) */
+.chip.requests-waiting { background: var(--amarillo); border-color: var(--amarillo); }
+.requests-header { margin-bottom: 16px; border-radius: var(--radius); }
+.request-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.request-card { padding: 18px 20px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 10px; }
+.request-who { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font-size: 1.2rem; }
+.request-contact { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); }
+.request-contact a { color: var(--lila-dark); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; overflow-wrap: anywhere; }
+.request-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-weight: 700; }
+.request-actions > span { margin-right: 2px; }
+.request-actions .chip.approve { margin-left: auto; }
+@media (max-width: 560px) { .request-actions .chip.approve { margin-left: 0; } }
+.account-card.new-account { max-width: none; margin-bottom: 16px; }
+.new-account h2 { margin: 0; color: var(--lila-deep); display: flex; align-items: center; gap: 8px; }
+.new-account .big-button.primary { align-self: auto; }
+.notice.account-created { max-width: none; margin-bottom: 16px; border-color: var(--verde); background: #e6f6ec; }

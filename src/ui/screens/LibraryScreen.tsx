@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { getInstrument, instruments } from '../../instruments'
 import { isPlayable, loadLibrary, pieceFromFile, type Piece } from '../../library/catalog'
 import { newNotebookId, removeNotebook, savedNotebooks, saveNotebooks, togglePiece, upsertNotebook, type Notebook } from '../../library/notebooks'
@@ -14,6 +14,8 @@ interface Props {
   /** The notebook being looked at; null = the whole library. */
   notebookId: string | null
   onNotebook(id: string | null): void
+  /** Who is signed in and their buttons, when the app has accounts. */
+  accountBar?: ReactNode
 }
 
 // Card covers cycle through the colours of the logo.
@@ -38,7 +40,7 @@ function saveFilter(value: string | null): void {
   }
 }
 
-export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, notebookId, onNotebook }: Props) {
+export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, notebookId, onNotebook, accountBar }: Props) {
   const [pieces, setPieces] = useState<Piece[] | null>(null)
   const [fileError, setFileError] = useState(false)
 
@@ -173,6 +175,7 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
           {school.state === 'open' && (
             <button className="chip" onClick={lock} title="Para usar otra clave en este dispositivo"><Lock /> Cerrar biblioteca</button>
           )}
+          {accountBar}
         </div>}
       </header>
       {editing && (
