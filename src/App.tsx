@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { accountNotebooks } from './account/sharedNotebooks'
 import { useAccount } from './account/useAccount'
 import { exerciseToMusicXml, generateExercise, type ExerciseOptions } from './core/exercises/generator'
 import type { Piece } from './library/catalog'
+import { deviceNotebooks } from './library/notebooks'
 import { savedExerciseOptions } from './core/exercises/savedOptions'
 import { AccountBar } from './ui/components/AccountBar'
 import { AdminScreen } from './ui/screens/AdminScreen'
@@ -37,6 +39,10 @@ export default function App() {
   const account = useAccount()
   // Requests waiting for the administrator; null until counted.
   const [pending, setPending] = useState<number | null>(null)
+  const profile = account.state === 'signedIn' && account.profile?.status === 'approved' ? account.profile : null
+  // Teachers and the administrator keep their notebooks on the server; students, on the device.
+  const staff = profile && profile.role !== 'student' ? profile : null
+  const notebookStore = useMemo(() => (staff ? accountNotebooks(staff) : deviceNotebooks), [staff])
   const toLibrary = () => setView({ name: 'library' })
   const startExercise = (options: ExerciseOptions) => {
     setExerciseOptions(options)
@@ -47,10 +53,9 @@ export default function App() {
   if (account.state === 'signedIn' && account.profile?.status !== 'approved') {
     return <WaitingScreen profile={account.profile} onCheck={account.reload} />
   }
-  const profile = account.state === 'signedIn' ? account.profile : null
   switch (view.name) {
     case 'teacher':
-      return profile ? <TeacherScreen me={profile} onBack={toLibrary} /> : null
+      return profile ? <TeacherScreen me={profile} notebookStore={notebookStore} onBack={toLibrary} /> : null
     case 'admin':
       return <AdminScreen onBack={toLibrary} onPending={setPending} />
     case 'practice':
@@ -70,7 +75,7 @@ export default function App() {
       return (
         <LibraryScreen onOpen={piece => setView({ name: 'practice', piece })} onReview={() => setView({ name: 'review' })}
           onExercises={() => setView({ name: 'exercises' })} onPhotos={photos => setView({ name: 'photo', photos })}
-          notebookId={notebookId} onNotebook={setNotebookId}
+          notebookId={notebookId} onNotebook={setNotebookId} notebookStore={notebookStore}
           accountBar={profile && (
             <AccountBar profile={profile} pending={pending} onPending={setPending} onAdmin={() => setView({ name: 'admin' })} onTeacher={() => setView({ name: 'teacher' })} />
           )} />

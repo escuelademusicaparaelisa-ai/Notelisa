@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Piece } from '../library/catalog'
 import { selectedPieces } from './assignments'
+import { sortNotebooks } from './sharedNotebooks'
 
 const piece = (id: string, level: number): Piece => ({ id, title: id.toUpperCase(), level, instrument: 'piano', file: `${id}.musicxml` })
 const pieces = [piece('a', 1), piece('b', 1), piece('c', 2), piece('d', 3)]
@@ -21,5 +22,15 @@ describe('selectedPieces', () => {
 
   it('skips pieces that are no longer in the library', () => {
     expect(selectedPieces({ notebookIds: ['n1'], levels: [], pieceIds: ['zzz'] }, pieces, notebooks)).toHaveLength(2)
+  })
+})
+
+describe('sortNotebooks', () => {
+  it('puts school notebooks first, each group alphabetical', () => {
+    const sorted = sortNotebooks([
+      { id: '1', name: 'Zorro', pieceIds: [] }, { id: '2', name: 'Navidad', pieceIds: [], school: true },
+      { id: '3', name: 'árbol', pieceIds: [] }, { id: '4', name: 'Escalas', pieceIds: [], school: true },
+    ])
+    expect(sorted.map(n => n.name)).toEqual(['Escalas', 'Navidad', 'árbol', 'Zorro'])
   })
 })

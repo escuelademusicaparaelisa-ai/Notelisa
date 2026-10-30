@@ -6,6 +6,23 @@ export interface Notebook {
   name: string
   /** Pieces in the order they were added. */
   pieceIds: string[]
+  /** Made by the administrator for every teacher (with accounts). */
+  school?: boolean
+  /** Someone else's notebook: it can be used but not changed. */
+  readOnly?: boolean
+}
+
+/** Where notebooks are kept: on this device, or on the school's server with accounts. */
+export interface NotebookStore {
+  load(): Promise<Notebook[]>
+  save(notebook: Notebook): Promise<void>
+  remove(id: string): Promise<void>
+}
+
+export const deviceNotebooks: NotebookStore = {
+  load: async () => savedNotebooks(),
+  save: async notebook => saveNotebooks(upsertNotebook(savedNotebooks(), notebook)),
+  remove: async id => saveNotebooks(removeNotebook(savedNotebooks(), id)),
 }
 
 const NOTEBOOKS_KEY = 'notelisa.notebooks'
@@ -23,7 +40,8 @@ export function savedNotebooks(): Notebook[] {
 
 export function saveNotebooks(notebooks: Notebook[]): void {
   try {
-    localStorage.setItem(NOTEBOOKS_KEY, JSON.stringify(notebooks))
+    if (notebooks.length === 0) localStorage.removeItem(NOTEBOOKS_KEY)
+    else localStorage.setItem(NOTEBOOKS_KEY, JSON.stringify(notebooks))
   } catch {
     // Private browsing: the notebooks last until the page is closed.
   }
