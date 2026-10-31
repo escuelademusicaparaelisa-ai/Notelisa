@@ -73,6 +73,8 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
   const [draft, setDraft] = useState<Notebook | null>(null)
   const [onlyChosen, setOnlyChosen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  // The notebook asked to be deleted from its view, waiting for a yes.
+  const [toDelete, setToDelete] = useState<Notebook | null>(null)
 
   const load = () => loadAllPieces().then(({ pieces: playable, all, school: schoolLibrary }) => {
     setPieces(playable)
@@ -147,6 +149,13 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
     changeNotebooks(removeNotebook(notebooks, id), () => notebookStore.remove(id))
     onNotebook(null)
     closeEditor()
+  }
+
+  const deleteNotebook = (target: Notebook) => {
+    if (target.readOnly) return
+    changeNotebooks(removeNotebook(notebooks, target.id), () => notebookStore.remove(target.id))
+    if (notebookId === target.id) onNotebook(null)
+    setToDelete(null)
   }
 
   const byId = new Map(pieces?.map(p => [p.id, p]))
@@ -261,6 +270,7 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
         <div className="section-head">
           <h2 className="section-title"><BookOpen /> {notebook.name}</h2>
           {!notebook.readOnly && <button className="chip" onClick={() => edit(notebook)}><Pencil /> Editar cuaderno</button>}
+          {!notebook.readOnly && <button className="chip" onClick={() => setToDelete(notebook)}><Trash2 /> Eliminar cuaderno</button>}
           <button className="chip" onClick={() => onNotebook(null)}><ArrowLeft /> Toda la biblioteca</button>
         </div>
       ) : <h2 className="section-title">Biblioteca</h2>)}
@@ -352,6 +362,19 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
           <button className="big-button ghost" onClick={closeEditor}>Cancelar</button>
           <button className="big-button primary" onClick={saveDraft} disabled={!draft.name.trim()}
             title={draft.name.trim() ? undefined : 'Escribe un nombre para el cuaderno'}><Check /> Guardar</button>
+        </div>
+      )}
+      {toDelete && (
+        <div className="modal-backdrop" onClick={() => setToDelete(null)}>
+          <section className="modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-notebook-title" onClick={e => e.stopPropagation()}>
+            <h2 id="delete-notebook-title">Eliminar cuaderno</h2>
+            <p>¿Seguro que deseas eliminar el cuaderno «{toDelete.name}»?</p>
+            <p>Las canciones siguen en la biblioteca.</p>
+            <div className="modal-actions">
+              <button className="big-button danger" onClick={() => deleteNotebook(toDelete)}><Trash2 /> Sí, eliminar</button>
+              <button className="big-button ghost" onClick={() => setToDelete(null)} autoFocus>Cancelar</button>
+            </div>
+          </section>
         </div>
       )}
     </main>

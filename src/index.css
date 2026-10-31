@@ -146,6 +146,8 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
   text-transform: uppercase; letter-spacing: 0.06em; }
 .big-button.primary:active:not(:disabled) { box-shadow: 0 2px 0 var(--lila-dark); }
 .big-button.primary.stop { background: var(--naranja); border-color: var(--naranja); box-shadow: 0 5px 0 var(--naranja-dark); }
+.big-button.danger { white-space: nowrap; background: var(--naranja); color: #fff; border-color: var(--naranja); box-shadow: 0 5px 0 var(--naranja-dark); }
+.big-button.danger:active:not(:disabled) { box-shadow: 0 2px 0 var(--naranja-dark); }
 .big-button.ghost { min-height: 46px; font-size: 1.05rem; box-shadow: none; border-color: transparent; background: var(--lila-soft); }
 .big-button.ghost:active:not(:disabled) { box-shadow: none; }
 .round-button { width: 46px; height: 46px; border-radius: 50%; border: none;
