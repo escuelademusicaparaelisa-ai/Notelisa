@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as Tone from 'tone'
 import { metronome, type Click } from '../../core/audio/metronome'
 import { ScorePlayer } from '../../core/audio/player'
+import { accompanimentNotes, ACCOMPANIMENT_NAMES, resolveStyle, stylesForTime, type AccompanimentStyle, type Harmony } from '../../core/exercises/accompaniment'
 import { noteBus } from '../../core/input/bus'
 import { midiToSolfege } from '../../core/music/pitch'
 import { summarize, type PracticeSummary } from '../../core/practice/summary'
@@ -19,7 +20,7 @@ import { MidiPanel } from '../components/MidiPanel'
 import { OnScreenKeyboard } from '../components/OnScreenKeyboard'
 import { ScoreView, type ScoreViewHandle } from '../components/ScoreView'
 import { SummaryCard } from '../components/SummaryCard'
-import { ArrowLeft, ChevronLeft, ChevronRight, Footprints, KeyboardMusic, Metronome, StaffIcon, Music, PartyPopper, Play, RefreshCw, RotateCcw, Settings, SkipBack, Square, Volume2 } from '../icons'
+import { ArrowLeft, ChevronLeft, ChevronRight, Footprints, KeyboardMusic, Metronome, StaffIcon, Music, PartyPopper, Piano, Play, RefreshCw, RotateCcw, Settings, SkipBack, Square, Volume2 } from '../icons'
 
 export interface PracticeProps {
   piece: Piece
@@ -30,6 +31,12 @@ export interface PracticeProps {
   onAnother?(): void
   /** Each time the piece is played to the end (to save the student's progress). */
   onSummary?(summary: PracticeSummary): void
+  /** Generated exercises: chords for a piano accompaniment and the chosen style. */
+  accompaniment?: {
+    harmony: Harmony
+    style: AccompanimentStyle
+    onChange(style: AccompanimentStyle): void
+  }
 }
 
 type Mode = 'listen' | 'wait' | 'tempo'
@@ -82,7 +89,7 @@ function clicksFor(timeline: Timeline, steps: ScoreStep[], startAt: number, temp
   return clicks
 }
 
-export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnother, onSummary }: PracticeProps) {
+export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnother, onSummary, accompaniment }: PracticeProps) {
   const scoreRef = useRef<ScoreViewHandle>(null)
   const [timeline, setTimeline] = useState<Timeline | null>(null)
   const [step, setStep] = useState(0)
@@ -111,6 +118,11 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
   const [held, setHeld] = useState<Set<number>>(new Set())
   const [micOn, setMicOn] = useState(microphoneInput.isOn)
   const [calibrating, setCalibrating] = useState(false)
+  const harmony = accompaniment?.harmony
+  const [accompanimentStyle, setAccompanimentStyle] = useState<AccompanimentStyle>(() => (accompaniment ? resolveStyle(accompaniment.style, accompaniment.harmony.time) : 'off'))
+  // Remembered so the footer chip turns the same style back on.
+  const [lastStyle, setLastStyle] = useState<AccompanimentStyle>(() => (accompaniment ? resolveStyle(accompaniment.style, accompaniment.harmony.time) : 'off'))
+  const backing = useMemo(() => (harmony && accompanimentStyle !== 'off' ? accompanimentNotes(harmony, accompanimentStyle) : undefined), [harmony, accompanimentStyle])
   const instrument = getInstrument(piece.instrument)
   const staves = useMemo(() => (staff === null ? undefined : [staff]), [staff])
   const measures = timeline ? measureCount(timeline) : 1
@@ -129,6 +141,8 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
   }, [])
 
   const stopPractice = useCallback(() => {
+    // Also the accompaniment of tempo mode.
+    player.stop()
     metronome.stop()
     setSession(null)
     setTempoRun(null)
@@ -246,6 +260,8 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
     const startAt = audioContext().currentTime + 0.3 + countIn * beatSeconds
     const clicks = clicksFor(timeline, s.steps, startAt, tempoFactor, metronomeOn)
     metronome.start(i => clicks[i] ?? null)
+    // The microphone would hear the accompaniment as the student's notes.
+    if (backing && !micOn) void player.accompany(timeline, s.steps, backing, tempoFactor, startAt)
     setCountdown(countIn)
     setTempoRun({ session: s, origin: heardAt(startAt), beatSeconds, countIn })
   }
@@ -349,6 +365,7 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
         tempoFactor,
         staves,
         startAt,
+        backing,
         onStep: goTo,
         onEnd: () => {
           metronome.stop()
@@ -410,6 +427,12 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
     stopPractice()
     setFeedback({ kind: 'idle' })
     setter(value)
+  }
+
+  const chooseAccompaniment = (style: AccompanimentStyle) => {
+    changeSetting(setAccompanimentStyle)(style)
+    if (style !== 'off') setLastStyle(style)
+    accompaniment?.onChange(style)
   }
 
   const switchMode = (next: Mode) => {
@@ -518,6 +541,22 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
               Repetir en bucle
             </label>
           </div>
+          {harmony && (
+            <div className="setting">
+              <span className="setting-label">Acompañamiento</span>
+              <div className="hands" role="group">
+                {(['off', ...stylesForTime(harmony.time)] as AccompanimentStyle[]).map(style => (
+                  <button key={style} className={`chip ${accompanimentStyle === style ? 'active' : ''}`} aria-pressed={accompanimentStyle === style}
+                    onClick={() => chooseAccompaniment(style)}>
+                    {style === 'off' ? 'No' : ACCOMPANIMENT_NAMES[style]}
+                  </button>
+                ))}
+              </div>
+              {micOn && accompanimentStyle !== 'off' && (
+                <p className="exercise-hint">Con el micrófono, el acompañamiento solo suena en «Escuchar»: el micrófono lo confundiría con tus notas.</p>
+              )}
+            </div>
+          )}
           <div className="setting">
             <span className="setting-label">Ayudas</span>
             <label className="toggle">
@@ -583,6 +622,13 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
         <div className="footer-actions">
           {micOn && mode !== 'listen' && <MicMeter />}
           {metronomeOn && <BeatIndicator />}
+          {harmony && (
+            <button className={`chip ${accompanimentStyle !== 'off' ? 'active' : ''}`} aria-pressed={accompanimentStyle !== 'off'}
+              onClick={() => chooseAccompaniment(accompanimentStyle !== 'off' ? 'off' : lastStyle !== 'off' ? lastStyle : stylesForTime(harmony.time)[0])}
+              title="Una base de piano que suena al escuchar y al tocar con tempo">
+              <Piano /> {accompanimentStyle !== 'off' ? ACCOMPANIMENT_NAMES[accompanimentStyle] : 'Acompañamiento'}
+            </button>
+          )}
           <button className={`chip ${metronomeOn ? 'active' : ''}`} onClick={() => changeSetting(setMetronomeOn)(!metronomeOn)}
             aria-pressed={metronomeOn} title="El metrónomo suena al empezar">
             <Metronome /> Metrónomo

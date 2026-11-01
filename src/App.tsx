@@ -4,7 +4,8 @@ import { useAccount } from './account/useAccount'
 import { exerciseToMusicXml, generateExercise, type ExerciseOptions } from './core/exercises/generator'
 import type { Piece } from './library/catalog'
 import { deviceNotebooks } from './library/notebooks'
-import { savedExerciseOptions } from './core/exercises/savedOptions'
+import { saveExerciseOptions, savedExerciseOptions } from './core/exercises/savedOptions'
+import type { Harmony } from './core/exercises/accompaniment'
 import { AccountBar } from './ui/components/AccountBar'
 import { LoggedPractice } from './ui/components/LoggedPractice'
 import { AdminScreen } from './ui/screens/AdminScreen'
@@ -22,14 +23,15 @@ type View =
   | { name: 'review' }
   | { name: 'exercises' }
   | { name: 'photo'; photos: File[] }
-  | { name: 'exercise'; piece: Piece; options: ExerciseOptions }
+  | { name: 'exercise'; piece: Piece; harmony: Harmony }
   | { name: 'admin' }
   | { name: 'teacher' }
 
-function newExercise(options: ExerciseOptions): Piece {
+function newExercise(options: ExerciseOptions): { piece: Piece; harmony: Harmony } {
   const seed = Math.floor(Math.random() * 2 ** 31)
   const exercise = generateExercise(options, seed)
-  return { id: `exercise:${seed}`, title: exercise.title, instrument: exercise.options.instrument, file: null, content: exerciseToMusicXml(exercise) }
+  const piece = { id: `exercise:${seed}`, title: exercise.title, instrument: exercise.options.instrument, file: null, content: exerciseToMusicXml(exercise) }
+  return { piece, harmony: exercise.harmony }
 }
 
 export default function App() {
@@ -49,7 +51,13 @@ export default function App() {
   const toLibrary = () => setView({ name: 'library' })
   const startExercise = (options: ExerciseOptions) => {
     setExerciseOptions(options)
-    setView({ name: 'exercise', piece: newExercise(options), options })
+    setView({ name: 'exercise', ...newExercise(options) })
+  }
+  // The accompaniment chosen while practising is kept for the next exercises.
+  const chooseAccompaniment = (accompaniment: ExerciseOptions['accompaniment']) => {
+    const options = { ...exerciseOptions, accompaniment }
+    saveExerciseOptions(options)
+    setExerciseOptions(options)
   }
   if (account.state === 'loading') return <p className="score-message">Cargando…</p>
   if (account.state === 'signedOut') return <LoginScreen />
@@ -72,7 +80,8 @@ export default function App() {
     case 'exercise':
       return (
         <LoggedPractice key={view.piece.id} log={!!student} kind="exercise" piece={view.piece} backLabel="Ejercicios"
-          onBack={() => setView({ name: 'exercises' })} onAnother={() => startExercise(view.options)} />
+          onBack={() => setView({ name: 'exercises' })} onAnother={() => startExercise(exerciseOptions)}
+          accompaniment={{ harmony: view.harmony, style: exerciseOptions.accompaniment ?? 'off', onChange: chooseAccompaniment }} />
       )
     default: {
       const accountBar = profile && (

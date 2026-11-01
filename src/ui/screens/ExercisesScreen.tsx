@@ -3,6 +3,7 @@ import {
   defaultChosenNotes, INTERVALS, MAJOR_KEYS, MINOR_KEYS, MINOR_SCALE_NAMES, RANGE_NOTES, selectableNotes,
   type ExerciseOptions, type MinorScale,
 } from '../../core/exercises/generator'
+import { ACCOMPANIMENT_NAMES, resolveStyle, stylesForTime, type AccompanimentStyle } from '../../core/exercises/accompaniment'
 import { saveExerciseOptions } from '../../core/exercises/savedOptions'
 import { Choices } from '../components/Choices'
 import { Arpeggio, ArrowLeft, FileMusic, Flute, Piano, Scale, ScaleArpeggio, Sparkles } from '../icons'
@@ -130,6 +131,9 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
           { value: '4/4', label: '4/4' },
           { value: '6/8', label: '6/8' },
         ]} />
+        <Choices<AccompanimentStyle> label="Acompañamiento" value={resolveStyle(options.accompaniment, options.time)} onChange={set('accompaniment')}
+          hint="Una base de piano que va con la melodía. Suena al escuchar y al tocar con tempo."
+          choices={(['off', ...stylesForTime(options.time)] as AccompanimentStyle[]).map(style => ({ value: style, label: ACCOMPANIMENT_NAMES[style] }))} />
         <Choices label={scale ? 'Figura' : 'Figuras'} value={options.rhythm} onChange={set('rhythm')} choices={scale ? [
           { value: 1, label: 'Lentas (blancas)' },
           { value: 2, label: 'Negras' },

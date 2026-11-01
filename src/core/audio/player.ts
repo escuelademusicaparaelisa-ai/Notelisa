@@ -1,6 +1,7 @@
 import * as Tone from 'tone'
 import { midiToNoteName } from '../music/pitch'
-import { playableNotes, wholeNotesToSeconds, type Timeline } from '../score/timeline'
+import type { BackingNote } from '../exercises/accompaniment'
+import { playableNotes, wholeNotesToSeconds, type ScoreStep, type Timeline } from '../score/timeline'
 
 // Samples shipped in public/samples/piano (one every minor third; Tone.js fills the gaps).
 const PIANO_SAMPLES: Record<string, string> = {}
@@ -19,6 +20,8 @@ export interface PlayOptions {
   staves?: readonly number[]
   /** AudioContext time at which the first step sounds; shortly from now when omitted. */
   startAt?: number
+  /** Accompaniment heard along with the notes, timed from the start of the score. */
+  backing?: readonly BackingNote[]
   onStep?: (index: number) => void
   onEnd?: () => void
 }
@@ -65,7 +68,7 @@ export class ScorePlayer {
   async play(timeline: Timeline, options: PlayOptions = {}): Promise<void> {
     await this.load()
     this.stop()
-    const { fromStep = 0, toStep = timeline.steps.length - 1, tempoFactor = 1, staves, startAt, onStep, onEnd } = options
+    const { fromStep = 0, toStep = timeline.steps.length - 1, tempoFactor = 1, staves, startAt, backing, onStep, onEnd } = options
     const steps = timeline.steps.slice(fromStep, toStep + 1)
     if (steps.length === 0) return
 
@@ -84,9 +87,8 @@ export class ScorePlayer {
       }, at))
     }
 
-    const last = steps[steps.length - 1]
-    const lastLength = Math.max(0, ...last.notes.map(n => n.duration))
-    const end = toSeconds(last.time - origin + lastLength)
+    const end = toSeconds(rangeEnd(steps) - origin)
+    if (backing) this.scheduleBacking(backing, origin, rangeEnd(steps), toSeconds)
     this.scheduled.push(transport.schedule(time => {
       Tone.getDraw().schedule(() => {
         this.stop()
@@ -97,6 +99,37 @@ export class ScorePlayer {
     transport.start(startAt ?? '+0.1')
   }
 
+  /**
+   * Plays only the accompaniment over some steps, starting at an AudioContext time,
+   * while the student plays the notes (tempo mode).
+   */
+  async accompany(timeline: Timeline, steps: readonly ScoreStep[], backing: readonly BackingNote[], tempoFactor: number, startAt: number): Promise<void> {
+    await this.load()
+    this.stop()
+    if (steps.length === 0) return
+    const origin = steps[0].time
+    const end = rangeEnd(steps)
+    const toSeconds = (wholeNotes: number) => wholeNotesToSeconds(wholeNotes, timeline.bpm, tempoFactor)
+    this.scheduleBacking(backing, origin, end, toSeconds)
+    this.scheduled.push(Tone.getTransport().schedule(time => {
+      Tone.getDraw().schedule(() => this.stop(), time)
+    }, toSeconds(end - origin) + 1.5))
+    Tone.getTransport().start(startAt)
+  }
+
+  /** Schedules the accompaniment notes that start between `origin` and `end` (whole notes). */
+  private scheduleBacking(backing: readonly BackingNote[], origin: number, end: number, toSeconds: (wholeNotes: number) => number): void {
+    const transport = Tone.getTransport()
+    const sampler = this.sampler!
+    for (const note of backing) {
+      if (note.time < origin - 1e-6 || note.time >= end - 1e-6) continue
+      const duration = toSeconds(Math.min(note.duration, end - note.time))
+      this.scheduled.push(transport.schedule(time => {
+        sampler.triggerAttackRelease(midiToNoteName(note.midi), duration, time, note.velocity)
+      }, toSeconds(note.time - origin)))
+    }
+  }
+
   stop(): void {
     const transport = Tone.getTransport()
     transport.stop()
@@ -105,4 +138,10 @@ export class ScorePlayer {
     this.scheduled = []
     this.sampler?.releaseAll()
   }
+}
+
+/** Where a range of steps stops sounding, in whole notes. */
+function rangeEnd(steps: readonly ScoreStep[]): number {
+  const last = steps[steps.length - 1]
+  return last.time + Math.max(0, ...last.notes.map(n => n.duration))
 }

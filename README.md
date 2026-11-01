@@ -255,7 +255,9 @@ En la pantalla de inicio, **🎯 Ejercicios y escalas** crea ejercicios nuevos a
 - **Figuras:** 1 redondas y blancas, 2 + negras, 3 + corcheas, 4 + puntillos y semicorcheas.
 - **Silencios**, **notas** (5 notas, una octava o con saltos) y **compases** (4, 8 o 12).
 
-Con dos pentagramas la mano izquierda toca una nota larga por compás (I, IV, V, I). Cada ejercicio se practica como cualquier pieza (paso a paso, con tempo, escuchar) y **🔄 Otro ejercicio** crea uno nuevo con las mismas opciones. Las opciones se recuerdan en el dispositivo. El generador está en `src/core/exercises/generator.ts`.
+Con dos pentagramas la mano izquierda toca una nota larga por compás: la fundamental del acorde que mejor va con la melodía. Cada ejercicio se practica como cualquier pieza (paso a paso, con tempo, escuchar) y **🔄 Otro ejercicio** crea uno nuevo con las mismas opciones. Las opciones se recuerdan en el dispositivo. El generador está en `src/core/exercises/generator.ts`.
+
+**Acompañamiento.** Cada ejercicio puede sonar con una base de piano. Primero se elige un acorde de la tonalidad para cada compás (o medio compás en 4/4), el que contiene más notas de la melodía, prefiriendo I, IV y V, empezando en I y cerrando con V–I. Después ese acorde se toca con el estilo elegido: **Clásico** (bajo Alberti), **Vals** (solo en 3/4), **Marcha** o **Balada** (bajo largo y acorde arpegiado); cada compás ofrece los estilos que le van. Se elige en *Ejercicios y escalas* o, ya practicando, con el botón 🎹 de abajo y en *Ajustes*. Suena en **Escuchar** y en **Con tempo** (no en paso a paso), y no suena con el micrófono encendido en *Con tempo*, porque el micrófono lo tomaría por notas del alumno. Está en `src/core/exercises/accompaniment.ts`.
 
 ## Estructura del código
 
