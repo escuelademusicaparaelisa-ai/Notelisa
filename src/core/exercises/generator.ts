@@ -1,6 +1,8 @@
 // Generates practice exercises (sight-reading lines, scales and arpeggios) as MusicXML, so
 // they open in the practice screen like any other piece.
 
+import { harmonize, type AccompanimentStyle, type Harmony } from './accompaniment'
+
 export type ExerciseKind = 'reading' | 'scale' | 'arpeggio' | 'scale-arpeggio'
 export type Clef = 'treble' | 'bass' | 'grand'
 export type TimeSignature = '2/4' | '3/4' | '4/4' | '6/8'
@@ -37,6 +39,8 @@ export interface ExerciseOptions {
   measures: number
   /** Which minor scale minor keys use. */
   minor: MinorScale
+  /** Piano accompaniment heard with the exercise; none when omitted. */
+  accompaniment?: AccompanimentStyle
 }
 
 export type MinorScale = 'natural' | 'harmonic' | 'melodic'
@@ -121,6 +125,8 @@ export interface Exercise {
   staves: ExerciseStaff[]
   /** Quarter notes per minute. */
   tempo: number
+  /** Chords that go with the melody, for the accompaniment. */
+  harmony: Harmony
 }
 
 /** Durations are in sixteenth notes. */
@@ -441,14 +447,25 @@ function readingMelody(options: ExerciseOptions, clef: 'treble' | 'bass', pitche
   return measures
 }
 
-/** Left hand of a two-staff reading exercise: one long note per measure (I, IV, V, I). */
-function bassLine(options: ExerciseOptions, pitches: Pitches): ExerciseEvent[][] {
+/** Left hand of a two-staff reading exercise: the root of the chord that goes with each measure. */
+function bassLine(options: ExerciseOptions, pitches: Pitches, harmony: Harmony): ExerciseEvent[][] {
   const length = measureLength(options.time)
-  const progression = [0, 3, 4, 0]
   return Array.from({ length: options.measures }, (_, m) => {
-    const last = m === options.measures - 1
-    const degree = last ? 0 : progression[m % progression.length]
+    const chord = harmony.slots.find(s => s.measure === m)?.degree ?? 0
+    // VI goes below the tonic, so the left hand stays near it.
+    const degree = chord > 4 ? chord - 7 : chord
     return [{ duration: length, degree, midi: pitches.midi(degree) }]
+  })
+}
+
+function harmonyFor(options: ExerciseOptions, key: KeyDefinition, melody: ExerciseEvent[][], split: boolean): Harmony {
+  return harmonize(melody, {
+    tonic: (LETTER_SEMITONES[key.letter] + key.alter + 12) % 12,
+    mode: key.mode,
+    time: options.time,
+    measureLength: measureLength(options.time),
+    beatLength: beatLength(options.time),
+    split,
   })
 }
 
@@ -555,14 +572,17 @@ export function generateExercise(options: ExerciseOptions, seed: number): Exerci
     for (const staffClef of clef === 'grand' ? (['treble', 'bass'] as const) : [clef]) {
       staves.push({ clef: staffClef, measures: scaleLine(opts, new Pitches(key, staffClef, opts.minor), staffClef) })
     }
+    const harmony = harmonyFor(opts, key, staves[0].measures, opts.time === '4/4')
     // The arpeggio alone is the same in every minor scale.
-    return { title: `${LINE_TITLES[opts.kind]} · ${opts.kind === 'arpeggio' ? key.name : name}`, options: opts, staves, tempo }
+    return { title: `${LINE_TITLES[opts.kind]} · ${opts.kind === 'arpeggio' ? key.name : name}`, options: opts, staves, tempo, harmony }
   }
 
   const melodyClef = clef === 'bass' ? 'bass' : 'treble'
   staves.push({ clef: melodyClef, measures: readingMelody(opts, melodyClef, new Pitches(key, melodyClef, opts.minor), random) })
-  if (clef === 'grand') staves.push({ clef: 'bass', measures: bassLine(opts, new Pitches(key, 'bass', opts.minor)) })
-  return { title: `Lectura · ${name}`, options: opts, staves, tempo }
+  // With a written left hand, one chord per measure so the accompaniment matches it.
+  const harmony = harmonyFor(opts, key, staves[0].measures, clef !== 'grand' && opts.time === '4/4')
+  if (clef === 'grand') staves.push({ clef: 'bass', measures: bassLine(opts, new Pitches(key, 'bass', opts.minor), harmony) })
+  return { title: `Lectura · ${name}`, options: opts, staves, tempo, harmony }
 }
 
 // --- MusicXML ---------------------------------------------------------------
