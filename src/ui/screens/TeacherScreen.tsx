@@ -4,13 +4,14 @@ import {
   assign, EMPTY_SELECTION, loadAssignments, myStudents, selectedPieces, setHomework, unassign, type Assignment, type Selection,
 } from '../../account/assignments'
 import { matchesPerson } from '../../account/admin'
-import { formatDuration, loadPractice, progressByPiece, secondsSince, startOfWeek, type PieceProgress, type PracticeLog } from '../../account/progress'
+import { formatDuration, loadPractice, progressByPiece, secondsSince, startOfWeek, type PracticeLog } from '../../account/progress'
+import { PieceProgressDialog, PractisedList, ProgressFigures, StudyChart } from '../components/StudyProgress'
 import { getInstrument, instruments } from '../../instruments'
 import { loadAllPieces } from '../../library/allPieces'
 import type { Piece } from '../../library/catalog'
 import type { Notebook, NotebookStore } from '../../library/notebooks'
 import { matchesQuery } from '../../library/search'
-import { ArrowLeft, BookOpen, Check, ChevronDown, CircleCheck, GraduationCap, InstrumentIcon, Minus, Plus, Search, Stars, Target, Timer, Trash2 } from '../icons'
+import { ArrowLeft, BookOpen, Check, ChevronDown, GraduationCap, InstrumentIcon, Minus, Plus, Search, Stars, Target, Timer, Trash2 } from '../icons'
 
 /** The teacher gives each of their students pieces: as homework or to play for fun. */
 export function TeacherScreen({ me, notebookStore, onBack }: { me: Profile; notebookStore: NotebookStore; onBack(): void }) {
@@ -23,6 +24,7 @@ export function TeacherScreen({ me, notebookStore, onBack }: { me: Profile; note
   const [choosing, setChoosing] = useState(false)
   const [failed, setFailed] = useState(false)
   const [query, setQuery] = useState('')
+  const [looking, setLooking] = useState<{ pieceId: string; title: string } | null>(null)
 
   useEffect(() => {
     notebookStore.load().then(setNotebooks, () => setFailed(true))
@@ -112,6 +114,7 @@ export function TeacherScreen({ me, notebookStore, onBack }: { me: Profile; note
                   <span><Target /> Ejercicios y escalas: <strong>{formatDuration(exerciseSeconds)}</strong></span>
                   <span>{lastDay ? <>Último estudio: <strong>{new Date(lastDay).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</strong></> : 'Todavía no ha estudiado con la app'}</span>
                 </p>
+                <StudyChart logs={theirLogs} />
                 {theirs.length === 0 && <p className="score-message">Todavía no tiene canciones. Pulsa «Asignar canciones».</p>}
                 {[true, false].map(homework => {
                   const list = theirs.filter(a => a.homework === homework)
@@ -122,9 +125,10 @@ export function TeacherScreen({ me, notebookStore, onBack }: { me: Profile; note
                       <ul className="assignment-list">
                         {list.map(a => (
                           <li key={a.id}>
-                            <span className="assignment-title">{a.piece_title || a.piece_id}</span>
+                            <button className="assignment-title link-button" title="Ver su progreso"
+                              onClick={() => setLooking({ pieceId: a.piece_id, title: a.piece_title || a.piece_id })}>{a.piece_title || a.piece_id}</button>
                             {a.source && <span className="status">{a.source}</span>}
-                            <AssignmentProgress progress={progress.get(a.piece_id)} />
+                            <ProgressFigures progress={progress.get(a.piece_id)} />
                             <label className="toggle assignment-homework">
                               <input type="checkbox" checked={a.homework}
                                 onChange={e => save(() => setHomework(a.id, e.target.checked),
@@ -139,6 +143,15 @@ export function TeacherScreen({ me, notebookStore, onBack }: { me: Profile; note
                     </div>
                   )
                 })}
+                {theirLogs.some(l => l.kind === 'piece' && !theirs.some(a => a.piece_id === l.piece_id)) && (
+                  <div className="teacher-group">
+                    <h3>Ya trabajadas</h3>
+                    <p className="group-hint">Canciones que estudió y ya no tiene asignadas. Pulsa una para ver su progreso.</p>
+                    <PractisedList logs={theirLogs} skip={new Set(theirs.map(a => a.piece_id))}
+                      onOpen={id => setLooking({ pieceId: id, title: progress.get(id)?.title || id })} />
+                  </div>
+                )}
+                {looking && <PieceProgressDialog {...looking} logs={theirLogs} onClose={() => setLooking(null)} />}
               </section>
             ) : <p className="score-message">Elige un alumno para ver y asignar sus canciones.</p>}
           </div>
@@ -340,16 +353,5 @@ function Chooser({ pieces, notebooks, assigned, onCancel, onAssign }: {
         }}><Check /> {busy ? 'Asignando…' : 'Asignar'}</button>
       </div>
     </section>
-  )
-}
-
-/** Time spent on an assigned piece and the best result, or that it is not started. */
-function AssignmentProgress({ progress }: { progress?: PieceProgress }) {
-  if (!progress) return <span className="assignment-progress muted">Sin empezar</span>
-  return (
-    <span className="assignment-progress">
-      <span><Timer /> {formatDuration(progress.seconds)}</span>
-      {progress.best !== null && <span title="Mejor resultado"><CircleCheck /> {progress.best}%</span>}
-    </span>
   )
 }
