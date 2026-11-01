@@ -1,5 +1,6 @@
 import { createClient, type AuthError, type SupabaseClient } from '@supabase/supabase-js'
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from './config'
+import { forgetSchoolLibrary } from '../library/school'
 
 // Accounts: administrator, teachers and students. Anyone can ask for access; the
 // administrator accepts the request before the app opens for them.
@@ -127,6 +128,7 @@ export async function changePassword(password: string): Promise<string | null> {
 }
 
 export async function signOut(): Promise<void> {
+  forgetSchoolLibrary()
   await server().auth.signOut()
 }
 

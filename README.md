@@ -202,14 +202,15 @@ El reconocimiento óptico **siempre comete errores**, por eso existe la revisió
 Las decisiones se guardan en `public/library/index.local.json`, por eso la revisión solo
 funciona con la app abierta con `npm run dev` en tu ordenador.
 
-## Biblioteca de la escuela (con clave)
+## Biblioteca de la escuela
 
 Las canciones propias de la escuela se publican **cifradas** en
 `public/library/school/`: quien descargue esos archivos solo ve datos sin sentido.
-La primera vez que un alumno abre Notelisa, escribe la clave de la escuela y le
-aparecen todas las canciones; el dispositivo la recuerda (da igual mayúsculas o
-minúsculas). Con **🔒 Cerrar biblioteca de la escuela** se olvida la clave en ese
-dispositivo.
+La llave que las abre está en Supabase (`supabase/06-biblioteca-escuela.sql`) y solo
+la pueden leer las cuentas aprobadas, así que alumnos y profesores ven todas las
+canciones sin escribir ninguna clave. El admin la activa una sola vez desde la
+biblioteca, escribiendo la clave con la que se publicó (da igual mayúsculas o
+minúsculas).
 
 Para publicar o actualizar la biblioteca (después de importar canciones nuevas):
 
@@ -219,8 +220,8 @@ npm run biblioteca-escuela -- --clave "la clave de la escuela"
 
 Cifra todas las piezas aprobadas de tu biblioteca local y deja el resultado en
 `public/library/school/`, listo para subir a GitHub. Con la misma clave, los alumnos
-ven las canciones nuevas sin volver a escribirla. Si cambias la clave (o añades
-`--nueva-llave`), la anterior deja de funcionar y tendrán que escribir la nueva.
+ven las canciones nuevas sin hacer nada. Si cambias la clave (o añades
+`--nueva-llave`), la app le pedirá al admin la clave nueva una vez para activarla.
 La clave **no** se guarda en el repositorio.
 
 ## Actualizar la biblioteca desde una carpeta (con hoja de datos)

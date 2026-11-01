@@ -11,7 +11,7 @@ funciona como siempre, sin cuentas.
    escuela ya revisa cada solicitud, así nadie tiene que esperar a un correo.
 3. **SQL Editor**: pega el contenido de `01-cuentas.sql` y pulsa *Run*. Después haz lo
    mismo con `02-alumnos-de-cada-profesor.sql`, `03-tareas.sql`,
-   `04-cuadernos.sql` y `05-progreso.sql`.
+   `04-cuadernos.sql`, `05-progreso.sql` y `06-biblioteca-escuela.sql`.
 4. Copia *Project URL* y la clave *anon public* (*Project Settings → API*) en el
    archivo `.env.production` de la raíz del repositorio:
 
@@ -43,3 +43,9 @@ alumno canciones sueltas, cuadernos enteros o niveles enteros, de deberes o por 
 Los cuadernos de profesores y admin se guardan en el servidor. Los del admin son «de la
 escuela»: todos los profesores los ven y los pueden asignar, pero solo el admin los cambia.
 Los cuadernos que hubiera en el dispositivo se suben solos la primera vez que se entra.
+
+La biblioteca de la escuela ya no pide clave a los alumnos: cualquier cuenta aprobada la
+ve. La primera vez que el admin entra después de ejecutar `06-biblioteca-escuela.sql`,
+la app le pide **una sola vez** la clave con la que se publicó la biblioteca (si ese
+dispositivo ya la tenía abierta, ni eso) y guarda la llave en el servidor. Si se publica
+la biblioteca con una clave nueva, la app se lo vuelve a pedir al admin.
