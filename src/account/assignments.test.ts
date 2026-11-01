@@ -20,6 +20,12 @@ describe('selectedPieces', () => {
     expect(chosen.map(c => c.piece.id)).toEqual(['a'])
   })
 
+  it('takes only the pieces picked inside a notebook or a level', () => {
+    const chosen = selectedPieces(
+      { notebookIds: [], levels: [], pieceIds: [], notebookPicks: { n1: ['a'] }, levelPicks: { 1: ['a', 'b'] } }, pieces, notebooks)
+    expect(chosen.map(c => [c.piece.id, c.source])).toEqual([['a', 'Cuaderno Navidad'], ['b', 'Nivel 1']])
+  })
+
   it('skips pieces that are no longer in the library', () => {
     expect(selectedPieces({ notebookIds: ['n1'], levels: [], pieceIds: ['zzz'] }, pieces, notebooks)).toHaveLength(2)
   })

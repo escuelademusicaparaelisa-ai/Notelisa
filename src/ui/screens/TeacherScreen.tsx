@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { fullName, type Profile } from '../../account/account'
 import {
   assign, EMPTY_SELECTION, loadAssignments, myStudents, selectedPieces, setHomework, unassign, type Assignment, type Selection,
@@ -11,7 +11,7 @@ import { loadAllPieces } from '../../library/allPieces'
 import type { Piece } from '../../library/catalog'
 import type { Notebook, NotebookStore } from '../../library/notebooks'
 import { matchesQuery } from '../../library/search'
-import { ArrowLeft, BookOpen, Check, GraduationCap, InstrumentIcon, Plus, Search, Stars, Target, Timer, Trash2 } from '../icons'
+import { ArrowLeft, BookOpen, Check, ChevronDown, GraduationCap, InstrumentIcon, Minus, Plus, Search, Stars, Target, Timer, Trash2 } from '../icons'
 
 /** The teacher gives each of their students pieces: as homework or to play for fun. */
 export function TeacherScreen({ me, notebookStore, onBack }: { me: Profile; notebookStore: NotebookStore; onBack(): void }) {
@@ -162,6 +162,14 @@ export function TeacherScreen({ me, notebookStore, onBack }: { me: Profile; note
 
 type Tab = 'notebooks' | 'levels' | 'pieces'
 
+/** A notebook or a level in the chooser: given whole, only some of its pieces, or not at all. */
+interface Group {
+  key: string
+  whole: boolean
+  picks: string[]
+  pieces: Piece[]
+}
+
 /** Ticks whole notebooks, whole levels and single pieces, then gives them all at once. */
 function Chooser({ pieces, notebooks, assigned, onCancel, onAssign }: {
   pieces: Piece[]
@@ -182,15 +190,100 @@ function Chooser({ pieces, notebooks, assigned, onCancel, onAssign }: {
   const has = new Set(assigned.map(a => a.piece_id))
   const levels = [...new Set(shown.map(p => p.level).filter((l): l is number => !!l))].sort((a, b) => a - b)
   const available = Object.values(instruments).filter(inst => pieces.some(p => getInstrument(p.instrument).id === inst.id))
-  const toggle = <K extends keyof Selection>(key: K, value: Selection[K][number]) => {
+  const [open, setOpen] = useState<string | null>(null)
+  const toggle = <K extends 'notebookIds' | 'levels' | 'pieceIds'>(key: K, value: Selection[K][number]) => {
     const list = selection[key] as Selection[K][number][]
     setSelection({ ...selection, [key]: list.includes(value) ? list.filter(v => v !== value) : [...list, value] })
   }
 
+  const notebookGroup = (n: Notebook): Group => {
+    const byId = new Map(pieces.map(p => [p.id, p]))
+    return {
+      key: `n:${n.id}`, whole: selection.notebookIds.includes(n.id), picks: selection.notebookPicks?.[n.id] ?? [],
+      pieces: n.pieceIds.map(id => byId.get(id)).filter((p): p is Piece => !!p),
+    }
+  }
+  const levelGroup = (level: number): Group => ({
+    key: `l:${level}`, whole: selection.levels.includes(level), picks: selection.levelPicks?.[level] ?? [],
+    pieces: shown.filter(p => p.level === level),
+  })
+  /** Leaves a group whole, with only these pieces, or out; ticking every piece makes it whole. */
+  const setGroup = (group: Group, whole: boolean, picks: string[]) => {
+    const all = group.pieces.length > 0 && group.pieces.every(p => picks.includes(p.id))
+    const isWhole = whole || all
+    const keep = isWhole ? [] : picks
+    const id = group.key.slice(2)
+    if (group.key.startsWith('n:')) {
+      const notebookPicks = { ...selection.notebookPicks }
+      if (keep.length) notebookPicks[id] = keep
+      else delete notebookPicks[id]
+      const notebookIds = selection.notebookIds.filter(x => x !== id)
+      setSelection({ ...selection, notebookPicks, notebookIds: isWhole ? [...notebookIds, id] : notebookIds })
+    } else {
+      const level = Number(id)
+      const levelPicks = { ...selection.levelPicks }
+      if (keep.length) levelPicks[level] = keep
+      else delete levelPicks[level]
+      const levels = selection.levels.filter(x => x !== level)
+      setSelection({ ...selection, levelPicks, levels: isWhole ? [...levels, level] : levels })
+    }
+  }
+  const togglePiece = (group: Group, pieceId: string) => {
+    const current = group.whole ? group.pieces.map(p => p.id) : group.picks
+    setGroup(group, false, current.includes(pieceId) ? current.filter(x => x !== pieceId) : [...current, pieceId])
+  }
+  const groupCard = (group: Group, icon: ReactNode, name: string, extra = '') => {
+    const some = !group.whole && group.picks.length > 0
+    const isOpen = open === group.key
+    const count = group.pieces.length
+    return (
+      <li key={group.key} className={isOpen ? 'pick-open' : undefined}>
+        <div className={`pick-card${group.whole ? ' on' : some ? ' some' : ''}`}>
+          <button className="pick-box" role="checkbox" aria-checked={group.whole ? true : some ? 'mixed' : false}
+            aria-label={`${name}: todas las canciones`} onClick={() => setGroup(group, !group.whole, [])}>
+            {group.whole ? <Check /> : some && <Minus />}
+          </button>
+          <button className="pick-expand" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : group.key)}>
+            {icon}
+            <span className="pick-text">
+              <strong>{name}</strong>
+              <small>{some ? `${group.picks.length} de ${count}` : count === 1 ? '1 canción' : `${count} canciones`}{extra}</small>
+            </span>
+            <ChevronDown className="pick-chevron" />
+          </button>
+        </div>
+        {isOpen && (
+          <div className="pick-drop">
+            <button className="chip" onClick={() => setGroup(group, !group.whole, [])}>
+              {group.whole ? 'Quitar todas' : 'Aplicar todas'}
+            </button>
+            <ul className="pick-list">
+              {group.pieces.map(p => {
+                const on = group.whole || group.picks.includes(p.id)
+                return (
+                  <li key={p.id}>
+                    <button className={`pick-row${on ? ' on' : ''}`} aria-pressed={on} onClick={() => togglePiece(group, p.id)}>
+                      <span className="pick-box">{on && <Check />}</span>
+                      <InstrumentIcon id={getInstrument(p.instrument).id} className="pick-icon" />
+                      <span className="pick-text"><strong>{p.title}</strong>{p.composer && <small>{p.composer}</small>}</span>
+                      {has.has(p.id) && <span className="status status-approved">Ya la tiene</span>}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
+      </li>
+    )
+  }
+  const notebookCount = selection.notebookIds.length + Object.keys(selection.notebookPicks ?? {}).length
+  const levelCount = selection.levels.length + Object.keys(selection.levelPicks ?? {}).length
+
   return (
     <section className="chooser">
       <nav className="admin-tabs" role="tablist">
-        {([['notebooks', 'Cuadernos', selection.notebookIds.length], ['levels', 'Niveles', selection.levels.length], ['pieces', 'Canciones', selection.pieceIds.length]] as const)
+        {([['notebooks', 'Cuadernos', notebookCount], ['levels', 'Niveles', levelCount], ['pieces', 'Canciones', selection.pieceIds.length]] as const)
           .map(([id, label, count]) => (
             <button key={id} role="tab" aria-selected={tab === id} className={`chip${tab === id ? ' active' : ''}`} onClick={() => setTab(id)}>
               {label}{count > 0 && <span className="count">{count}</span>}
@@ -212,36 +305,13 @@ function Chooser({ pieces, notebooks, assigned, onCancel, onAssign }: {
         notebooks.length === 0
           ? <p className="score-message">Todavía no hay cuadernos. Créalos en la biblioteca con «Crear cuaderno».</p>
           : <ul className="pick-grid">
-            {notebooks.map(n => {
-              const on = selection.notebookIds.includes(n.id)
-              return (
-                <li key={n.id}>
-                  <button className={`pick-card${on ? ' on' : ''}`} aria-pressed={on} onClick={() => toggle('notebookIds', n.id)}>
-                    <span className="pick-box">{on && <Check />}</span>
-                    <BookOpen className="pick-icon" />
-                    <span><strong>{n.name}</strong><small>{n.pieceIds.length === 1 ? '1 canción' : `${n.pieceIds.length} canciones`}{n.school && ' · De la escuela'}</small></span>
-                  </button>
-                </li>
-              )
-            })}
+            {notebooks.map(n => groupCard(notebookGroup(n), <BookOpen className="pick-icon" />, n.name, n.school ? ' · De la escuela' : ''))}
           </ul>
       )}
 
       {tab === 'levels' && (
         <ul className="pick-grid">
-          {levels.map(level => {
-            const on = selection.levels.includes(level)
-            const count = shown.filter(p => p.level === level).length
-            return (
-              <li key={level}>
-                <button className={`pick-card${on ? ' on' : ''}`} aria-pressed={on} onClick={() => toggle('levels', level)}>
-                  <span className="pick-box">{on && <Check />}</span>
-                  <Stars count={level} />
-                  <span><strong>Nivel {level}</strong><small>{count === 1 ? '1 canción' : `${count} canciones`}</small></span>
-                </button>
-              </li>
-            )
-          })}
+          {levels.map(level => groupCard(levelGroup(level), <Stars count={level} label={false} />, `Nivel ${level}`))}
         </ul>
       )}
 
