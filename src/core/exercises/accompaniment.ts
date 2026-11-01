@@ -59,6 +59,8 @@ export interface Harmony {
   time: TimeSignature
   /** Pitch class of the tonic (0 = C). */
   tonic: number
+  /** Letter of the tonic, 0 = C … 6 = B, to spell the chords. */
+  letter: number
   /** Measure length in sixteenth notes. */
   measureLength: number
   slots: ChordSlot[]
@@ -72,19 +74,23 @@ export function chordTones(degree: number, mode: 'major' | 'minor'): [number, nu
   return [scale[degree], scale[(degree + 2) % 7], scale[(degree + 4) % 7]]
 }
 
-const NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII']
+const LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
+const LETTER_SEMITONES = [0, 2, 4, 5, 7, 9, 11]
 
-/** The degree as it is written: capitals for major chords, small letters for minor, ° for diminished. */
-export function chordNumeral(slot: Pick<ChordSlot, 'degree' | 'tones'>): string {
+/** The chord's name as written over a melody: C, Am, F#m, Bb, Bdim… spelled in the key. */
+export function chordName(slot: Pick<ChordSlot, 'degree' | 'tones'>, harmony: Pick<Harmony, 'tonic' | 'letter'>): string {
+  const letter = (harmony.letter + slot.degree) % 7
+  const root = (harmony.tonic + slot.tones[0]) % 12
+  const alter = ((root - LETTER_SEMITONES[letter] + 18) % 12) - 6
   const third = (slot.tones[1] - slot.tones[0] + 12) % 12
   const fifth = (slot.tones[2] - slot.tones[0] + 12) % 12
-  const numeral = NUMERALS[slot.degree]
-  if (fifth === 6) return numeral.toLowerCase() + '°'
-  return third === 3 ? numeral.toLowerCase() : numeral
+  const quality = fifth === 6 ? 'dim' : third === 3 ? 'm' : ''
+  return LETTERS[letter] + (alter > 0 ? '#'.repeat(alter) : 'b'.repeat(-alter)) + quality
 }
 
 export interface HarmonizeOptions {
   tonic: number
+  letter: number
   mode: 'major' | 'minor'
   time: TimeSignature
   measureLength: number
@@ -120,7 +126,7 @@ function score(notes: SlotNote[], tonic: number, tones: number[], prior: number)
 
 /** Chooses the chords that go with a melody (one list of events per measure). */
 export function harmonize(melody: ExerciseEvent[][], options: HarmonizeOptions): Harmony {
-  const { tonic, mode, time, measureLength, beatLength, split } = options
+  const { tonic, letter, mode, time, measureLength, beatLength, split } = options
   const last = melody.length - 1
   const candidates = CANDIDATES[mode]
   const slots: ChordSlot[] = []
@@ -145,6 +151,15 @@ export function harmonize(melody: ExerciseEvent[][], options: HarmonizeOptions):
   }
 
   melody.forEach((events, m) => {
+    const half = measureLength / 2
+    // A second chord only where a note starts, so its name has a note to stand under.
+    let position = 0
+    const noteAtHalf = events.some(e => {
+      const at = position
+      position += e.duration
+      return at === half && e.midi !== null
+    })
+    const halves = split && noteAtHalf
     const push = (start: number, length: number, degree: number) => {
       const prev = slots[slots.length - 1]
       // The same chord twice in one measure is one longer chord.
@@ -154,8 +169,7 @@ export function harmonize(melody: ExerciseEvent[][], options: HarmonizeOptions):
     }
     if (m === 0 || m === last) {
       // Start and end on the tonic chord. A first measure split in two may move on in its second half.
-      if (m === 0 && split && last > 0) {
-        const half = measureLength / 2
+      if (m === 0 && halves && last > 0) {
         push(0, half, 0)
         push(half, half, choose(slotNotes(events, half, measureLength, beatLength), false))
       } else {
@@ -164,18 +178,17 @@ export function harmonize(melody: ExerciseEvent[][], options: HarmonizeOptions):
       return
     }
     const penultimate = m === last - 1
-    if (!split) {
+    if (!halves) {
       push(0, measureLength, choose(slotNotes(events, 0, measureLength, beatLength), penultimate))
       return
     }
-    const half = measureLength / 2
     push(0, half, choose(slotNotes(events, 0, half, beatLength), false))
     push(half, half, choose(slotNotes(events, half, measureLength, beatLength), penultimate))
   })
 
   const sounding = melody.flat().filter(e => e.midi !== null).map(e => e.midi!)
   const average = sounding.reduce((a, b) => a + b, 0) / Math.max(1, sounding.length)
-  return { time, tonic, measureLength, slots, low: average < 57 }
+  return { time, tonic, letter, measureLength, slots, low: average < 57 }
 }
 
 // --- Style --------------------------------------------------------------------

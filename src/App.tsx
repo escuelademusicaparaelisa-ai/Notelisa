@@ -31,9 +31,9 @@ function newExercise(options: ExerciseOptions): { exercise: Exercise; seed: numb
   return { exercise: generateExercise(options, seed), seed }
 }
 
-/** The exercise as a piece; with the accompaniment on, the degrees of its chords are written on the score. */
-function exercisePiece(exercise: Exercise, seed: number, degrees: boolean): Piece {
-  return { id: `exercise:${seed}`, title: exercise.title, instrument: exercise.options.instrument, file: null, content: exerciseToMusicXml(exercise, { degrees }) }
+/** The exercise as a piece; with the accompaniment on, the names of its chords are written on the score. */
+function exercisePiece(exercise: Exercise, seed: number, chords: boolean): Piece {
+  return { id: `exercise:${seed}`, title: exercise.title, instrument: exercise.options.instrument, file: null, content: exerciseToMusicXml(exercise, { chords }) }
 }
 
 export default function App() {
@@ -50,9 +50,9 @@ export default function App() {
   // Only students' practice is saved, so their teacher can follow it.
   const student = profile?.role === 'student' ? profile : null
   const notebookStore = useMemo(() => (staff ? accountNotebooks(staff) : deviceNotebooks), [staff])
-  const showDegrees = (exerciseOptions.accompaniment ?? 'off') !== 'off'
+  const showChords = (exerciseOptions.accompaniment ?? 'off') !== 'off'
   const exercise = view.name === 'exercise' ? view : null
-  const practisedExercise = useMemo(() => (exercise ? exercisePiece(exercise.exercise, exercise.seed, showDegrees) : null), [exercise, showDegrees])
+  const practisedExercise = useMemo(() => (exercise ? exercisePiece(exercise.exercise, exercise.seed, showChords) : null), [exercise, showChords])
   const toLibrary = () => setView({ name: 'library' })
   const startExercise = (options: ExerciseOptions) => {
     setExerciseOptions(options)
