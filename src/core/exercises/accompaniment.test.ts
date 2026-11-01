@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { accompanimentNotes, chordNumeral, chordTones, resolveStyle, stylesForTime } from './accompaniment'
+import { accompanimentNotes, chordName, chordTones, resolveStyle, stylesForTime } from './accompaniment'
 import { exerciseToMusicXml, generateExercise, KEYS, measureLength, type ExerciseOptions, type TimeSignature } from './generator'
 
 const BASE: ExerciseOptions = {
@@ -94,18 +94,28 @@ describe('accompaniment styles', () => {
   })
 })
 
-describe('degrees on the score', () => {
-  it('writes capitals for major chords and small letters for minor ones', () => {
-    expect(chordNumeral({ degree: 4, tones: chordTones(4, 'minor') })).toBe('V')
-    expect(chordNumeral({ degree: 3, tones: chordTones(3, 'minor') })).toBe('iv')
-    expect(chordNumeral({ degree: 5, tones: chordTones(5, 'major') })).toBe('vi')
+describe('chord names on the score', () => {
+  it('spells the chords in the key', () => {
+    const c = { tonic: 0, letter: 0 }
+    expect(chordName({ degree: 4, tones: chordTones(4, 'major') }, c)).toBe('G')
+    expect(chordName({ degree: 5, tones: chordTones(5, 'major') }, c)).toBe('Am')
+    // F# minor: iv is Bm, V is C# major, VI is D.
+    const fSharpMinor = { tonic: 6, letter: 3 }
+    expect(chordName({ degree: 3, tones: chordTones(3, 'minor') }, fSharpMinor)).toBe('Bm')
+    expect(chordName({ degree: 4, tones: chordTones(4, 'minor') }, fSharpMinor)).toBe('C#')
+    expect(chordName({ degree: 5, tones: chordTones(5, 'minor') }, fSharpMinor)).toBe('D')
+    // E flat major: IV is Ab.
+    expect(chordName({ degree: 3, tones: chordTones(3, 'major') }, { tonic: 3, letter: 2 })).toBe('Ab')
   })
 
-  it('writes one degree per chord, only when asked', () => {
-    const exercise = generateExercise(BASE, 2)
-    expect(exerciseToMusicXml(exercise)).not.toContain('<words')
-    const words = exerciseToMusicXml(exercise, { degrees: true }).match(/<words[^>]*>[^<]*<\/words>/g) ?? []
-    expect(words.length).toBe(exercise.harmony.slots.length)
-    expect(words[0]).toContain('>I<')
+  it('writes one name per chord under a note, only when asked', () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const exercise = generateExercise({ ...BASE, rests: true, rhythm: 3 }, seed)
+      expect(exerciseToMusicXml(exercise)).not.toContain('<lyric')
+      const names = exerciseToMusicXml(exercise, { chords: true }).match(/<text>[^<]*<\/text>/g) ?? []
+      expect(names.length).toBeGreaterThan(0)
+      expect(names.length).toBeLessThanOrEqual(exercise.harmony.slots.length)
+      expect(names[0]).toBe('<text>C</text>')
+    }
   })
 })

@@ -1,7 +1,7 @@
 // Generates practice exercises (sight-reading lines, scales and arpeggios) as MusicXML, so
 // they open in the practice screen like any other piece.
 
-import { chordNumeral, harmonize, type AccompanimentStyle, type Harmony } from './accompaniment'
+import { chordName, harmonize, type AccompanimentStyle, type Harmony } from './accompaniment'
 
 export type ExerciseKind = 'reading' | 'scale' | 'arpeggio' | 'scale-arpeggio' | 'chromatic'
 export type Clef = 'treble' | 'bass' | 'grand'
@@ -481,6 +481,7 @@ function bassLine(options: ExerciseOptions, pitches: Pitches, harmony: Harmony):
 function harmonyFor(options: ExerciseOptions, key: KeyDefinition, melody: ExerciseEvent[][], split: boolean): Harmony {
   return harmonize(melody, {
     tonic: (LETTER_SEMITONES[key.letter] + key.alter + 12) % 12,
+    letter: key.letter,
     mode: key.mode,
     time: options.time,
     measureLength: measureLength(options.time),
@@ -688,7 +689,7 @@ function beams(events: ExerciseEvent[], beat: number): string[][] {
   return result
 }
 
-function noteXml(event: ExerciseEvent, pitches: Pitches, staff: number, beamTags: string[], wholeMeasure: boolean): string {
+function noteXml(event: ExerciseEvent, pitches: Pitches, staff: number, beamTags: string[], wholeMeasure: boolean, chord?: string): string {
   const { type, dot } = DURATION_TYPES[event.duration]
   const voice = staff === 1 ? 1 : 5
   let head: string
@@ -702,21 +703,18 @@ function noteXml(event: ExerciseEvent, pitches: Pitches, staff: number, beamTags
     ? `<notations><technical><fingering placement="${staff === 1 ? 'above' : 'below'}">${event.finger}</fingering></technical></notations>`
     : ''
   return `<note>${head}<duration>${event.duration}</duration><voice>${voice}</voice><type>${type}</type>${dot ? '<dot/>' : ''}`
-    + `<staff>${staff}</staff>${beamTags.join('')}${fingering}</note>`
-}
-
-/** Roman numeral of a chord written under the first staff, where the chord starts. */
-function degreeXml(numeral: string, offset: number): string {
-  return '<direction placement="below"><direction-type><words font-weight="bold">' + numeral + '</words></direction-type>'
-    + (offset ? `<offset>${offset}</offset>` : '') + '<staff>1</staff></direction>'
+    + `<staff>${staff}</staff>${beamTags.join('')}${fingering}`
+    // Chord names go as lyrics: the score lines them all up on one row under the staff.
+    + (chord ? `<lyric number="1" name="acordes" placement="below"><syllabic>single</syllabic><text>${chord}</text></lyric>` : '')
+    + '</note>'
 }
 
 export interface MusicXmlOptions {
-  /** Writes the degree of each accompaniment chord (I, IV, V…) under the first staff. */
-  degrees?: boolean
+  /** Writes the name of each accompaniment chord (C, Am, G…) under the first staff. */
+  chords?: boolean
 }
 
-export function exerciseToMusicXml(exercise: Exercise, { degrees = false }: MusicXmlOptions = {}): string {
+export function exerciseToMusicXml(exercise: Exercise, { chords: withChords = false }: MusicXmlOptions = {}): string {
   const { options, staves, tempo } = exercise
   const key = exerciseKey(options)
   const [beats, beatType] = options.time.split('/')
@@ -747,14 +745,15 @@ export function exerciseToMusicXml(exercise: Exercise, { degrees = false }: Musi
       const events = staff.measures[m]
       const pitches = new Pitches(key, staff.clef, options.minor)
       const beamTags = beams(events, beatLength(options.time))
-      const chords = s === 0 && degrees ? exercise.harmony.slots.filter(slot => slot.measure === m) : []
+      const chords = s === 0 && withChords ? exercise.harmony.slots.filter(slot => slot.measure === m) : []
+      const named = new Set<number>()
       let position = 0
       events.forEach((event, i) => {
-        // A chord starting in the middle of a long note is moved forward from it.
-        for (const chord of chords) {
-          if (chord.start >= position && chord.start < position + event.duration) xml += degreeXml(chordNumeral(chord), chord.start - position)
-        }
-        xml += noteXml(event, pitches, s + 1, beamTags[i], events.length === 1)
+        // Under the first note of each chord (after a rest when it starts on one).
+        const chord = event.midi === null ? undefined
+          : chords.find(c => !named.has(c.start) && position >= c.start && position < c.start + c.length)
+        if (chord) named.add(chord.start)
+        xml += noteXml(event, pitches, s + 1, beamTags[i], events.length === 1, chord && chordName(chord, exercise.harmony))
         position += event.duration
       })
     })

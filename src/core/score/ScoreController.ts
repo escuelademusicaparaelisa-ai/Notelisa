@@ -3,6 +3,9 @@ import { extractTimeline } from './osmdTimeline'
 import type { Timeline } from './timeline'
 
 /** Owns the OSMD instance: renders a score and moves its cursor to a given step. */
+/** Name of the lyric line that holds chord names. */
+export const CHORD_LYRICS = 'acordes'
+
 export class ScoreController {
   private osmd: OpenSheetMusicDisplay
   private position = 0
@@ -35,6 +38,8 @@ export class ScoreController {
     // Disposed while loading (the screen changed score): drawing now would leave a
     // second copy of the score in the container.
     if (this.disposed) throw new Error('Score view closed while loading')
+    // Chord names of generated exercises (written as lyrics) sit further from the staff than sung lyrics.
+    if (source.includes(`name="${CHORD_LYRICS}"`)) this.osmd.EngravingRules.LyricsYOffsetToStaffHeight = 2
     this.osmd.render()
     this.osmd.cursor.show()
     this.timeline = extractTimeline(this.osmd)
