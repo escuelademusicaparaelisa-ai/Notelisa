@@ -303,6 +303,8 @@ function writableDurations(length: number): number[] {
 
 /** Lowest and highest notes for each clef: up to two ledger lines. */
 const CLEF_RANGE = { treble: { low: 57, high: 81 }, bass: { low: 40, high: 64 } }
+/** Notes chosen one by one may go further: up to three ledger lines (Fa3–Mi6, La1–Sol4). */
+const CHOSEN_CLEF_RANGE = { treble: { low: 53, high: 88 }, bass: { low: 33, high: 67 } }
 
 function degreeRange(pitches: Pitches, clef: 'treble' | 'bass', range: Exclude<RangeLevel, 5>, instrument: ExerciseOptions['instrument']): { low: number; high: number } {
   let { low, high } = [{ low: 0, high: 2 }, { low: 0, high: 4 }, { low: 0, high: 7 }, { low: -3, high: 9 }, { low: -3, high: 11 }][range]
@@ -367,24 +369,31 @@ function melodyLimits(clef: 'treble' | 'bass', instrument: ExerciseOptions['inst
   return instrument === 'flute' ? FLUTE_RANGE : CLEF_RANGE[clef]
 }
 
+/** Lowest and highest notes that may be chosen one by one. */
+function chosenLimits(clef: 'treble' | 'bass', instrument: ExerciseOptions['instrument']): { low: number; high: number } {
+  return instrument === 'flute' ? FLUTE_RANGE : CHOSEN_CLEF_RANGE[clef]
+}
+
 export interface SelectableNote {
   position: number
+  /** The key it sounds on the piano. */
+  midi: number
   /** Spanish name with its octave, e.g. "Fa♯4". */
   name: string
 }
 
-/** Notes of the key that fit on the melody's staff (or the flute), low to high, to choose from one by one. */
+/** Notes of the key that fit on the melody's staff with up to three ledger lines (or the flute), low to high, to choose from one by one. */
 export function selectableNotes(options: ExerciseOptions): SelectableNote[] {
   const clef = options.instrument === 'piano' && options.clef === 'bass' ? 'bass' : 'treble'
   const pitches = new Pitches(getKey(options.key), clef, options.minor)
-  const { low, high } = melodyLimits(clef, options.instrument)
+  const { low, high } = chosenLimits(clef, options.instrument)
   const notes: SelectableNote[] = []
-  for (let degree = -14; degree <= 21; degree++) {
+  for (let degree = -21; degree <= 28; degree++) {
     const midi = pitches.midi(degree)
     if (midi < low || midi > high) continue
     const { step, alter, octave } = pitches.spell(degree, midi)
     const name = LETTER_NAMES_ES[LETTER_NAMES.indexOf(step)] + (alter > 0 ? '♯'.repeat(alter) : '♭'.repeat(-alter)) + octave
-    notes.push({ position: pitches.position(degree), name })
+    notes.push({ position: pitches.position(degree), midi, name })
   }
   return notes
 }
@@ -399,7 +408,7 @@ export function defaultChosenNotes(options: ExerciseOptions): number[] {
 /** Degrees the melody may use, low to high. Fewer than two chosen notes that fit falls back to five notes. */
 function melodyPool(options: ExerciseOptions, clef: 'treble' | 'bass', pitches: Pitches): number[] {
   if (options.range === 5) {
-    const { low, high } = melodyLimits(clef, options.instrument)
+    const { low, high } = chosenLimits(clef, options.instrument)
     const chosen = [...new Set(options.notes ?? [])].map(p => pitches.degree(p))
       .filter(d => pitches.midi(d) >= low && pitches.midi(d) <= high).sort((a, b) => a - b)
     if (chosen.length >= 2) return chosen

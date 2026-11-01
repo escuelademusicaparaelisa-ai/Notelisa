@@ -5,6 +5,7 @@ import {
 } from '../../core/exercises/generator'
 import { saveExerciseOptions } from '../../core/exercises/savedOptions'
 import { Choices } from '../components/Choices'
+import { NotePicker } from '../components/NotePicker'
 import { Arpeggio, ArrowLeft, FileMusic, Flute, Piano, Scale, ScaleArpeggio, Sparkles } from '../icons'
 
 interface Props {
@@ -27,27 +28,21 @@ function KeyChips({ keys, value, onChange }: { keys: typeof MAJOR_KEYS; value: s
   )
 }
 
-/** Notes of the key to tap one by one, each with its octave (Do4, Mi4…). */
-function NoteChips({ options, onChange }: { options: ExerciseOptions; onChange(notes: number[]): void }) {
+/** A keyboard to tap the notes of the key one by one; it can move lower or higher. */
+function NoteChooser({ options, onChange }: { options: ExerciseOptions; onChange(notes: number[]): void }) {
   const toggle = (position: number) =>
     onChange(options.notes.includes(position) ? options.notes.filter(p => p !== position) : [...options.notes, position])
-  const chosen = selectableNotes(options).filter(n => options.notes.includes(n.position)).length
+  const notes = selectableNotes(options)
+  const chosen = notes.filter(n => options.notes.includes(n.position)).length
   return (
     <fieldset className="exercise-option">
       <legend>Elige las notas</legend>
-      <div className="exercise-choices">
-        {selectableNotes(options).map(note => {
-          const active = options.notes.includes(note.position)
-          return (
-            <button key={note.position} type="button" className={`chip key-chip ${active ? 'active' : ''}`}
-              aria-pressed={active} onClick={() => toggle(note.position)}>
-              {note.name}
-            </button>
-          )
-        })}
-      </div>
+      {/* A new key, clef or instrument opens the keyboard again around the chosen notes. */}
+      <NotePicker key={`${options.key}-${options.minor}-${options.clef}-${options.instrument}`}
+        notes={notes} chosen={options.notes} onToggle={toggle} />
       <p className="exercise-hint">
-        {chosen < 2 ? 'Elige al menos dos notas; mientras tanto se usarán 5 notas.' : 'Toca una nota para añadirla o quitarla. Do4 es el Do central.'}
+        {chosen < 2 ? 'Elige al menos dos notas; mientras tanto se usarán 5 notas.'
+          : 'Toca una tecla para añadirla o quitarla. Las teclas apagadas no son de la tonalidad.'}
       </p>
     </fieldset>
   )
@@ -158,7 +153,7 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
           { value: 4, label: 'Dos octavas' },
           { value: 5, label: 'Elegir notas' },
         ]} />
-        {!scale && options.range === 5 && <NoteChips options={options} onChange={set('notes')} />}
+        {!scale && options.range === 5 && <NoteChooser options={options} onChange={set('notes')} />}
         {!scale && (
           // Intervals wider than the chosen notes cannot come up, so they are greyed out.
           <Choices label="Intervalo máximo" value={Math.min(options.maxInterval, rangeNotes(options)) as ExerciseOptions['maxInterval']}

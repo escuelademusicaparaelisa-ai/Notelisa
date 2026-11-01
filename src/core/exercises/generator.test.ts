@@ -273,15 +273,22 @@ describe('chosen notes', () => {
     expect(used).toEqual(new Set([60, 72]))
   })
 
+  it('uses chosen notes above the usual range, with ledger lines', () => {
+    // C6 (position 42) and D6 (43) are over two ledger lines above the treble staff.
+    expect(new Set(midis({ notes: [42, 43] }))).toEqual(new Set([84, 86]))
+  })
+
   it('falls back to five notes with fewer than two notes', () => {
     expect(midis({ notes: [G4] })).toEqual(midis({ range: 1 }))
   })
 
   it('names the notes with their octave and the key signature', () => {
     const names = selectableNotes({ ...BASE, key: 'G' }).map(n => n.name)
-    expect(names[0]).toBe('La3')
+    // Up to three ledger lines, so the keyboard can move lower and higher than the usual range.
+    expect(names[0]).toBe('Fa♯3')
     expect(names).toContain('Fa♯4')
-    expect(names[names.length - 1]).toBe('La5')
+    expect(names[names.length - 1]).toBe('Mi6')
+    expect(selectableNotes({ ...BASE, key: 'G' }).find(n => n.name === 'Fa♯4')?.midi).toBe(66)
     expect(selectableNotes({ ...BASE, clef: 'bass' }).map(n => n.name)).toContain('Do3')
     expect(defaultChosenNotes({ ...BASE, key: 'C' })).toEqual([28, 29, 30])
   })
