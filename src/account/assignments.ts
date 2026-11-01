@@ -19,17 +19,23 @@ export interface Assignment {
 
 /** What the teacher ticked: whole notebooks, whole levels and single pieces. */
 export interface Selection {
+  /** Notebooks given whole. */
   notebookIds: string[]
+  /** Levels given whole. */
   levels: number[]
   pieceIds: string[]
+  /** Only some pieces of a notebook, by notebook id. */
+  notebookPicks?: Record<string, string[]>
+  /** Only some pieces of a level, by level. */
+  levelPicks?: Record<number, string[]>
 }
 
-export const EMPTY_SELECTION: Selection = { notebookIds: [], levels: [], pieceIds: [] }
+export const EMPTY_SELECTION: Selection = { notebookIds: [], levels: [], pieceIds: [], notebookPicks: {}, levelPicks: {} }
 
 /**
  * The pieces a selection stands for, each once, with where it came from (a notebook
- * first, then a level). Levels take their pieces from levelPieces, so an instrument
- * filter can narrow them.
+ * first, then a level). Whole levels take their pieces from levelPieces, so an
+ * instrument filter can narrow them; pieces picked one by one are kept as picked.
  */
 export function selectedPieces(selection: Selection, pieces: Piece[], notebooks: Notebook[], levelPieces: Piece[] = pieces): { piece: Piece; source: string }[] {
   const byId = new Map(pieces.map(p => [p.id, p]))
@@ -37,11 +43,19 @@ export function selectedPieces(selection: Selection, pieces: Piece[], notebooks:
   const add = (piece: Piece | undefined, source: string) => {
     if (piece && !chosen.has(piece.id)) chosen.set(piece.id, { piece, source })
   }
-  for (const notebook of notebooks.filter(n => selection.notebookIds.includes(n.id))) {
-    for (const id of notebook.pieceIds) add(byId.get(id), `Cuaderno ${notebook.name}`)
+  for (const notebook of notebooks) {
+    const whole = selection.notebookIds.includes(notebook.id)
+    const picks = selection.notebookPicks?.[notebook.id] ?? []
+    for (const id of notebook.pieceIds) if (whole || picks.includes(id)) add(byId.get(id), `Cuaderno ${notebook.name}`)
   }
-  for (const level of [...selection.levels].sort((a, b) => a - b)) {
-    for (const piece of levelPieces.filter(p => p.level === level)) add(piece, `Nivel ${level}`)
+  const levels = new Set([...selection.levels, ...Object.keys(selection.levelPicks ?? {}).map(Number)])
+  for (const level of [...levels].sort((a, b) => a - b)) {
+    if (selection.levels.includes(level)) {
+      for (const piece of levelPieces.filter(p => p.level === level)) add(piece, `Nivel ${level}`)
+    } else {
+      const picks = selection.levelPicks?.[level] ?? []
+      for (const piece of pieces.filter(p => p.level === level && picks.includes(p.id))) add(piece, `Nivel ${level}`)
+    }
   }
   for (const id of selection.pieceIds) add(byId.get(id), '')
   return [...chosen.values()]

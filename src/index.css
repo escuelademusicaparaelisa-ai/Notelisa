@@ -533,6 +533,18 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
 .pick-row { padding: 10px 14px; border-radius: 14px; }
 .pick-text { flex: 1; min-width: 0; }
 .chooser-mode { display: flex; gap: 6px; }
+/* A notebook or level: the box ticks it whole, the rest opens its pieces to pick some */
+.pick-card:has(.pick-expand) { padding: 0 0 0 16px; gap: 0; }
+.pick-card.some { border-color: var(--lila); }
+.some > .pick-box { background: var(--lila-tint); border-color: var(--lila); color: var(--lila); }
+button.pick-box { padding: 0; cursor: pointer; }
+.pick-expand { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; text-align: left; background: none; border: 0;
+  padding: 14px 16px 14px 12px; border-radius: 0 16px 16px 0; color: inherit; font: inherit; cursor: pointer; }
+.pick-chevron { flex: none; color: var(--muted); transition: transform 0.15s; }
+.pick-expand[aria-expanded="true"] .pick-chevron { transform: rotate(180deg); }
+.pick-grid > li.pick-open { grid-column: 1 / -1; }
+.pick-drop { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 8px; padding: 10px; border-radius: 16px; background: var(--bg); }
+.pick-drop .pick-list { width: 100%; }
 
 /* Editing someone's details (administrator) */
 .admin-edit { margin-left: auto; font-size: 0.95rem; padding: 6px 14px; }
