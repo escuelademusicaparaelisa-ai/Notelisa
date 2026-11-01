@@ -4,9 +4,9 @@ import { loadAllPieces } from '../../library/allPieces'
 import { pieceFromFile, type Piece } from '../../library/catalog'
 import { deviceNotebooks, newNotebookId, removeNotebook, togglePiece, upsertNotebook, type Notebook, type NotebookStore } from '../../library/notebooks'
 import { matchesQuery } from '../../library/search'
-import { lockSchoolLibrary, openSchoolPiece, unlockSchoolLibrary, type SchoolLibrary } from '../../library/school'
+import { connectSchoolLibrary, openSchoolPiece, type SchoolLibrary } from '../../library/school'
 import { NavMenu } from '../components/NavMenu'
-import { ArrowLeft, ArrowRight, BookOpen, Camera, Check, FileMusic, FolderOpen, InstrumentIcon, KeyRound, Lock, Pencil, Plus, Search, Stars, Target, Trash2 } from '../icons'
+import { ArrowLeft, ArrowRight, BookOpen, Camera, Check, FileMusic, FolderOpen, InstrumentIcon, KeyRound, Pencil, Plus, Search, Stars, Target, Trash2 } from '../icons'
 
 interface Props {
   onOpen(piece: Piece): void
@@ -103,11 +103,6 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
     }
   }
 
-  const lock = () => {
-    lockSchoolLibrary()
-    void load()
-  }
-
   const chooseFilter = (value: string | null) => {
     setFilter(value)
     saveFilter(value)
@@ -159,7 +154,7 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
   }
 
   const byId = new Map(pieces?.map(p => [p.id, p]))
-  // Pieces of a notebook that this device can show (school pieces need the password).
+  // Pieces of a notebook that this device can show.
   const notebookPieces = (notebook: Notebook) => notebook.pieceIds.map(id => byId.get(id)).filter((p): p is Piece => !!p)
   const editing = draft !== null
   const isNew = editing && !notebooks.some(n => n.id === draft.id)
@@ -193,9 +188,6 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
           </label>
           {toReview > 0 && (
             <button className="chip review-link" onClick={onReview}><FileMusic /> Revisar importaciones ({toReview})</button>
-          )}
-          {school.state === 'open' && (
-            <button className="chip" onClick={lock} title="Para usar otra clave en este dispositivo"><Lock /> Cerrar biblioteca</button>
           )}
           {accountBar}
         </NavMenu>}
@@ -232,7 +224,7 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
         <span className="exercises-text"><strong>Ejercicios y escalas</strong>Crea un ejercicio nuevo de lectura, una escala o un arpegio</span>
         <span className="exercises-go" aria-hidden="true"><ArrowRight /></span>
       </button>
-      {school.state === 'locked' && <SchoolUnlock onUnlocked={() => void load()} />}
+      {school.state === 'locked' && school.canConnect && <SchoolConnect onConnected={() => void load()} />}
       {pieces === null && <p className="score-message">Cargando biblioteca…</p>}
       {pieces?.length === 0 && <p className="score-message">Todavía no hay piezas en la biblioteca.</p>}
       {!!pieces?.length && (
@@ -381,35 +373,39 @@ export function LibraryScreen({ onOpen, onReview, onExercises, onPhotos, noteboo
   )
 }
 
-/** Asks for the school password the first time the library is used on a device. */
-export function SchoolUnlock({ onUnlocked }: { onUnlocked(): void }) {
+/**
+ * Only for the administrator, once: the server does not have the school library key yet
+ * (or the password changed). After this, every approved account sees the library.
+ */
+function SchoolConnect({ onConnected }: { onConnected(): void }) {
   const [password, setPassword] = useState('')
   const [checking, setChecking] = useState(false)
-  const [wrong, setWrong] = useState(false)
+  const [problem, setProblem] = useState<'wrong' | 'failed' | null>(null)
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
     if (!password.trim()) return
     setChecking(true)
-    setWrong(false)
-    const ok = await unlockSchoolLibrary(password)
+    setProblem(null)
+    const result = await connectSchoolLibrary(password)
     setChecking(false)
-    if (ok) onUnlocked()
-    else setWrong(true)
+    if (result === 'ok') onConnected()
+    else setProblem(result)
   }
 
   return (
     <form className="school-unlock" onSubmit={submit}>
-      <h2><KeyRound /> Biblioteca de la escuela</h2>
-      <p>Escribe la clave que te ha dado tu profe para ver todas las canciones. Solo hay que hacerlo una vez.</p>
+      <h2><KeyRound /> Activar la biblioteca de la escuela</h2>
+      <p>Escribe una vez la clave con la que publicaste la biblioteca. Después la verán todos los alumnos y profesores con cuenta aprobada, sin escribir nada.</p>
       <div className="school-unlock-row">
         <input id="school-password" type="text" autoComplete="off" autoCapitalize="none" spellCheck={false}
-          placeholder="Clave" value={password} onChange={e => setPassword(e.target.value)} aria-label="Clave de la escuela" />
+          placeholder="Clave" value={password} onChange={e => setPassword(e.target.value)} aria-label="Clave de la biblioteca" />
         <button className="big-button primary" type="submit" disabled={checking || !password.trim()}>
-          {checking ? 'Comprobando…' : 'Abrir'}
+          {checking ? 'Comprobando…' : 'Activar'}
         </button>
       </div>
-      {wrong && <p className="notice warn">Esa clave no es correcta. Revisa que esté bien escrita.</p>}
+      {problem === 'wrong' && <p className="notice warn">Esa clave no es correcta. Revisa que esté bien escrita.</p>}
+      {problem === 'failed' && <p className="notice warn">No se ha podido guardar en el servidor. Comprueba que has ejecutado 06-biblioteca-escuela.sql en Supabase.</p>}
     </form>
   )
 }

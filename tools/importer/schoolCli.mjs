@@ -10,8 +10,8 @@ if (!password) {
 
 Cifra las piezas aprobadas de tu biblioteca (public/library/index.local.json) en
 public/library/school/. Esa carpeta se puede publicar: sin la clave no se puede leer.
-Con la misma clave, los alumnos no tienen que volver a escribirla. Con una clave nueva
-(o con --nueva-llave) las claves anteriores dejan de valer.`)
+Los alumnos no escriben ninguna clave: la ven todas las cuentas aprobadas. Con una clave
+nueva (o con --nueva-llave), la app le pide al admin la clave nueva una vez.`)
   process.exit(1)
 }
 

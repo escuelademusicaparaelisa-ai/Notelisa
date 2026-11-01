@@ -19,7 +19,6 @@ export function TeacherScreen({ me, notebookStore, onBack }: { me: Profile; note
   const [logs, setLogs] = useState<PracticeLog[]>([])
   const [pieces, setPieces] = useState<Piece[]>([])
   const [notebooks, setNotebooks] = useState<Notebook[]>([])
-  const [schoolLocked, setSchoolLocked] = useState(false)
   const [studentId, setStudentId] = useState<string | null>(null)
   const [choosing, setChoosing] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -27,10 +26,7 @@ export function TeacherScreen({ me, notebookStore, onBack }: { me: Profile; note
 
   useEffect(() => {
     notebookStore.load().then(setNotebooks, () => setFailed(true))
-    void loadAllPieces().then(({ pieces, school }) => {
-      setPieces(pieces)
-      setSchoolLocked(school.state === 'locked')
-    })
+    void loadAllPieces().then(({ pieces }) => setPieces(pieces))
     myStudents(me)
       .then(async list => {
         setStudents(list)
@@ -72,9 +68,6 @@ export function TeacherScreen({ me, notebookStore, onBack }: { me: Profile; note
         <h1>{choosing && student ? `Asignar a ${student.nombre}` : me.role === 'admin' ? 'Tareas de los alumnos' : 'Mis alumnos'}</h1>
       </header>
       {failed && <p className="notice warn">No se ha podido guardar o cargar. Revisa la conexión y vuelve a probar.</p>}
-      {schoolLocked && (
-        <p className="notice warn teacher-notice">Para asignar también las canciones de la escuela, abre antes la biblioteca de la escuela con su clave.</p>
-      )}
       {students === null ? (!failed && <p className="score-message">Cargando…</p>)
         : students.length === 0 ? <p className="score-message">Todavía no tienes alumnos. El administrador te los asigna desde su panel.</p>
         : choosing && student ? (

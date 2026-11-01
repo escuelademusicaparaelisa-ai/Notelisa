@@ -5,9 +5,8 @@ import { formatDuration, loadPractice, progressByPiece, secondsSince, startOfWee
 import { getInstrument } from '../../instruments'
 import { loadAllPieces } from '../../library/allPieces'
 import type { Piece } from '../../library/catalog'
-import { openSchoolPiece, type SchoolLibrary } from '../../library/school'
+import { openSchoolPiece } from '../../library/school'
 import { ArrowRight, CircleCheck, InstrumentIcon, Lock, Stars, Target, Timer } from '../icons'
-import { SchoolUnlock } from './LibraryScreen'
 
 // Card covers cycle through the colours of the logo, as in the library.
 const COVERS = ['lila', 'azul', 'amarillo', 'naranja']
@@ -20,19 +19,13 @@ export function StudentScreen({ me, onOpen, onExercises, accountBar }: {
   accountBar: ReactNode
 }) {
   const [pieces, setPieces] = useState<Piece[]>([])
-  const [school, setSchool] = useState<SchoolLibrary>({ state: 'none' })
   const [assignments, setAssignments] = useState<Assignment[] | null>(null)
   const [logs, setLogs] = useState<PracticeLog[]>([])
   const [failed, setFailed] = useState(false)
   const [opening, setOpening] = useState<string | null>(null)
 
-  const loadPieces = () => loadAllPieces().then(({ pieces, school }) => {
-    setPieces(pieces)
-    setSchool(school)
-  })
-
   useEffect(() => {
-    void loadPieces()
+    void loadAllPieces().then(({ pieces }) => setPieces(pieces))
     loadAssignments([me.id]).then(setAssignments, () => setFailed(true))
     const loadLogs = () => loadPractice([me.id]).then(setLogs, () => {})
     void loadLogs()
@@ -79,7 +72,7 @@ export function StudentScreen({ me, onOpen, onExercises, accountBar }: {
                   </> : <span>Sin empezar</span>}
                 </span>
                 <span className="piece-meta">
-                  {opening === a.piece_id ? 'Abriendo…' : piece ? getInstrument(piece.instrument).name : 'Necesita la clave de la escuela'}
+                  {opening === a.piece_id ? 'Abriendo…' : piece ? getInstrument(piece.instrument).name : 'Todavía no disponible'}
                 </span>
               </span>
             </button>
@@ -91,7 +84,6 @@ export function StudentScreen({ me, onOpen, onExercises, accountBar }: {
 
   const homework = assignments?.filter(a => a.homework) ?? []
   const forFun = assignments?.filter(a => !a.homework) ?? []
-  const needsKey = school.state === 'locked' && !!assignments?.some(a => !byId.has(a.piece_id))
 
   return (
     <main className="library student">
@@ -111,7 +103,6 @@ export function StudentScreen({ me, onOpen, onExercises, accountBar }: {
         </span>
         <span className="exercises-go" aria-hidden="true"><ArrowRight /></span>
       </button>
-      {needsKey && <SchoolUnlock onUnlocked={() => void loadPieces()} />}
       {failed && <p className="notice warn student-notice">No se ha podido cargar o abrir. Revisa la conexión y vuelve a probar.</p>}
       {assignments === null ? (!failed && <p className="score-message">Cargando tus canciones…</p>)
         : assignments.length === 0 ? <p className="score-message">Tu profe todavía no te ha asignado canciones. Mientras tanto, prueba los ejercicios y escalas.</p>
