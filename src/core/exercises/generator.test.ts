@@ -293,3 +293,49 @@ describe('chosen notes', () => {
     expect(defaultChosenNotes({ ...BASE, key: 'C' })).toEqual([28, 29, 30])
   })
 })
+
+describe('chromatic scale', () => {
+  const pitches = (xml: string) => [...xml.matchAll(/<step>(\w)<\/step>(?:<alter>(-?\d)<\/alter>)?<octave>(\d)<\/octave>/g)]
+    .map(([, step, alter, octave]) => step + (alter === '1' ? '#' : alter === '-1' ? 'b' : '') + octave)
+
+  it('goes up with sharps and down with flats, without key signature or accompaniment', () => {
+    const exercise = generateExercise({ ...BASE, kind: 'chromatic', instrument: 'flute', chromaticStart: 0, accompaniment: 'waltz' as never }, 1)
+    const xml = exerciseToMusicXml(exercise)
+    expect(exercise.title).toBe('Escala cromática · Do')
+    expect(xml).toContain('<fifths>0</fifths>')
+    expect(exercise.harmony.slots).toEqual([])
+    expect(exercise.options.accompaniment).toBe('off')
+    expect(pitches(xml)).toEqual([
+      'C4', 'C#4', 'D4', 'D#4', 'E4', 'F4', 'F#4', 'G4', 'G#4', 'A4', 'A#4', 'B4', 'C5',
+      'B4', 'Bb4', 'A4', 'Ab4', 'G4', 'Gb4', 'F4', 'E4', 'Eb4', 'D4', 'Db4', 'C4',
+    ])
+  })
+
+  it('keeps the starting note spelling and plays every semitone over two octaves', () => {
+    const exercise = generateExercise({ ...BASE, kind: 'chromatic', instrument: 'flute', chromaticStart: 3, range: 4 }, 1)
+    const notes = exercise.staves[0].measures.flat().filter(e => e.midi !== null)
+    expect(notes).toHaveLength(49)
+    notes.forEach((n, i) => expect(n.midi).toBe(63 + (i <= 24 ? i : 48 - i)))
+    const names = pitches(exerciseToMusicXml(exercise))
+    expect([names[0], names[24], names[48]]).toEqual(['Eb4', 'Eb6', 'Eb4'])
+    expect(names[1]).toBe('E4')
+    expect(names[2]).toBe('F4')
+    expect(names[3]).toBe('F#4')
+    expect(names[45]).toBe('Gb4')
+  })
+
+  it('fills every measure and fingers the piano with 3 on black keys', () => {
+    for (const time of TIMES) {
+      for (const rhythm of LEVELS) {
+        const exercise = generateExercise({ ...BASE, kind: 'chromatic', clef: 'grand', time, rhythm, chromaticStart: 7 }, 1)
+        expect(exercise.staves).toHaveLength(2)
+        for (const staff of exercise.staves) {
+          for (const m of staff.measures) expect(sum(m.map(e => e.duration))).toBe(measureLength(time))
+          for (const n of staff.measures.flat()) if (n.midi !== null && [1, 3, 6, 8, 10].includes(n.midi % 12)) expect(n.finger).toBe(3)
+        }
+      }
+    }
+    const right = generateExercise({ ...BASE, kind: 'chromatic', chromaticStart: 0 }, 1).staves[0].measures.flat().map(e => e.finger)
+    expect(right.slice(0, 13)).toEqual([1, 3, 1, 3, 1, 2, 3, 1, 3, 1, 3, 1, 2])
+  })
+})
