@@ -3,6 +3,7 @@ import * as Tone from 'tone'
 import { metronome, type Click } from '../../core/audio/metronome'
 import { ScorePlayer } from '../../core/audio/player'
 import { noteBus } from '../../core/input/bus'
+import { keyboardRange } from '../../core/music/keyboardRange'
 import { midiToSolfege } from '../../core/music/pitch'
 import { summarize, type PracticeSummary } from '../../core/practice/summary'
 import { DEFAULT_WINDOWS, MICROPHONE_WINDOWS, TempoSession, type TempoEvent, type Timing } from '../../core/practice/tempoSession'
@@ -114,6 +115,11 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
   const instrument = getInstrument(piece.instrument)
   const staves = useMemo(() => (staff === null ? undefined : [staff]), [staff])
   const measures = timeline ? measureCount(timeline) : 1
+  // The on-screen keyboard covers every note of the piece.
+  const keys = useMemo(
+    () => keyboardRange(timeline ? timeline.steps.flatMap(s => s.notes.map(n => n.midi)) : []),
+    [timeline],
+  )
 
   const goTo = useCallback((target: number) => {
     if (!timeline) return
@@ -594,7 +600,7 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
       </footer>
 
       {showKeyboard && mode !== 'listen' && (
-        <OnScreenKeyboard hints={expected} pressed={held} />
+        <OnScreenKeyboard low={keys.low} high={keys.high} hints={expected} pressed={held} />
       )}
 
       {calibrating && <CalibrationWizard onClose={() => setCalibrating(false)} />}
