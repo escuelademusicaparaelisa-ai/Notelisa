@@ -17,6 +17,7 @@ export interface PracticeLog {
 export type NewPracticeLog = Pick<PracticeLog, 'piece_id' | 'piece_title' | 'kind' | 'seconds' | 'attempts' | 'best_accuracy' | 'best_rhythm'>
 
 export interface PieceProgress {
+  title: string
   seconds: number
   /** Times the piece was played to the end. */
   attempts: number
@@ -44,7 +45,8 @@ export async function loadPractice(studentIds: string[]): Promise<PracticeLog[]>
 export function progressByPiece(logs: PracticeLog[]): Map<string, PieceProgress> {
   const result = new Map<string, PieceProgress>()
   for (const log of logs) {
-    const p = result.get(log.piece_id) ?? { seconds: 0, attempts: 0, best: null, last: log.created_at }
+    const p = result.get(log.piece_id) ?? { title: log.piece_title, seconds: 0, attempts: 0, best: null, last: log.created_at }
+    if (log.piece_title) p.title = log.piece_title
     p.seconds += log.seconds
     p.attempts += log.attempts
     if (log.best_accuracy !== null) p.best = Math.max(p.best ?? 0, log.best_accuracy)
@@ -52,6 +54,63 @@ export function progressByPiece(logs: PracticeLog[]): Map<string, PieceProgress>
     result.set(log.piece_id, p)
   }
   return result
+}
+
+/** Every piece practised, also the ones no longer assigned, the most recent first. */
+export function practisedPieces(logs: PracticeLog[]): ({ pieceId: string } & PieceProgress)[] {
+  return [...progressByPiece(logs.filter(l => l.kind === 'piece'))]
+    .map(([pieceId, p]) => ({ pieceId, ...p }))
+    .sort((a, b) => b.last.localeCompare(a.last))
+}
+
+export interface WeekStudy {
+  /** Monday of the week. */
+  start: Date
+  pieces: number
+  exercises: number
+}
+
+/** Seconds on pieces and on exercises in each of the last weeks, the oldest first. */
+export function weeklyStudy(logs: PracticeLog[], weeks = 8, now = new Date()): WeekStudy[] {
+  const thisWeek = startOfWeek(now)
+  const result: WeekStudy[] = []
+  for (let i = weeks - 1; i >= 0; i--) {
+    result.push({ start: new Date(thisWeek.getFullYear(), thisWeek.getMonth(), thisWeek.getDate() - 7 * i), pieces: 0, exercises: 0 })
+  }
+  for (const log of logs) {
+    const at = new Date(log.created_at)
+    for (let i = result.length - 1; i >= 0; i--) {
+      if (at >= result[i].start) {
+        result[i][log.kind === 'exercise' ? 'exercises' : 'pieces'] += log.seconds
+        break
+      }
+    }
+  }
+  return result
+}
+
+export interface DayStudy {
+  /** Local midnight of the day. */
+  day: Date
+  seconds: number
+  attempts: number
+  best: number | null
+}
+
+/** One piece day by day: time, times played to the end and the best result, the oldest first. */
+export function pieceDays(logs: PracticeLog[], pieceId: string): DayStudy[] {
+  const days = new Map<number, DayStudy>()
+  for (const log of logs) {
+    if (log.piece_id !== pieceId) continue
+    const at = new Date(log.created_at)
+    const day = new Date(at.getFullYear(), at.getMonth(), at.getDate())
+    const d = days.get(day.getTime()) ?? { day, seconds: 0, attempts: 0, best: null }
+    d.seconds += log.seconds
+    d.attempts += log.attempts
+    if (log.best_accuracy !== null) d.best = Math.max(d.best ?? 0, log.best_accuracy)
+    days.set(day.getTime(), d)
+  }
+  return [...days.values()].sort((a, b) => a.day.getTime() - b.day.getTime())
 }
 
 /** Seconds practised from the given moment on. */

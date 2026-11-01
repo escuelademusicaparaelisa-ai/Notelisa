@@ -6,6 +6,7 @@ import { getInstrument } from '../../instruments'
 import { loadAllPieces } from '../../library/allPieces'
 import type { Piece } from '../../library/catalog'
 import { openSchoolPiece } from '../../library/school'
+import { PieceProgressDialog, PractisedList, StudyChart } from '../components/StudyProgress'
 import { ArrowRight, CircleCheck, InstrumentIcon, Lock, Stars, Target, Timer } from '../icons'
 
 // Card covers cycle through the colours of the logo, as in the library.
@@ -23,6 +24,7 @@ export function StudentScreen({ me, onOpen, onExercises, accountBar }: {
   const [logs, setLogs] = useState<PracticeLog[]>([])
   const [failed, setFailed] = useState(false)
   const [opening, setOpening] = useState<string | null>(null)
+  const [looking, setLooking] = useState<{ pieceId: string; title: string } | null>(null)
 
   useEffect(() => {
     void loadAllPieces().then(({ pieces }) => setPieces(pieces))
@@ -110,6 +112,17 @@ export function StudentScreen({ me, onOpen, onExercises, accountBar }: {
           {homework.length > 0 && <><h2 className="section-title">Deberes</h2>{grid(homework)}</>}
           {forFun.length > 0 && <><h2 className="section-title">Por gusto</h2>{grid(forFun)}</>}
         </>}
+      {logs.length > 0 && (
+        <section className="student-progress">
+          <h2 className="section-title">Mi progreso</h2>
+          <StudyChart logs={logs} title="Minutos que has estudiado cada semana" />
+          {progress.size > 0 && <>
+            <p className="group-hint">Pulsa una canción para ver cómo la has ido estudiando, también las que ya terminaste.</p>
+            <PractisedList logs={logs} onOpen={id => setLooking({ pieceId: id, title: progress.get(id)?.title || id })} />
+          </>}
+        </section>
+      )}
+      {looking && <PieceProgressDialog {...looking} logs={logs} onClose={() => setLooking(null)} />}
     </main>
   )
 }
