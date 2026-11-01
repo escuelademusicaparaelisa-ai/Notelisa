@@ -339,6 +339,35 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
 .key-row-label { font-weight: 800; color: var(--muted); }
 .minor-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
 .exercise-choices .key-chip { min-width: 52px; padding: 8px 12px; justify-content: center; }
+.note-picker { clear: both; }
+.note-picker-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.note-picker-nav .chip { font-size: 1rem; padding: 8px 14px; }
+.note-picker-nav .chip:disabled { opacity: 0.4; cursor: not-allowed; }
+.note-picker-nav .narrow-only { display: none; }
+.note-picker-range { font-weight: 800; color: var(--muted); text-align: center; }
+.pick-keyboard { position: relative; height: 150px; background: var(--lila-deep); border-radius: 12px; padding: 0; overflow: hidden;
+  border: 6px solid var(--lila-deep); border-top-width: 8px; }
+.pick-key { position: absolute; top: 0; padding: 0; border: none; cursor: pointer; display: flex; align-items: flex-end; justify-content: center;
+  -webkit-user-select: none; user-select: none; font: inherit; }
+.pick-key.white { height: 100%; background: #fffdf8; border-radius: 0 0 8px 8px; z-index: 1; box-shadow: inset -1px 0 0 #d9cfe0, inset 0 -6px 0 #e4dbe9; }
+.pick-key.black { height: 60%; background: #1d1326; border-radius: 0 0 6px 6px; z-index: 2; box-shadow: inset 0 -4px 0 #4a3458; }
+.pick-key:disabled { opacity: 1; }
+.pick-key.white:disabled { background: #ddd5e3; cursor: not-allowed; box-shadow: inset -1px 0 0 #d9cfe0; }
+.pick-key.black:disabled { background: #8a7d94; cursor: not-allowed; box-shadow: none; }
+.pick-key.white.active { background: var(--lila); box-shadow: inset -1px 0 0 var(--lila-dark), inset 0 -6px 0 var(--lila-dark); }
+.pick-key.black.active { background: var(--lila); box-shadow: inset 0 -4px 0 var(--lila-dark); }
+.pick-key:not(:disabled):not(.active):hover.white { background: var(--lila-soft); }
+.pick-key:focus-visible { outline: 3px solid var(--azul, #2bb6e8); outline-offset: -3px; }
+.pick-label { font-size: 0.8rem; font-weight: 800; color: #fff; padding-bottom: 10px; white-space: nowrap; }
+.pick-key.black .pick-label { font-size: 0.68rem; padding-bottom: 6px; }
+.pick-label.faint { color: var(--muted); font-weight: 700; }
+@media (max-width: 560px) {
+  .pick-keyboard { height: 130px; }
+  .note-picker-nav .chip { padding: 8px 10px; font-size: 0.95rem; }
+  .note-picker-nav .wide-only { display: none; }
+  .note-picker-nav .narrow-only { display: inline; }
+  .pick-label { font-size: 0.72rem; }
+}
 @media (max-width: 560px) {
   .key-rows { grid-template-columns: 1fr; }
   .exercises-link { padding: 18px; gap: 14px; }
