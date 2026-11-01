@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import {
-  defaultChosenNotes, INTERVALS, MAJOR_KEYS, MINOR_KEYS, MINOR_SCALE_NAMES, RANGE_NOTES, selectableNotes,
+  CHROMATIC_STARTS, defaultChosenNotes, INTERVALS, MAJOR_KEYS, MINOR_KEYS, MINOR_SCALE_NAMES, RANGE_NOTES, selectableNotes,
   type ExerciseOptions, type MinorScale,
 } from '../../core/exercises/generator'
 import { ACCOMPANIMENT_NAMES, resolveStyle, stylesForTime, type AccompanimentStyle } from '../../core/exercises/accompaniment'
 import { saveExerciseOptions } from '../../core/exercises/savedOptions'
 import { Choices } from '../components/Choices'
 import { NotePicker } from '../components/NotePicker'
-import { Arpeggio, ArrowLeft, FileMusic, Flute, Piano, Scale, ScaleArpeggio, Sparkles } from '../icons'
+import { Arpeggio, ArrowLeft, Chromatic, FileMusic, Flute, Piano, Scale, ScaleArpeggio, Sparkles } from '../icons'
 
 interface Props {
   options: ExerciseOptions
@@ -62,6 +62,7 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
   const set = <K extends keyof ExerciseOptions>(key: K) => (value: ExerciseOptions[K]) => setOptions(o => ({ ...o, [key]: value }))
   // Scales and arpeggios share their options.
   const scale = options.kind !== 'reading'
+  const chromatic = options.kind === 'chromatic'
   const piano = options.instrument === 'piano'
   // "Elegir notas" starts from the tonic and the two notes above it.
   const chooseRange = (range: ExerciseOptions['range']) =>
@@ -88,6 +89,7 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
           { value: 'scale', label: 'Escala', icon: <Scale /> },
           { value: 'arpeggio', label: 'Arpegio', icon: <Arpeggio /> },
           { value: 'scale-arpeggio', label: 'Escala + arpegio', icon: <ScaleArpeggio /> },
+          { value: 'chromatic', label: 'Cromática', icon: <Chromatic /> },
         ]} />
         <Choices label="Instrumento" value={options.instrument} onChange={set('instrument')} choices={[
           { value: 'piano', label: 'Piano', icon: <Piano /> },
@@ -100,7 +102,11 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
             { value: 'grand', label: '𝄞+𝄢 Dos pentagramas' },
           ]} />
         )}
-        <fieldset className="exercise-option">
+        {chromatic ? (
+          <Choices<number> label="Empieza en" value={options.chromaticStart ?? 0} onChange={set('chromaticStart')}
+            hint="Sube con sostenidos y baja con bemoles, de semitono en semitono."
+            choices={CHROMATIC_STARTS.map(s => ({ value: s.pitchClass, label: s.name }))} />
+        ) : <fieldset className="exercise-option">
           <legend>Tonalidad</legend>
           <div className="key-rows">
             <span className="key-row-label">Mayores</span>
@@ -119,16 +125,17 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
               </div>}
             </div>
           </div>
-        </fieldset>
+        </fieldset>}
         <Choices label="Compás" value={options.time} onChange={set('time')} choices={[
           { value: '2/4', label: '2/4' },
           { value: '3/4', label: '3/4' },
           { value: '4/4', label: '4/4' },
           { value: '6/8', label: '6/8' },
         ]} />
-        <Choices<AccompanimentStyle> label="Acompañamiento" value={resolveStyle(options.accompaniment, options.time)} onChange={set('accompaniment')}
+        {/* No chords fit every semitone, so the chromatic scale goes without accompaniment. */}
+        {!chromatic && <Choices<AccompanimentStyle> label="Acompañamiento" value={resolveStyle(options.accompaniment, options.time)} onChange={set('accompaniment')}
           hint="Una base de piano que va con la melodía. Suena al escuchar y al tocar con tempo."
-          choices={(['off', ...stylesForTime(options.time)] as AccompanimentStyle[]).map(style => ({ value: style, label: ACCOMPANIMENT_NAMES[style] }))} />
+          choices={(['off', ...stylesForTime(options.time)] as AccompanimentStyle[]).map(style => ({ value: style, label: ACCOMPANIMENT_NAMES[style] }))} />}
         <Choices label={scale ? 'Figura' : 'Figuras'} value={options.rhythm} onChange={set('rhythm')} choices={scale ? [
           { value: 1, label: 'Lentas (blancas)' },
           { value: 2, label: 'Negras' },
