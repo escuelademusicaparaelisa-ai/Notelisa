@@ -42,6 +42,18 @@ export function Scale(props: LucideProps) {
   )
 }
 
+/** A chromatic scale: notes rising by semitones, with a sharp. */
+export function Chromatic(props: LucideProps) {
+  return (
+    <LineIcon {...props}>
+      <ellipse cx="12" cy="20" rx="2.5" ry="2" fill="currentColor" />
+      <ellipse cx="19" cy="17" rx="2.5" ry="2" fill="currentColor" />
+      <path d="M14.5 20V9M21.5 17V6" />
+      <path d="M4 7v9M7.5 6v9M2.5 10l6.5-1.5M2.5 13.5l6.5-1.5" strokeWidth="1.5" />
+    </LineIcon>
+  )
+}
+
 /** An arpeggio: three notes leaping up the chord. */
 export function Arpeggio(props: LucideProps) {
   return (

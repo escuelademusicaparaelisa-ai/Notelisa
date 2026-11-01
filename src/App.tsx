@@ -86,7 +86,7 @@ export default function App() {
       return (
         <LoggedPractice key={practisedExercise!.id} log={!!student} kind="exercise" piece={practisedExercise!} backLabel="Ejercicios"
           onBack={() => setView({ name: 'exercises' })} onAnother={() => startExercise(exerciseOptions)}
-          accompaniment={{ harmony: view.exercise.harmony, style: exerciseOptions.accompaniment ?? 'off', onChange: chooseAccompaniment }} />
+          accompaniment={view.exercise.harmony.slots.length ? { harmony: view.exercise.harmony, style: exerciseOptions.accompaniment ?? 'off', onChange: chooseAccompaniment } : undefined} />
       )
     default: {
       const accountBar = profile && (

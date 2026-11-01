@@ -3,7 +3,7 @@
 
 import { chordNumeral, harmonize, type AccompanimentStyle, type Harmony } from './accompaniment'
 
-export type ExerciseKind = 'reading' | 'scale' | 'arpeggio' | 'scale-arpeggio'
+export type ExerciseKind = 'reading' | 'scale' | 'arpeggio' | 'scale-arpeggio' | 'chromatic'
 export type Clef = 'treble' | 'bass' | 'grand'
 export type TimeSignature = '2/4' | '3/4' | '4/4' | '6/8'
 /** 1 whole/half notes, 2 + quarters, 3 + eighths, 4 + dotted figures and sixteenths. */
@@ -41,6 +41,8 @@ export interface ExerciseOptions {
   minor: MinorScale
   /** Piano accompaniment heard with the exercise; none when omitted. */
   accompaniment?: AccompanimentStyle
+  /** Starting note of the chromatic scale, as a pitch class (0 = Do … 11 = Si); Do when omitted. */
+  chromaticStart?: number
 }
 
 export type MinorScale = 'natural' | 'harmonic' | 'melodic'
@@ -102,6 +104,24 @@ export const MINOR_KEYS: KeyDefinition[] = [
 ]
 
 export const KEYS: KeyDefinition[] = [...MAJOR_KEYS, ...MINOR_KEYS]
+
+/** Starting notes for the chromatic scale, spelled as usually named; the first and last notes keep this spelling. */
+export const CHROMATIC_STARTS: { pitchClass: number; letter: number; alter: number; name: string }[] = [
+  [0, 0], [1, 0, 1], [2, 1], [3, 2, -1], [4, 2], [5, 3], [6, 3, 1], [7, 4], [8, 5, -1], [9, 5], [10, 6, -1], [11, 6],
+].map(([pitchClass, letter, alter = 0]) => ({
+  pitchClass, letter, alter, name: LETTER_NAMES_ES[letter] + (alter > 0 ? '♯' : alter < 0 ? '♭' : ''),
+}))
+
+function chromaticStart(options: ExerciseOptions) {
+  return CHROMATIC_STARTS.find(s => s.pitchClass === options.chromaticStart) ?? CHROMATIC_STARTS[0]
+}
+
+/** The key an exercise is written in. The chromatic scale has no key signature: every note carries its own accidental. */
+export function exerciseKey(options: ExerciseOptions): KeyDefinition {
+  if (options.kind !== 'chromatic') return getKey(options.key)
+  const start = chromaticStart(options)
+  return { id: 'chromatic', name: start.name, letter: start.letter, alter: start.alter, fifths: 0, mode: 'major' }
+}
 
 export const MINOR_SCALE_NAMES: Record<MinorScale, string> = { natural: 'natural', harmonic: 'armónica', melodic: 'melódica' }
 
@@ -529,6 +549,45 @@ function lineNotes(options: ExerciseOptions, pitches: Pitches, clef: 'treble' | 
 /** Even notes up and down, ending on a long tonic. Two octaves for the wide range. */
 function scaleLine(options: ExerciseOptions, pitches: Pitches, clef: 'treble' | 'bass'): ExerciseEvent[][] {
   const notes = lineNotes(options, pitches, clef)
+    .map(({ degree, ascending, finger }) => ({ degree, midi: pitches.midi(degree, ascending), ...(finger ? { finger } : {}) }))
+  return evenLine(options, notes)
+}
+
+/** Sharps for the black keys going up, flats going down. */
+const SHARP_SPELLING = [[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [3, 0], [3, 1], [4, 0], [4, 1], [5, 0], [5, 1], [6, 0]]
+const FLAT_SPELLING = [[0, 0], [1, -1], [1, 0], [2, -1], [2, 0], [3, 0], [4, -1], [4, 0], [5, -1], [5, 0], [6, -1], [6, 0]]
+
+/**
+ * Piano chromatic fingering: 3 on the black keys and 1 on the white ones, with 2 where two white keys
+ * meet (Fa and Do in the right hand, Mi and Si in the left). The first and last notes start the hand with 1 on a white key.
+ */
+function chromaticFinger(midi: number, clef: 'treble' | 'bass', edge: boolean): number {
+  const pitchClass = midi % 12
+  if (!LETTER_SEMITONES.includes(pitchClass)) return 3
+  if (edge) return 1
+  return (clef === 'treble' ? [0, 5] : [4, 11]).includes(pitchClass) ? 2 : 1
+}
+
+/** Every semitone up and down from the starting note, one or two octaves. */
+function chromaticLine(options: ExerciseOptions, pitches: Pitches, clef: 'treble' | 'bass'): ExerciseEvent[][] {
+  const start = chromaticStart(options)
+  const top = 12 * scaleOctaves(options)
+  const steps = [...Array.from({ length: top + 1 }, (_, i) => i), ...Array.from({ length: top }, (_, i) => top - 1 - i)]
+  const notes = steps.map((step, i) => {
+    const midi = pitches.tonicMidi + step
+    const pitchClass = midi % 12
+    const [letter, alter] = pitchClass === start.pitchClass ? [start.letter, start.alter]
+      : (i <= top ? SHARP_SPELLING : FLAT_SPELLING)[pitchClass]
+    const octave = Math.floor((midi - alter) / 12) - 1
+    const degree = 7 * octave + letter - pitches.position(0)
+    const finger = options.instrument === 'piano' ? chromaticFinger(midi, clef, i === 0 || i === steps.length - 1) : undefined
+    return { degree, midi, ...(finger ? { finger } : {}) }
+  })
+  return evenLine(options, notes)
+}
+
+/** Lays out notes of the same length in measures; the last one lasts until the end of its measure. */
+function evenLine(options: ExerciseOptions, notes: { degree: number; midi: number; finger?: number }[]): ExerciseEvent[][] {
   const noteLength = scaleNoteLength(options.time, options.rhythm)
   const length = measureLength(options.time)
   const measures: ExerciseEvent[][] = []
@@ -543,8 +602,7 @@ function scaleLine(options: ExerciseOptions, pitches: Pitches, clef: 'treble' | 
       position = 0
     }
   }
-  notes.forEach(({ degree, ascending, finger }, i) => {
-    const note = { degree, midi: pitches.midi(degree, ascending), ...(finger ? { finger } : {}) }
+  notes.forEach((note, i) => {
     if (i < notes.length - 1) return push({ duration: noteLength, ...note })
     // The last tonic lasts until the end of the measure (or a whole measure on the downbeat).
     const remaining = position === 0 ? length : length - position
@@ -556,17 +614,26 @@ function scaleLine(options: ExerciseOptions, pitches: Pitches, clef: 'treble' | 
 }
 
 const LINE_TITLES: Record<Exclude<ExerciseKind, 'reading'>, string> = {
-  scale: 'Escala', arpeggio: 'Arpegio', 'scale-arpeggio': 'Escala y arpegio',
+  scale: 'Escala', arpeggio: 'Arpegio', 'scale-arpeggio': 'Escala y arpegio', chromatic: 'Escala cromática',
 }
 
 export function generateExercise(options: ExerciseOptions, seed: number): Exercise {
   const random = seededRandom(seed)
-  const key = getKey(options.key)
+  const key = exerciseKey(options)
   const clef: Clef = options.instrument === 'flute' ? 'treble' : options.clef
   const opts = { ...options, clef, minor: options.minor ?? 'harmonic', maxInterval: options.maxInterval ?? defaultMaxInterval(options.range) }
   const name = key.mode === 'minor' ? `${key.name} ${MINOR_SCALE_NAMES[opts.minor]}` : key.name
   const staves: ExerciseStaff[] = []
   const tempo = opts.time === '6/8' ? 90 : opts.kind !== 'reading' ? 72 : 80
+
+  if (opts.kind === 'chromatic') {
+    for (const staffClef of clef === 'grand' ? (['treble', 'bass'] as const) : [clef]) {
+      staves.push({ clef: staffClef, measures: chromaticLine(opts, new Pitches(key, staffClef), staffClef) })
+    }
+    // No chords fit every semitone, so the chromatic scale goes without accompaniment.
+    const harmony = { ...harmonyFor(opts, key, staves[0].measures, false), slots: [] }
+    return { title: `${LINE_TITLES.chromatic} · ${key.name}`, options: { ...opts, accompaniment: 'off' }, staves, tempo, harmony }
+  }
 
   if (opts.kind !== 'reading') {
     for (const staffClef of clef === 'grand' ? (['treble', 'bass'] as const) : [clef]) {
@@ -651,7 +718,7 @@ export interface MusicXmlOptions {
 
 export function exerciseToMusicXml(exercise: Exercise, { degrees = false }: MusicXmlOptions = {}): string {
   const { options, staves, tempo } = exercise
-  const key = getKey(options.key)
+  const key = exerciseKey(options)
   const [beats, beatType] = options.time.split('/')
   const length = measureLength(options.time)
   const partName = options.instrument === 'flute' ? 'Flauta' : 'Piano'
