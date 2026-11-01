@@ -1,11 +1,10 @@
 import { useMemo, useState } from 'react'
 import { accountNotebooks } from './account/sharedNotebooks'
 import { useAccount } from './account/useAccount'
-import { exerciseToMusicXml, generateExercise, type ExerciseOptions } from './core/exercises/generator'
+import { exerciseToMusicXml, generateExercise, type Exercise, type ExerciseOptions } from './core/exercises/generator'
 import type { Piece } from './library/catalog'
 import { deviceNotebooks } from './library/notebooks'
 import { saveExerciseOptions, savedExerciseOptions } from './core/exercises/savedOptions'
-import type { Harmony } from './core/exercises/accompaniment'
 import { AccountBar } from './ui/components/AccountBar'
 import { LoggedPractice } from './ui/components/LoggedPractice'
 import { AdminScreen } from './ui/screens/AdminScreen'
@@ -23,15 +22,18 @@ type View =
   | { name: 'review' }
   | { name: 'exercises' }
   | { name: 'photo'; photos: File[] }
-  | { name: 'exercise'; piece: Piece; harmony: Harmony }
+  | { name: 'exercise'; exercise: Exercise; seed: number }
   | { name: 'admin' }
   | { name: 'teacher' }
 
-function newExercise(options: ExerciseOptions): { piece: Piece; harmony: Harmony } {
+function newExercise(options: ExerciseOptions): { exercise: Exercise; seed: number } {
   const seed = Math.floor(Math.random() * 2 ** 31)
-  const exercise = generateExercise(options, seed)
-  const piece = { id: `exercise:${seed}`, title: exercise.title, instrument: exercise.options.instrument, file: null, content: exerciseToMusicXml(exercise) }
-  return { piece, harmony: exercise.harmony }
+  return { exercise: generateExercise(options, seed), seed }
+}
+
+/** The exercise as a piece; with the accompaniment on, the degrees of its chords are written on the score. */
+function exercisePiece(exercise: Exercise, seed: number, degrees: boolean): Piece {
+  return { id: `exercise:${seed}`, title: exercise.title, instrument: exercise.options.instrument, file: null, content: exerciseToMusicXml(exercise, { degrees }) }
 }
 
 export default function App() {
@@ -48,6 +50,9 @@ export default function App() {
   // Only students' practice is saved, so their teacher can follow it.
   const student = profile?.role === 'student' ? profile : null
   const notebookStore = useMemo(() => (staff ? accountNotebooks(staff) : deviceNotebooks), [staff])
+  const showDegrees = (exerciseOptions.accompaniment ?? 'off') !== 'off'
+  const exercise = view.name === 'exercise' ? view : null
+  const practisedExercise = useMemo(() => (exercise ? exercisePiece(exercise.exercise, exercise.seed, showDegrees) : null), [exercise, showDegrees])
   const toLibrary = () => setView({ name: 'library' })
   const startExercise = (options: ExerciseOptions) => {
     setExerciseOptions(options)
@@ -79,9 +84,9 @@ export default function App() {
       return <ExercisesScreen options={exerciseOptions} onCreate={startExercise} onBack={toLibrary} />
     case 'exercise':
       return (
-        <LoggedPractice key={view.piece.id} log={!!student} kind="exercise" piece={view.piece} backLabel="Ejercicios"
+        <LoggedPractice key={practisedExercise!.id} log={!!student} kind="exercise" piece={practisedExercise!} backLabel="Ejercicios"
           onBack={() => setView({ name: 'exercises' })} onAnother={() => startExercise(exerciseOptions)}
-          accompaniment={view.harmony.slots.length ? { harmony: view.harmony, style: exerciseOptions.accompaniment ?? 'off', onChange: chooseAccompaniment } : undefined} />
+          accompaniment={view.exercise.harmony.slots.length ? { harmony: view.exercise.harmony, style: exerciseOptions.accompaniment ?? 'off', onChange: chooseAccompaniment } : undefined} />
       )
     default: {
       const accountBar = profile && (

@@ -52,6 +52,8 @@ export const ScoreView = forwardRef<ScoreViewHandle, Props>(function ScoreView({
     return () => {
       cancelled = true
       controller.dispose()
+      // The renderer leaves its empty drawing behind; a new score would be drawn under it.
+      container.replaceChildren()
       controllerRef.current = null
     }
     // onLoaded is intentionally not a dependency: reload only when the score changes.

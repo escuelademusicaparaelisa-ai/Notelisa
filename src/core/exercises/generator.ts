@@ -1,7 +1,7 @@
 // Generates practice exercises (sight-reading lines, scales and arpeggios) as MusicXML, so
 // they open in the practice screen like any other piece.
 
-import { harmonize, type AccompanimentStyle, type Harmony } from './accompaniment'
+import { chordNumeral, harmonize, type AccompanimentStyle, type Harmony } from './accompaniment'
 
 export type ExerciseKind = 'reading' | 'scale' | 'arpeggio' | 'scale-arpeggio' | 'chromatic'
 export type Clef = 'treble' | 'bass' | 'grand'
@@ -705,7 +705,18 @@ function noteXml(event: ExerciseEvent, pitches: Pitches, staff: number, beamTags
     + `<staff>${staff}</staff>${beamTags.join('')}${fingering}</note>`
 }
 
-export function exerciseToMusicXml(exercise: Exercise): string {
+/** Roman numeral of a chord written under the first staff, where the chord starts. */
+function degreeXml(numeral: string, offset: number): string {
+  return '<direction placement="below"><direction-type><words font-weight="bold">' + numeral + '</words></direction-type>'
+    + (offset ? `<offset>${offset}</offset>` : '') + '<staff>1</staff></direction>'
+}
+
+export interface MusicXmlOptions {
+  /** Writes the degree of each accompaniment chord (I, IV, V…) under the first staff. */
+  degrees?: boolean
+}
+
+export function exerciseToMusicXml(exercise: Exercise, { degrees = false }: MusicXmlOptions = {}): string {
   const { options, staves, tempo } = exercise
   const key = exerciseKey(options)
   const [beats, beatType] = options.time.split('/')
@@ -736,7 +747,16 @@ export function exerciseToMusicXml(exercise: Exercise): string {
       const events = staff.measures[m]
       const pitches = new Pitches(key, staff.clef, options.minor)
       const beamTags = beams(events, beatLength(options.time))
-      events.forEach((event, i) => { xml += noteXml(event, pitches, s + 1, beamTags[i], events.length === 1) })
+      const chords = s === 0 && degrees ? exercise.harmony.slots.filter(slot => slot.measure === m) : []
+      let position = 0
+      events.forEach((event, i) => {
+        // A chord starting in the middle of a long note is moved forward from it.
+        for (const chord of chords) {
+          if (chord.start >= position && chord.start < position + event.duration) xml += degreeXml(chordNumeral(chord), chord.start - position)
+        }
+        xml += noteXml(event, pitches, s + 1, beamTags[i], events.length === 1)
+        position += event.duration
+      })
     })
     if (m === measureCount - 1) xml += '<barline location="right"><bar-style>light-heavy</bar-style></barline>'
     measures.push(xml + '</measure>')

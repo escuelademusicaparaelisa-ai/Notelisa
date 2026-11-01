@@ -6,19 +6,19 @@
 
 import type { ExerciseEvent, TimeSignature } from './generator'
 
-export type AccompanimentStyle = 'off' | 'classical' | 'waltz' | 'ballad' | 'march'
+export type AccompanimentStyle = 'off' | 'classical' | 'waltz' | 'ballad' | 'march' | 'rock'
 type Style = Exclude<AccompanimentStyle, 'off'>
 
 export const ACCOMPANIMENT_NAMES: Record<AccompanimentStyle, string> = {
-  off: 'Sin acompañamiento', classical: 'Clásico', waltz: 'Vals', ballad: 'Balada', march: 'Marcha',
+  off: 'Sin acompañamiento', classical: 'Clásico', waltz: 'Vals', ballad: 'Balada', march: 'Marcha', rock: 'Rock',
 }
 
 /** Styles that make sense in each time signature, the most natural first. */
 const STYLES_BY_TIME: Record<TimeSignature, Style[]> = {
-  '2/4': ['march', 'classical', 'ballad'],
-  '3/4': ['waltz', 'classical', 'ballad'],
-  '4/4': ['classical', 'ballad', 'march'],
-  '6/8': ['ballad', 'march'],
+  '2/4': ['march', 'classical', 'ballad', 'rock'],
+  '3/4': ['waltz', 'classical', 'ballad', 'rock'],
+  '4/4': ['classical', 'ballad', 'march', 'rock'],
+  '6/8': ['ballad', 'march', 'rock'],
 }
 
 export function stylesForTime(time: TimeSignature): Style[] {
@@ -70,6 +70,17 @@ export interface Harmony {
 export function chordTones(degree: number, mode: 'major' | 'minor'): [number, number, number] {
   const scale = mode === 'major' ? MAJOR : degree === 4 ? HARMONIC_MINOR : NATURAL_MINOR
   return [scale[degree], scale[(degree + 2) % 7], scale[(degree + 4) % 7]]
+}
+
+const NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII']
+
+/** The degree as it is written: capitals for major chords, small letters for minor, ° for diminished. */
+export function chordNumeral(slot: Pick<ChordSlot, 'degree' | 'tones'>): string {
+  const third = (slot.tones[1] - slot.tones[0] + 12) % 12
+  const fifth = (slot.tones[2] - slot.tones[0] + 12) % 12
+  const numeral = NUMERALS[slot.degree]
+  if (fifth === 6) return numeral.toLowerCase() + '°'
+  return third === 3 ? numeral.toLowerCase() : numeral
 }
 
 export interface HarmonizeOptions {
@@ -269,6 +280,17 @@ export function accompanimentNotes(harmony: Harmony, style: AccompanimentStyle):
               addChord(p, 2, 0.3)
             }
           }
+        }
+        break
+      }
+      case 'rock': {
+        // Boogie bass in eighth notes (root, fifth, sixth, fifth) and chords on the backbeat.
+        const sixth = fifth === 6 ? fifth : third === 3 ? 8 : 9
+        const figure = [bass, bass + fifth, bass + sixth, bass + fifth]
+        for (let p = 0; p < length; p += 2) add(p, 2, figure[(p / 2) % 4], (slot.start + p) % beat === 0 ? 0.5 : 0.4)
+        for (let p = 0; p < length; p += beat) {
+          const k = (slot.start + p) / beat
+          if (k % 2 === 1) addChord(p, 2, 0.34)
         }
         break
       }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { accompanimentNotes, chordTones, resolveStyle, stylesForTime } from './accompaniment'
-import { generateExercise, KEYS, measureLength, type ExerciseOptions, type TimeSignature } from './generator'
+import { accompanimentNotes, chordNumeral, chordTones, resolveStyle, stylesForTime } from './accompaniment'
+import { exerciseToMusicXml, generateExercise, KEYS, measureLength, type ExerciseOptions, type TimeSignature } from './generator'
 
 const BASE: ExerciseOptions = {
   kind: 'reading', instrument: 'piano', clef: 'treble', key: 'C', time: '4/4', rhythm: 2, rests: false, range: 2, notes: [], maxInterval: 5, measures: 8, minor: 'harmonic',
@@ -91,5 +91,21 @@ describe('accompaniment styles', () => {
 
   it('plays nothing when off', () => {
     expect(accompanimentNotes(generateExercise(BASE, 1).harmony, 'off')).toEqual([])
+  })
+})
+
+describe('degrees on the score', () => {
+  it('writes capitals for major chords and small letters for minor ones', () => {
+    expect(chordNumeral({ degree: 4, tones: chordTones(4, 'minor') })).toBe('V')
+    expect(chordNumeral({ degree: 3, tones: chordTones(3, 'minor') })).toBe('iv')
+    expect(chordNumeral({ degree: 5, tones: chordTones(5, 'major') })).toBe('vi')
+  })
+
+  it('writes one degree per chord, only when asked', () => {
+    const exercise = generateExercise(BASE, 2)
+    expect(exerciseToMusicXml(exercise)).not.toContain('<words')
+    const words = exerciseToMusicXml(exercise, { degrees: true }).match(/<words[^>]*>[^<]*<\/words>/g) ?? []
+    expect(words.length).toBe(exercise.harmony.slots.length)
+    expect(words[0]).toContain('>I<')
   })
 })
