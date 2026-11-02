@@ -90,7 +90,7 @@ export class MicrophoneInput implements InputSource {
   listenForNotes(notes: readonly number[] | null, onHeard?: () => void, ignoreOctave = false): void {
     if (!notes || notes.length === 0 || !onHeard) {
       this.onChordHeard = null
-      this.chordListener.listen([])
+      this.chordListener.stop()
       return
     }
     const { threshold, a4Hz } = this.calibration
@@ -140,14 +140,14 @@ export class MicrophoneInput implements InputSource {
       const frame = analyzer.analyze(newest, performance.now())
       for (const listener of this.frameListeners) listener(frame)
       if (!this.detecting) return
-      if (this.onChordHeard) {
-        // Every other frame is enough for the spectrum (frames overlap a lot) and halves the work.
-        const spectrum = tick++ % 2 === 0 ? spectrumOf(buffer, context.sampleRate) : undefined
-        if (this.chordListener.process(frame, spectrum)) {
-          const onHeard = this.onChordHeard
-          this.onChordHeard = null
-          onHeard()
-        }
+      // Every other frame is enough for the spectrum (frames overlap a lot) and halves the work.
+      // Without a step waiting, only keys being struck are followed (fast passages strike
+      // the next key before the previous step has been recognised).
+      const spectrum = this.onChordHeard && tick++ % 2 === 0 ? spectrumOf(buffer, context.sampleRate) : undefined
+      if (this.chordListener.process(frame, spectrum) && this.onChordHeard) {
+        const onHeard = this.onChordHeard
+        this.onChordHeard = null
+        onHeard()
       }
       // Report notes at the moment they were played, not when we heard them.
       const latency = this.calibration.latencyMs
