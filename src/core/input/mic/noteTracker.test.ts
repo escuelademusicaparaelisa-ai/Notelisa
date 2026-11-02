@@ -123,3 +123,17 @@ describe('NoteTracker with a simulated piano', () => {
     expect(ons(track(signal, { a4Hz: 432 })).map(e => e.midi)).toEqual([69])
   })
 })
+
+describe('NoteTracker timing of fast legato notes', () => {
+  it('does not give a note the attack of the note before', () => {
+    const tracker = new NoteTracker({ threshold: 0.01 })
+    const frame = (time: number, midi: number, rms = 0.1) =>
+      ({ time, rms, frequency: midiToFrequency(midi), clarity: 0.95, onset: 1 })
+    const ons: NoteInputEvent[] = []
+    for (let t = -50; t < 0; t += 12) tracker.process({ time: t, rms: 0.001, frequency: 0, clarity: 0, onset: 1 })
+    // C4 struck at 0; D4 follows at 150 ms with no visible attack (legato).
+    for (let t = 0; t < 150; t += 12) ons.push(...tracker.process(frame(t, 60)).filter(e => e.type === 'noteon'))
+    for (let t = 150; t < 250; t += 12) ons.push(...tracker.process(frame(t, 62, 0.09)).filter(e => e.type === 'noteon'))
+    expect(ons.map(e => [e.midi, e.time])).toEqual([[60, 0], [62, 150]])
+  })
+})

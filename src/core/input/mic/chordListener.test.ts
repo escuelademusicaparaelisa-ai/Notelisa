@@ -143,21 +143,48 @@ describe('ChordListener in big chords', () => {
   })
 
   it('keeps a key struck before its step was reached (fast notes)', () => {
+    const first = spectrumOf(mix(tone(48), tone(72)), RATE)
     const both = spectrumOf(mix(tone(48), tone(72), tone(74)), RATE)
-    const second = spectrumOf(mix(tone(74)), RATE)
     const listener = new ChordListener()
     listener.listen([48, 72], 0)
     listener.process(frame(0, 0.001))
-    listener.process(frame(10, 0.1), second) // struck, but not recognised yet
-    listener.process(frame(100, 0.05), second)
-    listener.process(frame(150, 0.1), both) // the next key, before the first step is done
-    expect(listener.process(frame(160, 0.1), both)).toBe(true)
+    listener.process(frame(10, 0.1)) // struck; no spectrum analysed yet
+    listener.process(frame(100, 0.05))
+    listener.process(frame(150, 0.1)) // the next key, before the first step is recognised
+    listener.process(frame(160, 0.1), both)
+    expect(listener.process(frame(170, 0.1), both)).toBe(true)
+    expect(listener.playedAt).toBe(10)
     // Between steps nobody listens, but attacks are still followed.
-    listener.process(frame(170, 0.1))
+    listener.process(frame(180, 0.1))
     listener.listen([74], 190)
-    listener.process(frame(200, 0.1), second)
-    expect(listener.process(frame(210, 0.1), second)).toBe(true)
+    listener.process(frame(200, 0.1), both)
+    expect(listener.process(frame(210, 0.1), both)).toBe(true)
+    expect(listener.playedAt).toBe(150)
+    void first
   })
+
+  it('times each step by its own attack when the hands are a little apart', () => {
+    const left = spectrumOf(mix(tone(48)), RATE)
+    const chord = spectrumOf(mix(tone(48), tone(74)), RATE)
+    const next = spectrumOf(mix(tone(48, 0.03), tone(74, 0.03), tone(77)), RATE)
+    const listener = new ChordListener()
+    listener.listen([48, 74], 0)
+    listener.process(frame(0, 0.001))
+    listener.process(frame(310, 0.05), left) // left hand
+    listener.process(frame(320, 0.05), left)
+    listener.process(frame(400, 0.15), chord) // right hand, 90 ms later: a second attack
+    expect(listener.process(frame(410, 0.15), chord)).toBe(true)
+    expect(listener.playedAt).toBe(310)
+    // The right hand's attack is still unused, but the next step has its own.
+    listener.listen([77], 420)
+    listener.process(frame(430, 0.1), chord)
+    listener.process(frame(590, 0.03), chord)
+    listener.process(frame(600, 0.1), next)
+    expect(listener.process(frame(610, 0.1), next)).toBe(true)
+    expect(listener.playedAt).toBe(600)
+  })
+
+
 
   it('forgets keys struck long before the step', () => {
     const chord = spectrumOf(mix(tone(48), tone(77)), RATE)

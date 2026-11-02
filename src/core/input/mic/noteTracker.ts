@@ -61,6 +61,8 @@ export class NoteTracker {
   private attackPending = true
   private attackStrength = 0
   private lastAttackTime = -Infinity
+  /** The last attack already gave its time to a note: the next note cannot take it too. */
+  private attackUsed = false
 
   constructor(settings: Partial<TrackerSettings> = {}) {
     this.settings = { ...DEFAULT_TRACKER_SETTINGS, ...settings }
@@ -104,6 +106,7 @@ export class NoteTracker {
       this.valley = frame.rms
     } else if (levelRise || shortRise) {
       this.lastAttackTime = frame.time
+      this.attackUsed = false
       this.attackPending = true
       this.attackStrength = frame.rms
       this.candidate = null
@@ -134,8 +137,11 @@ export class NoteTracker {
       const strength = Math.min(1, Math.max(this.attackStrength, frame.rms) / (s.threshold * 10))
       // The note started when it was struck (or first heard), not when its pitch became
       // stable a few frames later: that delay would make every note look late.
-      const recentAttack = frame.time - this.lastAttackTime <= s.maxAttackToPitchMs
+      // In fast legato passages a key's attack may go unseen: then the previous note's
+      // attack must not be taken, or the note would look early by a whole note.
+      const recentAttack = !this.attackUsed && frame.time - this.lastAttackTime <= s.maxAttackToPitchMs
       const time = recentAttack ? Math.min(this.lastAttackTime, this.candidateStart) : this.candidateStart
+      if (recentAttack) this.attackUsed = true
       events.push({ type: 'noteon', midi, time, strength, source: 'microphone' })
     }
     return events
