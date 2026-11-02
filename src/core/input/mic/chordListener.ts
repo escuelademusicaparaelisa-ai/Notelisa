@@ -55,15 +55,17 @@ export interface Spectrum {
 }
 
 // Work buffers reused between calls: the spectrum is computed many times a second.
-let scratch: { re: Float64Array; im: Float64Array; window: Float64Array } | null = null
+const scratches = new Map<number, { re: Float64Array; im: Float64Array; window: Float64Array }>()
 
 /** Magnitude spectrum of a block of samples (length must be a power of two). */
 export function spectrumOf(samples: ArrayLike<number>, sampleRate: number): Spectrum {
   const n = samples.length
-  if (scratch?.re.length !== n) {
+  let scratch = scratches.get(n)
+  if (!scratch) {
     const window = new Float64Array(n)
     for (let i = 0; i < n; i++) window[i] = 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (n - 1))
     scratch = { re: new Float64Array(n), im: new Float64Array(n), window }
+    scratches.set(n, scratch)
   }
   const { re, im, window } = scratch
   for (let i = 0; i < n; i++) re[i] = samples[i] * window[i]
@@ -72,6 +74,25 @@ export function spectrumOf(samples: ArrayLike<number>, sampleRate: number): Spec
   const magnitudes = new Float64Array(n / 2)
   for (let i = 0; i < n / 2; i++) magnitudes[i] = Math.hypot(re[i], im[i])
   return { magnitudes, binHz: sampleRate / n }
+}
+
+/**
+ * Spectral flux: how much the spectrum grew since the previous one, relative to its
+ * size (0 = nothing new). A struck key makes it jump even inside a loud chord, where
+ * the overall level hardly changes; that makes it a much surer sign of a new note
+ * than the volume.
+ */
+export function spectralFlux(current: Spectrum, previous: Spectrum | null): number {
+  if (!previous || previous.magnitudes.length !== current.magnitudes.length) return 0
+  const from = Math.max(1, Math.floor(60 / current.binHz))
+  const to = Math.min(current.magnitudes.length - 1, Math.ceil(5000 / current.binHz))
+  let rise = 0
+  let total = 0
+  for (let i = from; i <= to; i++) {
+    rise += Math.max(0, current.magnitudes[i] - previous.magnitudes[i])
+    total += current.magnitudes[i]
+  }
+  return total > 0 ? rise / total : 0
 }
 
 // A peak must stand this far above the spectrum around it (×4 ≈ 12 dB)...
@@ -150,9 +171,13 @@ export interface ChordListenerSettings {
   ignoreOctave: boolean
   /** Consecutive analyses a note must be heard in before it counts. */
   framesToConfirm: number
-  /** Rises closer together than this (ms) are one attack (both hands, or one attack spanning frames). */
+  /** Rises less than this (ms) after the previous rising frame belong to the same attack. */
   minAttackGapMs: number
-  /** Volume must grow by this factor over its recent minimum to count as a new attack. */
+  /** Spectral flux a frame needs to count as a new attack... */
+  minFlux: number
+  /** ...and how many times the recent average flux. */
+  fluxOverRecent: number
+  /** Without flux: volume must grow by this factor over its recent minimum to count as a new attack. */
   onsetRatio: number
   /** Same, measured on short blocks inside a frame. */
   shortOnsetRatio: number
@@ -163,10 +188,15 @@ export const DEFAULT_CHORD_SETTINGS: ChordListenerSettings = {
   a4Hz: DEFAULT_A4_HZ,
   ignoreOctave: false,
   framesToConfirm: 2,
-  minAttackGapMs: 100,
+  minAttackGapMs: 60,
+  minFlux: 0.12,
+  fluxOverRecent: 2,
   onsetRatio: 1.6,
   shortOnsetRatio: 1.8,
 }
+
+/** A note may show in the spectrum this long (ms) before its attack is seen. */
+const SEEN_BEFORE_ATTACK_MS = 30
 
 /** How long a key struck ahead of its step is remembered for it. */
 const ATTACK_MEMORY_MS = 1000
@@ -188,12 +218,17 @@ export class ChordListener {
   private expected: number[] = []
   private heard = new Set<number>()
   private streak = new Map<number, number>()
-  /** The current step has its own attack: its notes may be ticked off. */
-  private struck = false
-  /** Attacks heard after the one that started the current step, oldest first. */
-  private laterAttacks: number[] = []
+  /** When each heard note was first noticed. */
+  private firstSeen = new Map<number, number>()
+  /** When this step's notes were first looked for. */
+  private firstLook: number | null = null
+  /** Recent attacks (keys struck), oldest first. */
+  private attacks: number[] = []
+  /** Attacks up to this time were used by earlier steps. */
+  private usedUpTo = -Infinity
   private valley = Infinity
-  private lastAttack = -Infinity
+  private recentFlux: number[] = []
+  private lastRise = -Infinity
   private done = true
 
   constructor(settings: Partial<ChordListenerSettings> = {}) {
@@ -201,32 +236,34 @@ export class ChordListener {
   }
 
   /**
-   * Starts listening for a new set of notes. A key struck since the previous step
-   * started (and not used by it) already counts for this one.
+   * Starts listening for a new set of notes; `time` is now, on the frames' clock.
+   * A key struck since the previous step was recognised already counts for this one.
    */
-  listen(notes: readonly number[], time = Infinity): void {
+  listen(notes: readonly number[], time = -Infinity): void {
     this.expected = [...new Set(notes)].sort((a, b) => a - b)
     this.heard.clear()
     this.streak.clear()
+    this.firstSeen.clear()
+    this.firstLook = null
     this.done = this.expected.length === 0
     // Keys struck long ago belong to something else (e.g. before practice started).
-    this.laterAttacks = this.laterAttacks.filter(t => time - t <= ATTACK_MEMORY_MS)
-    this.struck = this.laterAttacks.length > 0
-    this.laterAttacks.shift()
+    this.usedUpTo = Math.max(this.usedUpTo, time - ATTACK_MEMORY_MS)
   }
+
+  /** The step has an attack of its own: its notes may be ticked off. */
+  private get struck(): boolean {
+    return this.attacks.some(t => t > this.usedUpTo)
+  }
+
+  /**
+   * When the notes just recognised were played (frames' clock): the last attack
+   * before they were noticed. Valid right after process() returned true.
+   */
+  playedAt = -Infinity
 
   /** Stops listening; attacks are still followed. */
   stop(): void {
     this.done = true
-  }
-
-  /** Forgets everything, e.g. when practice starts again. */
-  reset(): void {
-    this.stop()
-    this.struck = false
-    this.laterAttacks = []
-    this.valley = Infinity
-    this.lastAttack = -Infinity
   }
 
   get pending(): number[] {
@@ -234,7 +271,7 @@ export class ChordListener {
   }
 
   /**
-   * Feeds one analysis; returns true once, when the last expected note is heard.
+   * Feeds one analysis; returns true once, when the expected notes have been heard.
    * Without a spectrum, only watches for keys being struck (cheaper, for in-between
    * frames and while no step is waiting).
    */
@@ -242,37 +279,67 @@ export class ChordListener {
     const s = this.settings
     if (frame.rms < s.threshold) {
       this.valley = Math.min(this.valley, frame.rms)
+      this.recentFlux = [...this.recentFlux, frame.flux ?? 0].slice(-8)
       this.streak.clear()
       return false
     }
     this.watchAttacks(frame)
-    if (this.done || !this.struck || !spectrum) return false
+    if (this.done || !spectrum || !this.struck) return false
 
     const loudest = loudestPeak(spectrum)
+    this.firstLook ??= frame.time
     for (const midi of this.pending) {
       const sounds = this.sounds(spectrum, midi, loudest)
       const count = sounds ? (this.streak.get(midi) ?? 0) + 1 : 0
       this.streak.set(midi, count)
+      if (count === 1) this.firstSeen.set(midi, frame.time)
       if (count >= s.framesToConfirm) this.heard.add(midi)
     }
     if (!this.enoughHeard()) return false
     this.done = true
+    this.playedAt = this.attackOfStep()
+    this.usedUpTo = this.playedAt
     return true
+  }
+
+  /**
+   * Which unused attack started the notes just recognised. Normally the last one
+   * before they were noticed: an extra attack (hands a little apart) is then left
+   * aside. But notes already sounding when we started looking were struck ahead,
+   * before the previous step was recognised: they take the oldest unused attack.
+   */
+  private attackOfStep(): number {
+    const seen = Math.min(...this.firstSeen.values())
+    const unused = this.attacks.filter(t => t > this.usedUpTo)
+    if (seen === this.firstLook) return unused[0]
+    // A few frames' grace: the spectrum may show a note before its attack is seen.
+    const before = unused.filter(t => t <= seen + SEEN_BEFORE_ATTACK_MS)
+    return before.length ? before[before.length - 1] : unused[0]
   }
 
   private watchAttacks(frame: AudioFrame): void {
     const s = this.settings
-    const levelRise = frame.rms > Math.max(this.valley, s.threshold * 0.5) * s.onsetRatio
-    const shortRise = (frame.onset ?? 1) >= s.shortOnsetRatio
-    this.valley = levelRise ? frame.rms : Math.min(this.valley, frame.rms)
-    if (!levelRise && !shortRise) return
-    const sameAttack = frame.time - this.lastAttack < s.minAttackGapMs
-    this.lastAttack = frame.time
-    if (sameAttack) return
-    // A new key: for the waiting step if it has none yet, otherwise for the steps after it.
-    if (!this.done && !this.struck) this.struck = true
-    else this.laterAttacks = [...this.laterAttacks, frame.time].slice(-4)
+    let rise: boolean
+    if (frame.flux !== undefined) {
+      // The spectrum grew clearly more than it has been growing lately.
+      const recent = this.recentFlux.length ? this.recentFlux.reduce((a, b) => a + b, 0) / this.recentFlux.length : 0
+      rise = frame.flux >= s.minFlux && frame.flux > recent * s.fluxOverRecent
+      this.recentFlux = [...this.recentFlux, frame.flux].slice(-8)
+    } else {
+      // Frames without a spectrum: fall back on the volume.
+      const levelRise = frame.rms > Math.max(this.valley, s.threshold * 0.5) * s.onsetRatio
+      const shortRise = (frame.onset ?? 1) >= s.shortOnsetRatio
+      this.valley = levelRise ? frame.rms : Math.min(this.valley, frame.rms)
+      rise = levelRise || shortRise
+    }
+    if (!rise) return
+    // One attack lasts several frames: rises that follow each other closely are one
+    // attack. A short pause in rising is enough to tell fast notes apart.
+    const sameAttack = frame.time - this.lastRise < s.minAttackGapMs
+    this.lastRise = frame.time
+    if (!sameAttack) this.attacks = [...this.attacks, frame.time].slice(-8)
   }
+
   private enoughHeard(): boolean {
     const top = this.expected[this.expected.length - 1]
     const allowedMissing = this.expected.length >= 3 ? 1 : 0

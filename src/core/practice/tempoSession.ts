@@ -141,6 +141,43 @@ export class TempoSession {
     return [{ type: 'hit', step: best.step, midi: best.midi, timing }]
   }
 
+  /**
+   * Position (in `steps`) of the earliest step with notes still waiting to be played:
+   * what the microphone's chord listener should listen for. null when none is left.
+   */
+  get openStep(): number | null {
+    if (this.done) return null
+    const target = this.targets.find(t => t.state === 'waiting')
+    return target ? this.steps.findIndex(s => s.index === target.step) : null
+  }
+
+  /**
+   * The microphone heard a whole step (both hands, a chord) played at `at` seconds:
+   * all of its waiting notes count as played then. Outside the step's window it is
+   * a mistake and the step keeps waiting.
+   */
+  hitStep(position: number, at: number): TempoEvent[] {
+    if (this.done) return []
+    const step = this.steps[position]
+    if (!step) return []
+    const { ok, perfect } = this.options.windows
+    const offset = at - this.stepTimes[position]
+    const waiting = this.targets.filter(t => t.step === step.index && t.state === 'waiting')
+    if (waiting.length === 0) return []
+    const stats = this.statsFor(step.measureIndex)
+    if (Math.abs(offset) > ok) {
+      stats.wrong++
+      return [{ type: 'wrong', midi: waiting[waiting.length - 1].midi }]
+    }
+    const timing: Timing = Math.abs(offset) <= perfect ? 'onTime' : offset < 0 ? 'early' : 'late'
+    return waiting.map(target => {
+      target.state = 'hit'
+      stats.correct++
+      if (timing !== 'onTime') stats.offTime++
+      return { type: 'hit', step: step.index, midi: target.midi, timing }
+    })
+  }
+
   private isChordNote(midi: number, at: number): boolean {
     const { ok } = this.options.windows
     return this.sounding.some(n => n.pitchClass === midi % 12 && at >= n.start - ok && at <= n.end + ok)

@@ -1,4 +1,5 @@
 import { PitchDetector } from 'pitchy'
+import { spectralFlux, spectrumOf, type Spectrum } from './chordListener'
 
 export interface AudioFrame {
   /** Milliseconds (performance.now() clock). */
@@ -14,6 +15,8 @@ export interface AudioFrame {
    * blocks (about 5 ms) so that a quick re-strike is not smoothed away. 1 = no jump.
    */
   onset?: number
+  /** Spectral flux against the previous frame (see spectralFlux): jumps when a key is struck. */
+  flux?: number
 }
 
 export function rmsOf(samples: ArrayLike<number>, from = 0, to = samples.length): number {
@@ -48,6 +51,7 @@ export function onsetStrength(samples: ArrayLike<number>): number {
 export class FrameAnalyzer {
   private readonly detector: PitchDetector<Float32Array>
   private readonly sampleRate: number
+  private previousSpectrum: Spectrum | null = null
 
   constructor(frameSize: number, sampleRate: number) {
     this.detector = PitchDetector.forFloat32Array(frameSize)
@@ -58,8 +62,11 @@ export class FrameAnalyzer {
 
   analyze(samples: Float32Array, time: number): AudioFrame {
     const rms = rmsOf(samples)
-    if (rms < 1e-4) return { time, rms, frequency: 0, clarity: 0, onset: 1 }
+    const spectrum = spectrumOf(samples, this.sampleRate)
+    const flux = spectralFlux(spectrum, this.previousSpectrum)
+    this.previousSpectrum = spectrum
+    if (rms < 1e-4) return { time, rms, frequency: 0, clarity: 0, onset: 1, flux: 0 }
     const [frequency, clarity] = this.detector.findPitch(samples, this.sampleRate)
-    return { time, rms, frequency: Number.isFinite(frequency) ? frequency : 0, clarity, onset: onsetStrength(samples) }
+    return { time, rms, frequency: Number.isFinite(frequency) ? frequency : 0, clarity, onset: onsetStrength(samples), flux }
   }
 }

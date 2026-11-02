@@ -54,7 +54,7 @@ export class MicrophoneInput implements InputSource {
   readonly tracker: NoteTracker
   /** Listens for several notes at once (both hands, chords) when a practice step asks for them. */
   private readonly chordListener = new ChordListener()
-  private onChordHeard: (() => void) | null = null
+  private onChordHeard: ((playedAt: number) => void) | null = null
   /** Pauses note detection (e.g. during calibration) while frames keep flowing. */
   detecting = true
 
@@ -85,9 +85,10 @@ export class MicrophoneInput implements InputSource {
 
   /**
    * Starts listening for a whole set of notes sounding together (both hands, chords);
-   * `onHeard` is called once when all of them have been heard. null stops listening.
+   * `onHeard` is called once when all of them have been heard, with when they were
+   * played (performance.now() clock, latency-compensated). null stops listening.
    */
-  listenForNotes(notes: readonly number[] | null, onHeard?: () => void, ignoreOctave = false): void {
+  listenForNotes(notes: readonly number[] | null, onHeard?: (playedAt: number) => void, ignoreOctave = false): void {
     if (!notes || notes.length === 0 || !onHeard) {
       this.onChordHeard = null
       this.chordListener.stop()
@@ -147,7 +148,7 @@ export class MicrophoneInput implements InputSource {
       if (this.chordListener.process(frame, spectrum) && this.onChordHeard) {
         const onHeard = this.onChordHeard
         this.onChordHeard = null
-        onHeard()
+        onHeard(this.chordListener.playedAt - this.calibration.latencyMs)
       }
       // Report notes at the moment they were played, not when we heard them.
       const latency = this.calibration.latencyMs

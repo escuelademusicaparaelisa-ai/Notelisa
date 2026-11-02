@@ -84,3 +84,27 @@ describe('TempoSession', () => {
     expect(s.finished).toBe(true)
   })
 })
+
+describe('TempoSession with the microphone hearing whole steps', () => {
+  it('follows the earliest step still waiting', () => {
+    const s = new TempoSession(timeline, { onlyHighest: true })
+    expect(s.openStep).toBe(0)
+    s.update(0.5) // step 0 missed (window 0.3 s)
+    expect(s.openStep).toBe(1)
+  })
+
+  it('judges a whole step at once', () => {
+    const s = new TempoSession(timeline, { onlyHighest: true })
+    expect(s.hitStep(0, 0.05)).toEqual([{ type: 'hit', step: 0, midi: 60, timing: 'onTime' }])
+    expect(s.openStep).toBe(1)
+    expect(s.hitStep(1, 1.2)).toEqual([{ type: 'hit', step: 1, midi: 62, timing: 'late' }])
+    expect(s.hitStep(1, 1.2)).toEqual([])
+  })
+
+  it('does not take a step heard far from its beat', () => {
+    const s = new TempoSession(timeline, { onlyHighest: true })
+    s.hitStep(0, 0)
+    expect(s.hitStep(1, 0.4)).toEqual([{ type: 'wrong', midi: 62 }])
+    expect(s.openStep).toBe(1)
+  })
+})

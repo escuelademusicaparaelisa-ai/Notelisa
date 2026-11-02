@@ -55,6 +55,8 @@ interface TempoRun {
   origin: number
   beatSeconds: number
   countIn: number
+  /** The microphone listens for whole steps (both hands, chords) instead of single notes. */
+  listenChords: boolean
 }
 
 const COLORS = { correct: '#1f9d55', retried: '#e08a00', wrong: '#e2574c' }
@@ -282,7 +284,9 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
     // The microphone would hear the accompaniment as the student's notes.
     if (backing && !micOn) void player.accompany(timeline, s.steps, backing, tempoFactor, startAt)
     setCountdown(countIn)
-    setTempoRun({ session: s, origin: heardAt(startAt), beatSeconds, countIn })
+    const bothHands = staff === null && timeline.staffCount > 1
+    const listenChords = micOn && (bothHands || s.steps.some(step => playableNotes(step, staves).length > 1))
+    setTempoRun({ session: s, origin: heardAt(startAt), beatSeconds, countIn, listenChords })
   }
 
   const handleTempoEvents = useCallback((s: TempoSession, events: TempoEvent[]) => {
@@ -318,8 +322,24 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
   // The clock of tempo mode: moves the cursor and spots notes that were not played.
   useEffect(() => {
     if (!tempoRun) return
+    const { session: s, origin } = tempoRun
+    // With both hands, the microphone listens for the earliest step not played yet
+    // and says when it was played (see the wait mode above).
+    let listening: number | null = null
+    const followChords = () => {
+      const position = s.openStep
+      if (position === listening) return
+      listening = position
+      if (position === null) return microphoneInput.listenForNotes(null)
+      const notes = playableNotes(s.steps[position], staves).map(n => n.midi)
+      microphoneInput.listenForNotes(notes, playedAt => {
+        handleTempoEvents(s, s.hitStep(position, (playedAt - origin) / 1000))
+        listening = null // listen again: for the next step, or this one if it was off the beat
+      }, ignoreOctave)
+    }
     const timer = window.setInterval(() => {
       const now = (performance.now() - tempoRun.origin) / 1000
+      if (tempoRun.listenChords && !s.finished) followChords()
       if (now < 0) {
         setCountdown(Math.min(tempoRun.countIn, Math.ceil(-now / tempoRun.beatSeconds)))
         return
@@ -327,8 +347,11 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
       setCountdown(null)
       handleTempoEvents(tempoRun.session, tempoRun.session.update(now))
     }, 25)
-    return () => window.clearInterval(timer)
-  }, [tempoRun, handleTempoEvents])
+    return () => {
+      window.clearInterval(timer)
+      if (tempoRun.listenChords) microphoneInput.listenForNotes(null)
+    }
+  }, [tempoRun, handleTempoEvents, staves, ignoreOctave])
 
   // Every input (MIDI, on-screen keyboard) arrives here.
   useEffect(() => noteBus.subscribe(event => {
@@ -338,7 +361,7 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
       setHeld(prev => new Set(prev).add(event.midi))
       const heardByChordListener = event.source === 'microphone' && listeningForChords.current
       if (session && !session.finished && !heardByChordListener) handleWaitEvents(session, session.play(event.midi))
-      if (tempoRun && !tempoRun.session.finished) {
+      if (tempoRun && !tempoRun.session.finished && !(event.source === 'microphone' && tempoRun.listenChords)) {
         const at = (event.time - tempoRun.origin) / 1000
         if (at >= -IGNORE_BEFORE_START_SECONDS) handleTempoEvents(tempoRun.session, tempoRun.session.play(event.midi, at))
       }
