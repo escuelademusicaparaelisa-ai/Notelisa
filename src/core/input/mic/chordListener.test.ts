@@ -126,15 +126,46 @@ describe('ChordListener in big chords', () => {
     expect(strict.process(frame(20, 0.1), withoutMelody)).toBe(false)
   })
 
-  it('ignores the attack of the notes just played', () => {
+  it('does not take the rest of the same attack for the next step', () => {
     const chord = spectrumOf(mix(tone(48), tone(77)), RATE)
     const listener = new ChordListener()
-    listener.listen([48, 76], 1000)
-    listener.process(frame(1010, 0.05), chord)
-    expect(listener.process(frame(1020, 0.1), chord)).toBe(false) // still rising: same attack
-    expect(listener.process(frame(1030, 0.1), chord)).toBe(false)
-    listener.process(frame(1200, 0.02), chord)
-    listener.process(frame(1300, 0.1), chord)
-    expect(listener.process(frame(1310, 0.1), chord)).toBe(true)
+    listener.listen([48, 77], 0)
+    listener.process(frame(0, 0.001), chord)
+    listener.process(frame(10, 0.05), chord)
+    expect(listener.process(frame(20, 0.1), chord)).toBe(true)
+    // The next step asks for the same chord: the level still rising is the same attack.
+    listener.listen([48, 77], 30)
+    expect(listener.process(frame(40, 0.2), chord)).toBe(false)
+    expect(listener.process(frame(50, 0.2), chord)).toBe(false)
+    listener.process(frame(250, 0.05), chord)
+    listener.process(frame(300, 0.15), chord)
+    expect(listener.process(frame(310, 0.15), chord)).toBe(true)
+  })
+
+  it('keeps a key struck before its step was reached (fast notes)', () => {
+    const both = spectrumOf(mix(tone(48), tone(72), tone(74)), RATE)
+    const second = spectrumOf(mix(tone(74)), RATE)
+    const listener = new ChordListener()
+    listener.listen([48, 72], 0)
+    listener.process(frame(0, 0.001))
+    listener.process(frame(10, 0.1), second) // struck, but not recognised yet
+    listener.process(frame(100, 0.05), second)
+    listener.process(frame(150, 0.1), both) // the next key, before the first step is done
+    expect(listener.process(frame(160, 0.1), both)).toBe(true)
+    // Between steps nobody listens, but attacks are still followed.
+    listener.process(frame(170, 0.1))
+    listener.listen([74], 190)
+    listener.process(frame(200, 0.1), second)
+    expect(listener.process(frame(210, 0.1), second)).toBe(true)
+  })
+
+  it('forgets keys struck long before the step', () => {
+    const chord = spectrumOf(mix(tone(48), tone(77)), RATE)
+    const listener = new ChordListener()
+    listener.process(frame(0, 0.001))
+    listener.process(frame(10, 0.1))
+    listener.listen([48, 77], 5000)
+    expect(listener.process(frame(5010, 0.1), chord)).toBe(false)
+    expect(listener.process(frame(5020, 0.1), chord)).toBe(false)
   })
 })

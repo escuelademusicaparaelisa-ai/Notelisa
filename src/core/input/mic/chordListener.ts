@@ -150,8 +150,8 @@ export interface ChordListenerSettings {
   ignoreOctave: boolean
   /** Consecutive analyses a note must be heard in before it counts. */
   framesToConfirm: number
-  /** Attacks this soon (ms) after listening starts belong to the notes just played. */
-  settleMs: number
+  /** Rises closer together than this (ms) are one attack (both hands, or one attack spanning frames). */
+  minAttackGapMs: number
   /** Volume must grow by this factor over its recent minimum to count as a new attack. */
   onsetRatio: number
   /** Same, measured on short blocks inside a frame. */
@@ -163,42 +163,70 @@ export const DEFAULT_CHORD_SETTINGS: ChordListenerSettings = {
   a4Hz: DEFAULT_A4_HZ,
   ignoreOctave: false,
   framesToConfirm: 2,
-  settleMs: 120,
+  minAttackGapMs: 100,
   onsetRatio: 1.6,
   shortOnsetRatio: 1.8,
 }
 
+/** How long a key struck ahead of its step is remembered for it. */
+const ATTACK_MEMORY_MS = 1000
+
 /**
  * Waits until every note of a step has been heard. A note only counts after a key
- * was struck while waiting for this step, so notes still ringing from the step
- * before do not complete the next one by themselves. The hands do not have to
- * strike exactly together: each note is ticked off as soon as it is heard.
+ * was struck for this step, so notes still ringing from the step before do not
+ * complete the next one by themselves. The hands do not have to strike exactly
+ * together: each note is ticked off as soon as it is heard.
  * In chords of three or more notes one inner or bass note may go unheard (they
  * hide behind each other's harmonics); the top note, usually the melody, may not.
+ *
+ * Attacks are watched all the time, also between steps: in fast passages the next
+ * key is often struck before the previous step has been recognised, and that
+ * attack must still count for the next step.
  */
 export class ChordListener {
   settings: ChordListenerSettings
   private expected: number[] = []
   private heard = new Set<number>()
   private streak = new Map<number, number>()
+  /** The current step has its own attack: its notes may be ticked off. */
   private struck = false
+  /** Attacks heard after the one that started the current step, oldest first. */
+  private laterAttacks: number[] = []
   private valley = Infinity
+  private lastAttack = -Infinity
   private done = true
-  private since = 0
 
   constructor(settings: Partial<ChordListenerSettings> = {}) {
     this.settings = { ...DEFAULT_CHORD_SETTINGS, ...settings }
   }
 
-  /** Starts listening for a new set of notes; `time` is now, on the frames' clock. */
-  listen(notes: readonly number[], time = -Infinity): void {
+  /**
+   * Starts listening for a new set of notes. A key struck since the previous step
+   * started (and not used by it) already counts for this one.
+   */
+  listen(notes: readonly number[], time = Infinity): void {
     this.expected = [...new Set(notes)].sort((a, b) => a - b)
-    this.since = time
     this.heard.clear()
     this.streak.clear()
-    this.struck = false
-    this.valley = Infinity
     this.done = this.expected.length === 0
+    // Keys struck long ago belong to something else (e.g. before practice started).
+    this.laterAttacks = this.laterAttacks.filter(t => time - t <= ATTACK_MEMORY_MS)
+    this.struck = this.laterAttacks.length > 0
+    this.laterAttacks.shift()
+  }
+
+  /** Stops listening; attacks are still followed. */
+  stop(): void {
+    this.done = true
+  }
+
+  /** Forgets everything, e.g. when practice starts again. */
+  reset(): void {
+    this.stop()
+    this.struck = false
+    this.laterAttacks = []
+    this.valley = Infinity
+    this.lastAttack = -Infinity
   }
 
   get pending(): number[] {
@@ -207,21 +235,18 @@ export class ChordListener {
 
   /**
    * Feeds one analysis; returns true once, when the last expected note is heard.
-   * Without a spectrum, only watches for keys being struck (cheaper, for in-between frames).
+   * Without a spectrum, only watches for keys being struck (cheaper, for in-between
+   * frames and while no step is waiting).
    */
   process(frame: AudioFrame, spectrum?: Spectrum): boolean {
-    if (this.done) return false
     const s = this.settings
     if (frame.rms < s.threshold) {
       this.valley = Math.min(this.valley, frame.rms)
       this.streak.clear()
       return false
     }
-    const levelRise = frame.rms > Math.max(this.valley, s.threshold * 0.5) * s.onsetRatio
-    const shortRise = (frame.onset ?? 1) >= s.shortOnsetRatio
-    if ((levelRise || shortRise) && frame.time - this.since >= s.settleMs) this.struck = true
-    this.valley = levelRise ? frame.rms : Math.min(this.valley, frame.rms)
-    if (!this.struck || !spectrum) return false
+    this.watchAttacks(frame)
+    if (this.done || !this.struck || !spectrum) return false
 
     const loudest = loudestPeak(spectrum)
     for (const midi of this.pending) {
@@ -235,6 +260,19 @@ export class ChordListener {
     return true
   }
 
+  private watchAttacks(frame: AudioFrame): void {
+    const s = this.settings
+    const levelRise = frame.rms > Math.max(this.valley, s.threshold * 0.5) * s.onsetRatio
+    const shortRise = (frame.onset ?? 1) >= s.shortOnsetRatio
+    this.valley = levelRise ? frame.rms : Math.min(this.valley, frame.rms)
+    if (!levelRise && !shortRise) return
+    const sameAttack = frame.time - this.lastAttack < s.minAttackGapMs
+    this.lastAttack = frame.time
+    if (sameAttack) return
+    // A new key: for the waiting step if it has none yet, otherwise for the steps after it.
+    if (!this.done && !this.struck) this.struck = true
+    else this.laterAttacks = [...this.laterAttacks, frame.time].slice(-4)
+  }
   private enoughHeard(): boolean {
     const top = this.expected[this.expected.length - 1]
     const allowedMissing = this.expected.length >= 3 ? 1 : 0
