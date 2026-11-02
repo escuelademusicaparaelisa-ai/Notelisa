@@ -13,7 +13,8 @@ export interface WaitSessionOptions extends MatchOptions {
   loop: boolean
   /**
    * Only ask for the highest note of each chord. Used with the microphone, which
-   * hears one note at a time (the melody is usually on top).
+   * hears one note at a time (the melody is usually on top). Whole chords and both
+   * hands are heard by the microphone's chord listener instead (see completeStep).
    */
   onlyHighest?: boolean
 }
@@ -49,6 +50,8 @@ export class WaitSession {
   private mistakesOnStep = 0
   /** Pitch classes of every note of this step and the previous one (both hands). */
   private chordClasses = new Set<number>()
+  /** Every note of the current step for the chosen hands, even with onlyHighest. */
+  private stepNotes: number[] = []
   private done = false
   readonly stats = new Map<number, MeasureStats>()
 
@@ -72,6 +75,14 @@ export class WaitSession {
   /** Notes of the current step still to be played (for hints). */
   get pendingNotes(): number[] {
     return this.matcher ? this.matcher.pendingNotes : []
+  }
+
+  /**
+   * Every note of the current step (both hands, whole chord), whatever onlyHighest says:
+   * what the microphone's chord listener waits for.
+   */
+  get allNotes(): number[] {
+    return this.done ? [] : [...this.stepNotes]
   }
 
   get finished(): boolean {
@@ -102,6 +113,25 @@ export class WaitSession {
     return events
   }
 
+  /**
+   * The microphone heard the whole step at once (both hands, a chord): every note
+   * still pending counts as played and the cursor moves on.
+   */
+  completeStep(): WaitEvent[] {
+    if (this.done || !this.matcher) return []
+    const step = this.steps[this.position]
+    const stats = this.statsFor(step.measureIndex)
+    const events: WaitEvent[] = []
+    for (const midi of this.matcher.pendingNotes) {
+      this.matcher.play(midi)
+      stats.correct++
+      events.push({ type: 'correct', step: step.index, midi })
+    }
+    events.push({ type: 'stepDone', step: step.index, clean: this.mistakesOnStep === 0, notes: [...this.stepNotes] })
+    events.push(...this.advance())
+    return events
+  }
+
   private advance(): WaitEvent[] {
     if (this.position + 1 < this.steps.length) {
       this.enterStep(this.position + 1)
@@ -128,6 +158,7 @@ export class WaitSession {
     const previous = this.steps[position - 1]
     this.chordClasses = new Set([...step.notes, ...(previous?.notes ?? [])].map(n => n.midi % 12))
     const notes = playableNotes(step, this.options.staves).map(n => n.midi)
+    this.stepNotes = [...new Set(notes)]
     this.matcher = new StepMatcher(this.options.onlyHighest ? [Math.max(...notes)] : notes, this.options)
   }
 
