@@ -87,3 +87,20 @@ describe('WaitSession', () => {
     expect(s.play(24)).toEqual([])
   })
 })
+
+describe('WaitSession with the microphone hearing whole chords', () => {
+  it('lists every note of the step even when only the highest is asked for', () => {
+    const s = new WaitSession(timeline, { onlyHighest: true })
+    expect(s.expectedNotes).toEqual([60])
+    expect(s.allNotes.sort()).toEqual([48, 60])
+  })
+
+  it('completes the step at once', () => {
+    const s = new WaitSession(timeline, { onlyHighest: true })
+    const events = s.completeStep()
+    expect(types(events)).toEqual(['correct', 'stepDone', 'advance'])
+    expect(events).toContainEqual({ type: 'stepDone', step: 0, clean: true, notes: [60, 48] })
+    expect(s.currentStep).toBe(1)
+    expect(s.allNotes).toEqual([62])
+  })
+})

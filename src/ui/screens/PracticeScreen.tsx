@@ -231,6 +231,25 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
     setExpected(s.finished ? [] : s.pendingNotes)
   }, [goTo])
 
+  // With the microphone, both hands or a chord sound as a mix that has no single pitch:
+  // the note tracker cannot follow it. For those steps the microphone checks, in the
+  // spectrum, that every note of the step is sounding, and the tracker's guesses are
+  // left out so they do not count as mistakes or move the cursor twice.
+  const listeningForChords = useRef(false)
+  useEffect(() => {
+    listeningForChords.current = false
+    if (!session || session.finished || !micOn) return
+    const notes = session.allNotes
+    const bothHands = staff === null && (timeline?.staffCount ?? 1) > 1
+    if (notes.length < 2 && !bothHands) return
+    listeningForChords.current = true
+    microphoneInput.listenForNotes(notes, () => handleWaitEvents(session, session.completeStep()), ignoreOctave)
+    return () => {
+      listeningForChords.current = false
+      microphoneInput.listenForNotes(null)
+    }
+  }, [session, step, expected, micOn, staff, timeline, ignoreOctave, handleWaitEvents])
+
   // Tempo mode --------------------------------------------------------------
 
   const startTempo = async () => {
@@ -317,7 +336,8 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
       // An acoustic instrument heard by the microphone already makes its own sound.
       if (event.source !== 'microphone') void player.noteOn(event.midi, event.strength)
       setHeld(prev => new Set(prev).add(event.midi))
-      if (session && !session.finished) handleWaitEvents(session, session.play(event.midi))
+      const heardByChordListener = event.source === 'microphone' && listeningForChords.current
+      if (session && !session.finished && !heardByChordListener) handleWaitEvents(session, session.play(event.midi))
       if (tempoRun && !tempoRun.session.finished) {
         const at = (event.time - tempoRun.origin) / 1000
         if (at >= -IGNORE_BEFORE_START_SECONDS) handleTempoEvents(tempoRun.session, tempoRun.session.play(event.midi, at))

@@ -3,6 +3,7 @@ import { noteBus, type NoteBus } from '../bus'
 import type { InputSource } from '../types'
 import { FrameAnalyzer, type AudioFrame } from './analysis'
 import { DEFAULT_CALIBRATION, type MicCalibration } from './calibration'
+import { ChordListener, SPECTRUM_SIZE, spectrumOf } from './chordListener'
 import { NoteTracker } from './noteTracker'
 
 export type MicStatus =
@@ -35,7 +36,8 @@ function saveCalibration(calibration: MicCalibration): void {
 
 /**
  * Microphone input: reads audio, detects one note at a time and publishes
- * note events on the note bus. Also streams raw frames for the level meter
+ * note events on the note bus. When practice asks for several notes at once
+ * (both hands, chords), it also checks that all of them are sounding. Also streams raw frames for the level meter
  * and the calibration wizard.
  */
 export class MicrophoneInput implements InputSource {
@@ -50,6 +52,9 @@ export class MicrophoneInput implements InputSource {
   private frameListeners = new Set<Listener<AudioFrame>>()
   private savedCalibration = loadCalibration()
   readonly tracker: NoteTracker
+  /** Listens for several notes at once (both hands, chords) when a practice step asks for them. */
+  private readonly chordListener = new ChordListener()
+  private onChordHeard: (() => void) | null = null
   /** Pauses note detection (e.g. during calibration) while frames keep flowing. */
   detecting = true
 
@@ -76,6 +81,22 @@ export class MicrophoneInput implements InputSource {
     saveCalibration(calibration)
     this.tracker.settings = { ...this.tracker.settings, threshold: calibration.threshold, a4Hz: calibration.a4Hz }
     if (this.status.state === 'on') this.setStatus({ state: 'on', calibrated: true })
+  }
+
+  /**
+   * Starts listening for a whole set of notes sounding together (both hands, chords);
+   * `onHeard` is called once when all of them have been heard. null stops listening.
+   */
+  listenForNotes(notes: readonly number[] | null, onHeard?: () => void, ignoreOctave = false): void {
+    if (!notes || notes.length === 0 || !onHeard) {
+      this.onChordHeard = null
+      this.chordListener.listen([])
+      return
+    }
+    const { threshold, a4Hz } = this.calibration
+    this.chordListener.settings = { ...this.chordListener.settings, threshold, a4Hz, ignoreOctave }
+    this.chordListener.listen(notes, performance.now())
+    this.onChordHeard = onHeard
   }
 
   onStatus(listener: Listener<MicStatus>): () => void {
@@ -105,17 +126,29 @@ export class MicrophoneInput implements InputSource {
     const context = Tone.getContext().rawContext as AudioContext
     this.source = context.createMediaStreamSource(this.stream)
     this.analyser = context.createAnalyser()
-    this.analyser.fftSize = FRAME_SIZE
+    // The longer buffer feeds the spectrum used to hear chords; pitch and level use its newest part.
+    this.analyser.fftSize = SPECTRUM_SIZE
     this.source.connect(this.analyser)
 
     const analyzer = new FrameAnalyzer(FRAME_SIZE, context.sampleRate)
-    const buffer = new Float32Array(FRAME_SIZE)
+    const buffer = new Float32Array(SPECTRUM_SIZE)
+    const newest = buffer.subarray(SPECTRUM_SIZE - FRAME_SIZE)
+    let tick = 0
     this.timer = window.setInterval(() => {
       if (!this.analyser) return
       this.analyser.getFloatTimeDomainData(buffer)
-      const frame = analyzer.analyze(buffer, performance.now())
+      const frame = analyzer.analyze(newest, performance.now())
       for (const listener of this.frameListeners) listener(frame)
       if (!this.detecting) return
+      if (this.onChordHeard) {
+        // Every other frame is enough for the spectrum (frames overlap a lot) and halves the work.
+        const spectrum = tick++ % 2 === 0 ? spectrumOf(buffer, context.sampleRate) : undefined
+        if (this.chordListener.process(frame, spectrum)) {
+          const onHeard = this.onChordHeard
+          this.onChordHeard = null
+          onHeard()
+        }
+      }
       // Report notes at the moment they were played, not when we heard them.
       const latency = this.calibration.latencyMs
       for (const event of this.tracker.process(frame)) this.bus.emit({ ...event, time: event.time - latency })
@@ -126,6 +159,7 @@ export class MicrophoneInput implements InputSource {
   stop(): void {
     if (this.timer !== null) window.clearInterval(this.timer)
     this.timer = null
+    this.listenForNotes(null)
     for (const event of this.tracker.reset()) this.bus.emit(event)
     this.source?.disconnect()
     this.stream?.getTracks().forEach(track => track.stop())
