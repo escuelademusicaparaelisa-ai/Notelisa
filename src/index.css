@@ -630,3 +630,80 @@ button.pick-box { padding: 0; cursor: pointer; }
 .piece-days th { text-align: left; color: var(--muted); font-weight: 700; padding: 4px 6px; border-bottom: 2px solid var(--line); }
 .piece-days td { padding: 6px; border-bottom: 1px solid var(--line); }
 @media (max-width: 480px) { .piece-history { padding: 20px; } .piece-days { font-size: 0.85rem; } .piece-days th, .piece-days td { padding: 6px 4px; } }
+
+/* Metronome and tuner (Exercises) */
+.practice-tools { margin-bottom: 18px; display: flex; flex-direction: column; gap: 14px; }
+.tool-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.tool-button { display: flex; align-items: center; gap: 14px; padding: 14px 18px; text-align: left; border: 2px solid transparent;
+  border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); color: var(--ink); font: inherit;
+  transition: border-color 0.12s, transform 0.12s; }
+.tool-button:hover { border-color: var(--lila); }
+.tool-button:active { transform: scale(0.98); }
+.tool-button .icon { flex: none; display: flex; align-items: center; justify-content: center; width: 52px; height: 52px;
+  border-radius: 16px; background: var(--lila-soft); color: var(--lila-dark); }
+.tool-button .icon .lucide { width: 28px; height: 28px; }
+.tool-button strong { display: block; font-family: var(--font-display); font-weight: 600; font-size: 1.25rem; color: var(--lila-deep); }
+.tool-button small { display: block; color: var(--muted); font-size: 0.95rem; }
+.tool-button.active { border-color: var(--lila); }
+.tool-button.active .icon { background: var(--lila); color: #fff; }
+.tool-panels { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 14px; align-items: start; }
+.tool-card { padding: 16px 18px 18px; background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow);
+  display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.tool-card .exercise-hint { margin: 0; }
+.tool-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tool-header h2 { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 1.3rem; color: var(--lila-deep); }
+.tool-header h2 .lucide { color: var(--lila); }
+.tool-close { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%;
+  border: none; background: var(--lila-soft); color: var(--lila-deep); }
+.tool-option { border: none; margin: 0; padding: 0; }
+.tool-option legend { padding: 0; margin-bottom: 8px; font-weight: 800; color: var(--muted); }
+.tool-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.tool-actions .big-button.primary { min-width: 170px; }
+.round-button { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 56px; height: 56px; border-radius: 50%;
+  border: 2px solid var(--line); background: var(--surface); color: var(--lila-deep); box-shadow: 0 3px 0 var(--line); }
+.round-button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+.round-button:disabled { opacity: 0.4; cursor: not-allowed; }
+.round-button.small { width: 40px; height: 40px; box-shadow: none; }
+.bpm-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.bpm-display { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.bpm-value { font-family: var(--font-display); font-weight: 600; font-size: 3.6rem; line-height: 1; color: var(--lila-deep); font-variant-numeric: tabular-nums; }
+.bpm-unit { color: var(--muted); font-weight: 700; font-size: 0.95rem; }
+.bpm-slider { width: 100%; accent-color: var(--accent); height: 32px; margin: 0; }
+.beat-dots { display: flex; justify-content: center; gap: 12px; min-height: 30px; align-items: center; }
+.beat-dot { width: 22px; height: 22px; border-radius: 50%; background: var(--lila-soft); border: 2px solid var(--line); }
+.beat-dot.first { width: 28px; height: 28px; }
+.beat-dot.on { background: var(--lila); border-color: var(--lila); animation: beat-flash 0.25s ease-out; }
+.beat-dot.first.on { background: var(--naranja); border-color: var(--naranja); }
+.tuner-display { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 18px 12px 14px;
+  border-radius: 16px; background: var(--lila-tint); border: 2px solid var(--line); transition: border-color 0.15s, background 0.15s; }
+.tuner-display.in-tune { border-color: var(--verde); background: #e9f7ef; }
+.tuner-note { font-family: var(--font-display); font-weight: 600; font-size: 3.6rem; line-height: 1; color: var(--lila-deep); min-height: 1em; }
+.tuner-note sub { font-size: 0.4em; color: var(--muted); margin-left: 2px; }
+.tuner-display.idle .tuner-note { color: var(--line); }
+.tuner-message { display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 800; font-size: 1.15rem; color: var(--lila-deep); text-align: center; }
+.tuner-display.in-tune .tuner-message { color: var(--verde); }
+.tuner-display.flat .tuner-message, .tuner-display.sharp .tuner-message { color: var(--naranja-dark); }
+.tuner-detail { font-weight: 700; font-size: 0.9rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.tuner-gauge { position: relative; width: 100%; max-width: 420px; height: 46px; border-radius: 12px; background: var(--surface); border: 2px solid var(--line); overflow: hidden; }
+.gauge-zone { position: absolute; top: 0; bottom: 0; background: #1f9d5533; }
+.gauge-tick { position: absolute; bottom: 0; width: 2px; height: 12px; margin-left: -1px; background: var(--line); }
+.gauge-tick.center { height: 100%; background: var(--verde); opacity: 0.6; }
+.gauge-needle { position: absolute; top: 4px; bottom: 4px; width: 6px; margin-left: -3px; border-radius: 3px; background: var(--lila-deep);
+  transition: left 80ms linear; }
+.tuner-display.in-tune .gauge-needle { background: var(--verde); }
+.tuner-display.flat .gauge-needle, .tuner-display.sharp .gauge-needle { background: var(--naranja); }
+.gauge-label { position: absolute; top: 50%; transform: translateY(-50%); font-weight: 800; color: var(--muted); font-size: 1.1rem; }
+.gauge-label.left { left: 10px; }
+.gauge-label.right { right: 10px; }
+.a4-setting { display: flex; align-items: center; gap: 8px; }
+.a4-value { min-width: 64px; text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .beat-dot.on { animation: none; } .gauge-needle { transition: none; } }
+@media (max-width: 560px) {
+  .tool-buttons { grid-template-columns: 1fr; gap: 10px; }
+  .tool-button { padding: 12px 14px; }
+  .tool-button .icon { width: 44px; height: 44px; }
+  .tool-card { padding: 14px; }
+  .bpm-value, .tuner-note { font-size: 3rem; }
+  .tool-actions .big-button.primary { flex: 1; min-width: 0; }
+  .tool-option .exercise-choices .chip { padding: 8px 13px; }
+}

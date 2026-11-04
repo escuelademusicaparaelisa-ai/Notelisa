@@ -7,6 +7,7 @@ import { ACCOMPANIMENT_NAMES, resolveStyle, stylesForTime, type AccompanimentSty
 import { saveExerciseOptions } from '../../core/exercises/savedOptions'
 import { Choices } from '../components/Choices'
 import { NotePicker } from '../components/NotePicker'
+import { PracticeTools } from '../components/PracticeTools'
 import { Arpeggio, ArrowLeft, Chromatic, FileMusic, Flute, Piano, Scale, ScaleArpeggio, Sparkles } from '../icons'
 
 interface Props {
@@ -83,6 +84,7 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
         <h1>Ejercicios y escalas</h1>
         <p>Elige qué quieres practicar y se creará un ejercicio nuevo cada vez.</p>
       </section>
+      <PracticeTools />
       <div className="exercise-options">
         <Choices label="Tipo" value={options.kind} onChange={set('kind')} choices={[
           { value: 'reading', label: 'Lectura', icon: <FileMusic /> },
