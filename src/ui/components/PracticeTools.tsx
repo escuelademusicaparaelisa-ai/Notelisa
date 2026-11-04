@@ -199,7 +199,8 @@ export function TunerTool({ onClose }: { onClose(): void }) {
     if (status.state !== 'on' || !listening) return
     const detecting = microphoneInput.detecting
     microphoneInput.detecting = false
-    const follower = new TunerFollower(microphoneInput.calibration.threshold)
+    // A softer gate than practice uses: a flute played quietly or a fading note should still show.
+    const follower = new TunerFollower(Math.max(0.003, microphoneInput.calibration.threshold * 0.6), 0.85)
     let lastHeard = 0
     const unsubscribe = microphoneInput.onFrame(frame => {
       const next = follower.process(frame, a4Ref.current)
@@ -239,7 +240,7 @@ export function TunerTool({ onClose }: { onClose(): void }) {
 
   const on = status.state === 'on' && listening
   const tune = reading ? verdict(reading.cents) : null
-  const message = !reading ? 'Toca una nota larga…'
+  const message = !reading ? 'Toca cualquier nota…'
     : tune === 'in-tune' ? '¡Afinado!'
     : tune === 'flat' ? 'Un poco bajo' : 'Un poco alto'
 
@@ -260,7 +261,7 @@ export function TunerTool({ onClose }: { onClose(): void }) {
         </div>
         <TunerGauge cents={reading?.cents ?? null} />
         <div className="tuner-message">
-          {on ? message : 'Pulsa «Escuchar» y toca una nota'}
+          {on ? message : 'Pulsa «Escuchar» y toca cualquier nota'}
           {reading && <span className="tuner-detail">{reading.cents > 0 ? '+' : ''}{reading.cents} cents · {reading.frequency.toFixed(1)} Hz</span>}
         </div>
       </div>
@@ -272,15 +273,16 @@ export function TunerTool({ onClose }: { onClose(): void }) {
             <Mic /> {status.state === 'starting' ? 'Abriendo…' : 'Escuchar'}
           </button>}
         <div className="a4-setting">
-          <span className="setting-label">La =</span>
+          <span className="setting-label">Referencia: La4 =</span>
           <button type="button" className="round-button small" aria-label="Bajar el La" onClick={() => setA4(a4 - 1)} disabled={a4 <= MIN_A4_HZ}><Minus /></button>
           <span className="a4-value">{a4} Hz</span>
           <button type="button" className="round-button small" aria-label="Subir el La" onClick={() => setA4(a4 + 1)} disabled={a4 >= MAX_A4_HZ}><Plus /></button>
         </div>
       </div>
       <p className="exercise-hint">
-        En la flauta: si sale <b>bajo</b>, mete un poco la cabeza de la flauta; si sale <b>alto</b>, sácala un poco.
-        Muchas orquestas afinan con La = 442 Hz.
+        Reconoce cualquier nota que suene: la barra va hacia <b>♭</b> si está baja y hacia <b>♯</b> si está alta.
+        En la flauta: si sale baja, mete un poco la cabeza de la flauta; si sale alta, sácala un poco.
+        La referencia solo cambia lo que se considera afinado (muchas orquestas usan La4 = 442 Hz).
       </p>
     </div>
   )
@@ -298,8 +300,8 @@ function TunerGauge({ cents }: { cents: number | null }) {
         <span key={mark} className={`gauge-tick ${mark === 0 ? 'center' : ''}`} style={{ left: `${50 + mark}%` }} />
       ))}
       {cents !== null && <span className="gauge-needle" style={{ left: `${position}%` }} />}
-      <span className="gauge-label left">♭</span>
-      <span className="gauge-label right">♯</span>
+      <span className="gauge-label left">♭ bajo</span>
+      <span className="gauge-label right">alto ♯</span>
     </div>
   )
 }
