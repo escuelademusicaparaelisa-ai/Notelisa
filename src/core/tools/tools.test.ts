@@ -61,3 +61,36 @@ describe('metronome tempo', () => {
     expect(taps.tap(6000)).toBe(60)
   })
 })
+
+describe('tuner with the real pitch detector', () => {
+  const SAMPLE_RATE = 48000
+  const FRAME = 2048
+  // A flute-like tone: strong fundamental, weaker harmonics and a little breath noise.
+  function flute(frequency: number, offset: number): Float32Array {
+    const out = new Float32Array(FRAME)
+    let seed = 7
+    for (let i = 0; i < FRAME; i++) {
+      const t = (offset + i) / SAMPLE_RATE
+      seed = (seed * 16807) % 2147483647
+      const noise = (seed / 2147483647 - 0.5) * 0.02
+      out[i] = 0.2 * Math.sin(2 * Math.PI * frequency * t) + 0.08 * Math.sin(4 * Math.PI * frequency * t)
+        + 0.03 * Math.sin(6 * Math.PI * frequency * t) + noise
+    }
+    return out
+  }
+
+  it.each([
+    ['Do', 4, 0], ['Re', 4, -20], ['Sol', 4, 10], ['Si♭', 4, 0], ['La', 4, 0], ['Mi', 5, 25], ['Fa♯', 5, -12], ['Do', 6, 0], ['Re', 7, 8],
+  ] as const)('reads %s%i at %i cents', async (name, octave, cents) => {
+    const { FrameAnalyzer } = await import('../input/mic/analysis')
+    const names = ['Do', 'Do♯', 'Re', 'Re♯', 'Mi', 'Fa', 'Fa♯', 'Sol', 'Sol♯', 'La', 'Si♭', 'Si']
+    const midi = (octave + 1) * 12 + names.indexOf(name)
+    const frequency = midiToFrequency(midi) * Math.pow(2, cents / 1200)
+    const analyzer = new FrameAnalyzer(FRAME, SAMPLE_RATE)
+    const follower = new TunerFollower(0.006, 0.85)
+    let reading = null
+    for (let k = 0; k < 6; k++) reading = follower.process(analyzer.analyze(flute(frequency, k * 576), k * 12), 440) ?? reading
+    expect(reading).toMatchObject({ midi, octave })
+    expect(Math.abs(reading!.cents - cents)).toBeLessThanOrEqual(2)
+  })
+})
