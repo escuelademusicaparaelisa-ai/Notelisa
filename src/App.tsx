@@ -10,7 +10,7 @@ import { LoggedPractice } from './ui/components/LoggedPractice'
 import { AdminScreen } from './ui/screens/AdminScreen'
 import { ExercisesScreen } from './ui/screens/ExercisesScreen'
 import { LibraryScreen } from './ui/screens/LibraryScreen'
-import { LoginScreen, WaitingScreen } from './ui/screens/LoginScreen'
+import { LoginScreen, NewPasswordScreen, WaitingScreen } from './ui/screens/LoginScreen'
 import { PhotoScreen } from './ui/screens/PhotoScreen'
 import { StudentScreen } from './ui/screens/StudentScreen'
 import { TeacherScreen } from './ui/screens/TeacherScreen'
@@ -66,6 +66,7 @@ export default function App() {
   }
   if (account.state === 'loading') return <p className="score-message">Cargando…</p>
   if (account.state === 'signedOut') return <LoginScreen />
+  if (account.state === 'signedIn' && account.recovering) return <NewPasswordScreen onDone={account.recovered} />
   if (account.state === 'signedIn' && account.profile?.status !== 'approved') {
     return <WaitingScreen profile={account.profile} onCheck={account.reload} />
   }

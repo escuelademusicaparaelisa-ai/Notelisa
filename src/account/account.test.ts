@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { errorMessage, fullName, registrationProblem, type Registration } from './account'
+import { errorMessage, fullName, recoveryTarget, registrationProblem, type Registration } from './account'
 
 const form: Registration = { nombre: 'Lucía', apellidos: 'Pérez Gil', telefono: '600 123 456', email: 'lucia@example.com', password: 'flauta1', role: 'student' }
 
@@ -29,4 +29,19 @@ describe('errorMessage', () => {
 
 it('joins name and surnames', () => {
   expect(fullName(form)).toBe('Lucía Pérez Gil')
+})
+
+describe('recoveryTarget', () => {
+  it('takes an email or a phone number', () => {
+    expect(recoveryTarget(' lucia@example.com ')).toEqual({ kind: 'email', email: 'lucia@example.com' })
+    expect(recoveryTarget('+34 600 12 34 56')).toEqual({ kind: 'phone', phone: '+34 600 12 34 56' })
+    expect(recoveryTarget('600-123-456')).toEqual({ kind: 'phone', phone: '600-123-456' })
+  })
+
+  it('refuses anything else', () => {
+    expect(recoveryTarget('lucia@')).toBeNull()
+    expect(recoveryTarget('600 123')).toBeNull()
+    expect(recoveryTarget('Lucía 600123456')).toBeNull()
+    expect(recoveryTarget('')).toBeNull()
+  })
 })
