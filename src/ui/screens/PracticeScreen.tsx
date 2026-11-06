@@ -543,85 +543,110 @@ export function PracticeScreen({ piece, onBack, backLabel = 'Biblioteca', onAnot
 
       {showSettings && (
         <section className="settings-panel" aria-label="Ajustes">
-          <div className="setting">
-            <span className="setting-label">Teclado MIDI</span>
-            <MidiPanel />
-          </div>
-          <div className="setting">
-            <span className="setting-label">Micrófono</span>
-            <MicPanel onCalibrate={() => { stopPractice(); setCalibrating(true) }} />
-          </div>
-          {staffOptions.length > 1 && (
+          <fieldset className="settings-group">
+            <legend>Cómo tocas</legend>
             <div className="setting">
-              <span className="setting-label">Qué tocar</span>
-              <div className="hands" role="group">
-                <button className={`chip ${staff === null ? 'active' : ''}`} onClick={() => changeSetting(setStaff)(null)}>Todo</button>
-                {/* Piano: left hand first, as the hands sit on the keyboard. */}
-                {(instrument.id === 'piano' ? [...staffOptions].reverse() : staffOptions).map(i => (
-                  <button key={i} className={`chip ${staff === i ? 'active' : ''}`} onClick={() => changeSetting(setStaff)(i)}>
-                    {instrument.id === 'piano' && i === 0
-                      ? <>{staffLabel(instrument, i)} <StaffIcon instrument={instrument.id} staff={i} /></>
-                      : <><StaffIcon instrument={instrument.id} staff={i} /> {staffLabel(instrument, i)}</>}
-                  </button>
-                ))}
+              <span className="setting-label">Teclado MIDI</span>
+              <div className="setting-controls"><MidiPanel /></div>
+            </div>
+            <div className="setting">
+              <span className="setting-label">Micrófono</span>
+              <div className="setting-controls">
+                <MicPanel onCalibrate={() => { stopPractice(); setCalibrating(true) }} />
               </div>
             </div>
-          )}
-          <div className="setting">
-            <span className="setting-label">Compases</span>
-            <label className="measure-input">
-              del
-              <input id="from-measure" type="number" min={1} max={toMeasure} value={fromMeasure}
-                onChange={e => changeSetting(setFromMeasure)(Math.max(1, Math.min(Number(e.target.value) || 1, toMeasure)))} />
-            </label>
-            <label className="measure-input">
-              al
-              <input id="to-measure" type="number" min={fromMeasure} max={measures} value={toMeasure}
-                onChange={e => changeSetting(setToMeasure)(Math.max(fromMeasure, Math.min(Number(e.target.value) || 1, measures)))} />
-            </label>
-            <label className="toggle">
-              <input id="loop" type="checkbox" checked={loop} onChange={e => changeSetting(setLoop)(e.target.checked)} />
-              Repetir en bucle
-            </label>
-          </div>
-          {harmony && (
             <div className="setting">
-              <span className="setting-label">Acompañamiento</span>
-              <div className="hands" role="group">
-                {(['off', ...stylesForTime(harmony.time)] as AccompanimentStyle[]).map(style => (
-                  <button key={style} className={`chip ${accompanimentStyle === style ? 'active' : ''}`} aria-pressed={accompanimentStyle === style}
-                    onClick={() => chooseAccompaniment(style)}>
-                    {style === 'off' ? 'No' : ACCOMPANIMENT_NAMES[style]}
-                  </button>
-                ))}
+              <span className="setting-label">En pantalla</span>
+              <div className="setting-controls">
+                <label className="toggle">
+                  <input id="show-keyboard" type="checkbox" checked={showKeyboard} onChange={e => setShowKeyboard(e.target.checked)} />
+                  <KeyboardMusic /> Teclado en pantalla
+                </label>
               </div>
-              {micOn && accompanimentStyle !== 'off' && (
-                <p className="exercise-hint">Con el micrófono, el acompañamiento solo suena en «Escuchar»: el micrófono lo confundiría con tus notas.</p>
-              )}
             </div>
-          )}
-          <div className="setting">
-            <span className="setting-label">Ayudas</span>
-            <label className="toggle">
-              <input id="ignore-octave" type="checkbox" checked={ignoreOctave} onChange={e => changeSetting(setIgnoreOctave)(e.target.checked)} />
-              Vale cualquier octava
-            </label>
-            <label className="toggle">
-              <input id="show-keyboard" type="checkbox" checked={showKeyboard} onChange={e => setShowKeyboard(e.target.checked)} />
-              <KeyboardMusic /> Teclado en pantalla
-            </label>
-          </div>
-          <div className="setting">
-            <label className="tempo">
-              <span className="setting-label">Velocidad {tempo}%{timeline ? ` (${Math.round(timeline.bpm * tempo / 100)} negras por minuto)` : ''}</span>
-              <input id="tempo" type="range" min={40} max={120} step={5} value={tempo}
-                onChange={e => changeSetting(setTempo)(Number(e.target.value))} />
-            </label>
-            <label className="toggle">
-              <input id="metronome" type="checkbox" checked={metronomeOn} onChange={e => changeSetting(setMetronomeOn)(e.target.checked)} />
-              <Metronome /> Metrónomo
-            </label>
-          </div>
+          </fieldset>
+
+          <fieldset className="settings-group">
+            <legend>Qué tocar</legend>
+            {staffOptions.length > 1 && (
+              <div className="setting">
+                <span className="setting-label">Parte</span>
+                <div className="setting-controls hands" role="group" aria-label="Parte">
+                  <button className={`chip ${staff === null ? 'active' : ''}`} onClick={() => changeSetting(setStaff)(null)}>Todo</button>
+                  {/* Piano: left hand first, as the hands sit on the keyboard. */}
+                  {(instrument.id === 'piano' ? [...staffOptions].reverse() : staffOptions).map(i => (
+                    <button key={i} className={`chip ${staff === i ? 'active' : ''}`} onClick={() => changeSetting(setStaff)(i)}>
+                      {instrument.id === 'piano' && i === 0
+                        ? <>{staffLabel(instrument, i)} <StaffIcon instrument={instrument.id} staff={i} /></>
+                        : <><StaffIcon instrument={instrument.id} staff={i} /> {staffLabel(instrument, i)}</>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="setting">
+              <span className="setting-label">Compases</span>
+              <div className="setting-controls">
+                <label className="measure-input">
+                  del
+                  <input id="from-measure" type="number" min={1} max={toMeasure} value={fromMeasure}
+                    onChange={e => changeSetting(setFromMeasure)(Math.max(1, Math.min(Number(e.target.value) || 1, toMeasure)))} />
+                </label>
+                <label className="measure-input">
+                  al
+                  <input id="to-measure" type="number" min={fromMeasure} max={measures} value={toMeasure}
+                    onChange={e => changeSetting(setToMeasure)(Math.max(fromMeasure, Math.min(Number(e.target.value) || 1, measures)))} />
+                </label>
+                <label className="toggle">
+                  <input id="loop" type="checkbox" checked={loop} onChange={e => changeSetting(setLoop)(e.target.checked)} />
+                  Repetir en bucle
+                </label>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset className="settings-group">
+            <legend>Ritmo y ayudas</legend>
+            <div className="setting">
+              <label className="setting-label" htmlFor="tempo">Velocidad</label>
+              <div className="setting-controls tempo">
+                <input id="tempo" type="range" min={40} max={120} step={5} value={tempo}
+                  onChange={e => changeSetting(setTempo)(Number(e.target.value))} />
+                <span className="tempo-value">
+                  {tempo}%{timeline && <small>{Math.round(timeline.bpm * tempo / 100)} negras/min</small>}
+                </span>
+                <label className="toggle">
+                  <input id="metronome" type="checkbox" checked={metronomeOn} onChange={e => changeSetting(setMetronomeOn)(e.target.checked)} />
+                  <Metronome /> Metrónomo
+                </label>
+              </div>
+            </div>
+            <div className="setting">
+              <span className="setting-label">Ayuda</span>
+              <div className="setting-controls">
+                <label className="toggle">
+                  <input id="ignore-octave" type="checkbox" checked={ignoreOctave} onChange={e => changeSetting(setIgnoreOctave)(e.target.checked)} />
+                  Vale cualquier octava
+                </label>
+              </div>
+            </div>
+            {harmony && (
+              <div className="setting">
+                <span className="setting-label">Acompañamiento</span>
+                <div className="setting-controls hands" role="group" aria-label="Acompañamiento">
+                  {(['off', ...stylesForTime(harmony.time)] as AccompanimentStyle[]).map(style => (
+                    <button key={style} className={`chip ${accompanimentStyle === style ? 'active' : ''}`} aria-pressed={accompanimentStyle === style}
+                      onClick={() => chooseAccompaniment(style)}>
+                      {style === 'off' ? 'No' : ACCOMPANIMENT_NAMES[style]}
+                    </button>
+                  ))}
+                  {micOn && accompanimentStyle !== 'off' && (
+                    <p className="exercise-hint">Con el micrófono, el acompañamiento solo suena en «Escuchar»: el micrófono lo confundiría con tus notas.</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </fieldset>
         </section>
       )}
 

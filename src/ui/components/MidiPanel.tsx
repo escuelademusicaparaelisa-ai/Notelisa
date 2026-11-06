@@ -14,8 +14,7 @@ export function MidiPanel() {
     case 'unsupported':
       return (
         <p className="notice warn">
-          Este navegador no permite conectar teclados MIDI (pasa en iPhone y iPad).
-          Usa Chrome o Edge en un ordenador o tablet Android, o toca con el teclado de la pantalla.
+          No disponible en este navegador. Usa Chrome o Edge en ordenador o Android.
         </p>
       )
     case 'idle':

@@ -173,10 +173,26 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
 .segmented button { display: inline-flex; align-items: center; gap: 6px; border: none; background: none; border-radius: 999px; padding: 8px 14px; font-weight: 800; font-size: 1rem; color: var(--lila-deep); }
 .segmented button.active { background: var(--lila); color: var(--accent-ink); box-shadow: 0 2px 6px rgba(126, 58, 150, 0.35); }
 
-.settings-panel { background: var(--surface); border-top: 1px solid var(--line); padding: 14px 16px;
-  display: flex; flex-wrap: wrap; gap: 14px 28px; position: relative; z-index: 2; }
-.setting { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.settings-panel { background: var(--bg); border-top: 1px solid var(--line); padding: 14px 16px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 12px;
+  align-items: start; position: relative; z-index: 2; }
+.settings-group { margin: 0; min-width: 0; background: var(--surface); border: 2px solid var(--line); border-radius: 18px;
+  padding: 4px 14px 10px; display: flex; flex-direction: column; container-type: inline-size; }
+.settings-group legend { float: left; width: 100%; padding: 10px 0 6px; margin-bottom: 4px; border-bottom: 1px solid var(--line);
+  font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; color: var(--lila-deep); }
+.setting { display: grid; grid-template-columns: 7.2rem minmax(0, 1fr); align-items: baseline; gap: 6px 8px; padding: 8px 0; }
+/* Narrow cards (phones): the name goes above its controls, so they get the whole width. */
+@container (max-width: 380px) { .setting { grid-template-columns: minmax(0, 1fr); } }
+.setting + .setting { border-top: 1px dashed var(--line); }
 .setting-label { font-weight: 800; color: var(--lila-dark); }
+.setting-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; }
+.settings-panel .hands { justify-content: flex-start; }
+.settings-panel .notice { font-size: 0.92rem; padding: 8px 12px; }
+.settings-panel .tempo input[type="range"] { flex: 1; min-width: 100px; width: auto; }
+.settings-panel .tempo .toggle { flex-basis: 100%; }
+.tempo-value { display: flex; flex-direction: column; align-items: flex-end; font-weight: 800; color: var(--lila-deep); line-height: 1.15; }
+.tempo-value small { font-size: 0.78rem; font-weight: 700; color: var(--lila-dark); white-space: nowrap; }
+.settings-panel .exercise-hint { flex-basis: 100%; margin: 0; }
 .measure-input { display: flex; align-items: center; gap: 6px; font-weight: 700; }
 .measure-input input { width: 64px; height: 44px; font: inherit; font-size: 1.1rem; text-align: center;
   border: 2px solid var(--line); border-radius: 12px; background: var(--bg); color: var(--ink); }
