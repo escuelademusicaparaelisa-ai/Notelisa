@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { EMPTY_REGISTRATION, MIN_PASSWORD, register, registrationProblem, signIn, signOut, fullName, type Profile, type Registration } from '../../account/account'
-import { LogIn, RefreshCw, UserPlus } from '../icons'
+import { changePassword, EMPTY_REGISTRATION, MIN_PASSWORD, register, registrationProblem, sendPasswordReset, signIn, signOut, fullName, type Profile, type Registration } from '../../account/account'
+import { brokenLink } from '../../account/useAccount'
+import { ArrowLeft, Check, KeyRound, LogIn, Mail, RefreshCw, UserPlus } from '../icons'
 import { PasswordInput } from '../components/PasswordInput'
 
 /** Entry to the app: sign in, or ask the administrator for access. */
 export function LoginScreen() {
-  const [mode, setMode] = useState<'signIn' | 'register'>('signIn')
+  const [mode, setMode] = useState<'signIn' | 'register' | 'forgot'>(brokenLink ? 'forgot' : 'signIn')
   const [form, setForm] = useState<Registration>(EMPTY_REGISTRATION)
   const [busy, setBusy] = useState(false)
   const [problem, setProblem] = useState<string | null>(null)
@@ -34,6 +35,15 @@ export function LoginScreen() {
     setCheckEmail(false)
   }
 
+  if (mode === 'forgot') {
+    return (
+      <main className="account-page">
+        <img className="account-logo" src={`${import.meta.env.BASE_URL}brand/logo-notelisa.png`} alt="Notelisa" />
+        <ForgotPassword initial={form.email} brokenLink={brokenLink} onBack={() => switchTo('signIn')} />
+      </main>
+    )
+  }
+
   return (
     <main className="account-page">
       <img className="account-logo" src={`${import.meta.env.BASE_URL}brand/logo-notelisa.png`} alt="Notelisa" />
@@ -60,10 +70,100 @@ export function LoginScreen() {
               <PasswordInput autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'} value={form.password} onChange={set('password')}
                 placeholder={mode === 'register' ? `Mínimo ${MIN_PASSWORD} caracteres` : undefined} />
             </label>
+            {mode === 'signIn' && (
+              <button type="button" className="link-button forgot-link" onClick={() => switchTo('forgot')}>¿Has olvidado tu contraseña?</button>
+            )}
             {problem && <p className="notice warn" role="alert">{problem}</p>}
             <button className="big-button primary" type="submit" disabled={busy}>
               {busy ? 'Un momento…' : mode === 'signIn' ? 'Entrar' : 'Enviar solicitud'}
             </button>
+          </>
+        )}
+      </form>
+    </main>
+  )
+}
+
+/** Asks for the email or phone of the account and sends a link to choose a new password. */
+function ForgotPassword({ initial, brokenLink, onBack }: { initial: string; brokenLink: boolean; onBack(): void }) {
+  const [text, setText] = useState(initial)
+  const [busy, setBusy] = useState(false)
+  const [problem, setProblem] = useState<string | null>(null)
+  const [sent, setSent] = useState(false)
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setBusy(true)
+    const error = await sendPasswordReset(text)
+    setBusy(false)
+    setProblem(error)
+    setSent(!error)
+  }
+
+  return (
+    <form className="account-card" onSubmit={submit} noValidate>
+      <h1><KeyRound /> Recuperar contraseña</h1>
+      {sent ? (
+        <p className="notice account-created" role="status"><Mail /> Si hay una cuenta con ese dato, te hemos enviado un correo a su email.
+          Abre el enlace que trae para elegir una contraseña nueva. Si no lo ves, mira en la carpeta de spam.</p>
+      ) : (
+        <>
+          {brokenLink && <p className="notice warn" role="alert">Ese enlace ya no sirve: se ha usado o ha caducado. Pide uno nuevo.</p>}
+          <p className="account-intro">Escribe el email o el teléfono con el que te diste de alta. Te enviaremos un enlace al email de tu cuenta.</p>
+          <label>Email o teléfono
+            <input type="text" inputMode="email" autoComplete="username" autoCapitalize="none" spellCheck={false} value={text}
+              onChange={e => setText(e.target.value)} />
+          </label>
+          {problem && <p className="notice warn" role="alert">{problem}</p>}
+          <button className="big-button primary" type="submit" disabled={busy || !text.trim()}>{busy ? 'Enviando…' : 'Enviar enlace'}</button>
+        </>
+      )}
+      <button type="button" className="chip forgot-back" onClick={onBack}><ArrowLeft /> Volver a entrar</button>
+    </form>
+  )
+}
+
+/** Opened from the email: choose the new password, then go into the app. */
+export function NewPasswordScreen({ onDone }: { onDone(): void }) {
+  const [password, setPassword] = useState('')
+  const [repeat, setRepeat] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [problem, setProblem] = useState<string | null>(null)
+  const [changed, setChanged] = useState(false)
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (password !== repeat) {
+      setProblem('Las dos contraseñas no coinciden.')
+      return
+    }
+    setBusy(true)
+    const error = await changePassword(password)
+    setBusy(false)
+    setProblem(error)
+    setChanged(!error)
+  }
+
+  return (
+    <main className="account-page">
+      <img className="account-logo" src={`${import.meta.env.BASE_URL}brand/logo-notelisa.png`} alt="Notelisa" />
+      <form className="account-card" onSubmit={submit} noValidate>
+        <h1><KeyRound /> Nueva contraseña</h1>
+        {changed ? (
+          <>
+            <p className="notice account-created" role="status"><Check /> Contraseña cambiada. La próxima vez entra con la nueva.</p>
+            <button className="big-button primary" type="button" onClick={onDone}>Entrar en Notelisa</button>
+          </>
+        ) : (
+          <>
+            <label>Nueva contraseña
+              <PasswordInput autoComplete="new-password" value={password} placeholder={`Mínimo ${MIN_PASSWORD} caracteres`} onChange={e => setPassword(e.target.value)} />
+            </label>
+            <label>Repítela
+              <PasswordInput autoComplete="new-password" value={repeat} onChange={e => setRepeat(e.target.value)} />
+            </label>
+            {problem && <p className="notice warn" role="alert">{problem}</p>}
+            <button className="big-button primary" type="submit" disabled={busy || !password}>{busy ? 'Guardando…' : 'Guardar'}</button>
           </>
         )}
       </form>

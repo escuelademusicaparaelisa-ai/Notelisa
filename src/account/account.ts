@@ -119,6 +119,35 @@ export async function createAccount(form: Registration): Promise<string | null> 
   return null
 }
 
+/** What someone typed to recover their password: an email, a phone number, or neither. */
+export type RecoveryTarget = { kind: 'email'; email: string } | { kind: 'phone'; phone: string } | null
+
+export function recoveryTarget(text: string): RecoveryTarget {
+  const value = text.trim()
+  if (value.includes('@')) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? { kind: 'email', email: value } : null
+  return value.replace(/\D/g, '').length >= 9 && /^[\d\s()+.-]+$/.test(value) ? { kind: 'phone', phone: value } : null
+}
+
+/** Where the link in the email takes them: back to Notelisa, which then asks for the new password. */
+export function recoveryAddress(): string {
+  return new URL(import.meta.env.BASE_URL, window.location.origin).href
+}
+
+/**
+ * Emails a link to choose a new password. With a phone number, the server looks up the
+ * account and writes to its email. It never says whether the account exists.
+ */
+export async function sendPasswordReset(text: string): Promise<string | null> {
+  const target = recoveryTarget(text)
+  if (!target) return 'Escribe el email o el teléfono con el que te diste de alta.'
+  if (target.kind === 'email') {
+    const { error } = await server().auth.resetPasswordForEmail(target.email, { redirectTo: recoveryAddress() })
+    return error ? errorMessage(error) : null
+  }
+  const { error } = await server().functions.invoke('recuperar-contrasena', { body: { telefono: target.phone, volver: recoveryAddress() } })
+  return error ? 'No se ha podido enviar con el teléfono. Prueba a escribir tu email.' : null
+}
+
 /** Changes the signed-in person's password; null when done, or what went wrong. */
 export async function changePassword(password: string): Promise<string | null> {
   if (password.length < MIN_PASSWORD) return `La contraseña necesita al menos ${MIN_PASSWORD} caracteres.`
