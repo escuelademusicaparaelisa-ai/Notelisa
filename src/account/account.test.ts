@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { errorMessage, fullName, registrationProblem, type Registration } from './account'
+import { errorMessage, fullName, newPasswordProblem, registrationProblem, type Registration } from './account'
 
 const form: Registration = { nombre: 'Lucía', apellidos: 'Pérez Gil', telefono: '600 123 456', email: 'lucia@example.com', password: 'flauta1', role: 'student' }
 
@@ -29,4 +29,14 @@ describe('errorMessage', () => {
 
 it('joins name and surnames', () => {
   expect(fullName(form)).toBe('Lucía Pérez Gil')
+})
+
+describe('newPasswordProblem', () => {
+  it('lets the password stay as it is when left empty', () => {
+    expect(newPasswordProblem('')).toBeNull()
+  })
+  it('asks for at least the minimum length', () => {
+    expect(newPasswordProblem('abc')).toMatch(/al menos/)
+    expect(newPasswordProblem('abcdef')).toBeNull()
+  })
 })

@@ -11,7 +11,8 @@ funciona como siempre, sin cuentas.
    escuela ya revisa cada solicitud, así nadie tiene que esperar a un correo.
 3. **SQL Editor**: pega el contenido de `01-cuentas.sql` y pulsa *Run*. Después haz lo
    mismo con `02-alumnos-de-cada-profesor.sql`, `03-tareas.sql`,
-   `04-cuadernos.sql`, `05-progreso.sql` y `06-biblioteca-escuela.sql`.
+   `04-cuadernos.sql`, `05-progreso.sql`, `06-biblioteca-escuela.sql` y
+   `07-contrasena-admin.sql`.
 4. Copia *Project URL* y la clave *anon public* (*Project Settings → API*) en el
    archivo `.env.production` de la raíz del repositorio:
 
@@ -49,3 +50,7 @@ ve. La primera vez que el admin entra después de ejecutar `06-biblioteca-escuel
 la app le pide **una sola vez** la clave con la que se publicó la biblioteca (si ese
 dispositivo ya la tenía abierta, ni eso) y guarda la llave en el servidor. Si se publica
 la biblioteca con una clave nueva, la app se lo vuelve a pedir al admin.
+
+Al editar la ficha de un alumno o profesor, el admin puede escribir una **Nueva
+contraseña** (necesita `07-contrasena-admin.sql`). La contraseña actual no se puede ver:
+Supabase la guarda cifrada sin vuelta atrás, así que solo se puede poner una nueva.
