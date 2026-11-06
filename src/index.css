@@ -460,7 +460,7 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
   border-radius: 14px; background: var(--bg); color: var(--ink); }
 .account-card input:focus { outline: none; border-color: var(--lila); }
 .password-input { position: relative; display: block; font-weight: 400; }
-.account-card .password-input input { padding-right: 56px; }
+.account-card .password-input input, .edit-person .password-input input { padding-right: 56px; }
 .password-eye { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); width: 44px; height: 44px; padding: 0;
   display: grid; place-items: center; border: none; border-radius: 12px; background: none; color: var(--muted); cursor: pointer; }
 .password-eye:hover, .password-eye[aria-pressed="true"] { color: var(--lila-deep); }
@@ -582,6 +582,7 @@ button.pick-box { padding: 0; cursor: pointer; }
 .edit-person input { width: 100%; min-width: 0; font-size: 1.1rem; padding: 10px 14px; border: 2px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); }
 .edit-person input:focus { outline: none; border-color: var(--lila); }
 .edit-person input:disabled { color: var(--muted); }
+.edit-person-note { margin: 0; color: var(--muted); font-size: 0.95rem; }
 .edit-person .notice { max-width: none; }
 .edit-person .big-button.primary { min-height: 52px; }
 .notebook-school { display: block; margin-top: 4px; font-size: 0.8rem; font-weight: 800; color: var(--lila-dark); }
