@@ -160,6 +160,21 @@ export async function updateProfile(id: string, changes: ProfileChanges): Promis
   if (error) throw error
 }
 
+/** What is wrong with a new password the administrator types for someone; null if nothing (empty means keep it). */
+export function newPasswordProblem(password: string): string | null {
+  if (password && password.length < MIN_PASSWORD) return `La contraseña necesita al menos ${MIN_PASSWORD} caracteres.`
+  return null
+}
+
+/**
+ * The administrator gives someone a new password. Passwords are stored hashed, so
+ * nobody can read the current one; it can only be replaced (07-contrasena-admin.sql).
+ */
+export async function setPasswordFor(id: string, password: string): Promise<void> {
+  const { error } = await server().rpc('admin_set_password', { target: id, new_password: password })
+  if (error) throw error
+}
+
 export async function answerRequest(id: string, answer: { status: 'approved'; role: Role } | { status: 'rejected' }): Promise<void> {
   const { error } = await server().from('profiles').update(answer).eq('id', id)
   if (error) throw error

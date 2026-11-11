@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
-  answerRequest, changesProblem, createAccount, EMPTY_REGISTRATION, fullName, MIN_PASSWORD, registrationProblem, ROLE_NAMES,
-  updateProfile, type Profile, type ProfileChanges, type Registration, type Role,
+  answerRequest, changesProblem, createAccount, EMPTY_REGISTRATION, fullName, MIN_PASSWORD, newPasswordProblem, registrationProblem,
+  ROLE_NAMES, setPasswordFor, updateProfile, type Profile, type ProfileChanges, type Registration, type Role,
 } from '../../account/account'
 import { isLinked, loadSchool, matchesPerson, members, setTeacherStudent, unlinkEveryone, withLink, type School } from '../../account/admin'
 import { ArrowLeft, Check, GraduationCap, Mail, Pencil, Phone, Search, UserPlus, Users, X } from '../icons'
@@ -50,10 +50,11 @@ export function AdminScreen({ onBack, onPending }: { onBack(): void; onPending(c
     return change(() => setTeacherStudent(pair, linked), withLink(school!, pair, linked))
   }
 
-  const edit = (profile: Profile, changes: ProfileChanges) => {
+  const edit = (profile: Profile, changes: ProfileChanges, password: string) => {
     const roleChanged = changes.role !== profile.role
     return change(async () => {
       await updateProfile(profile.id, changes)
+      if (password) await setPasswordFor(profile.id, password)
       // A student who becomes a teacher (or the other way round) starts with no pairs.
       if (roleChanged) await unlinkEveryone(profile.id)
     }, {
@@ -165,7 +166,7 @@ interface PeopleProps {
   students: Profile[]
   onLink(teacherId: string, studentId: string, linked: boolean): void
   onRemove(profile: Profile): void
-  onEdit(profile: Profile, changes: ProfileChanges): void
+  onEdit(profile: Profile, changes: ProfileChanges, password: string): void
 }
 
 function SearchBox({ value, onChange, placeholder }: { value: string; onChange(value: string): void; placeholder: string }) {
@@ -205,7 +206,7 @@ function Students({ school, teachers, students, onLink, onRemove, onEdit }: Peop
               {editing !== student.id && <button className="chip admin-edit" onClick={() => setEditing(student.id)}><Pencil /> Editar</button>}
             </div>
             {editing === student.id ? (
-              <EditPerson profile={student} onCancel={() => setEditing(null)} onSave={changes => { onEdit(student, changes); setEditing(null) }} />
+              <EditPerson profile={student} onCancel={() => setEditing(null)} onSave={(changes, password) => { onEdit(student, changes, password); setEditing(null) }} />
             ) : <>
             <Contact profile={student} />
             <div className="request-actions">
@@ -253,7 +254,7 @@ function Teachers({ school, teachers, students, onLink, onRemove, onEdit }: Peop
                 {editing !== teacher.id && <button className="chip admin-edit" onClick={() => setEditing(teacher.id)}><Pencil /> Editar</button>}
               </div>
               {editing === teacher.id ? (
-                <EditPerson profile={teacher} onCancel={() => setEditing(null)} onSave={changes => { onEdit(teacher, changes); setEditing(null) }} />
+                <EditPerson profile={teacher} onCancel={() => setEditing(null)} onSave={(changes, password) => { onEdit(teacher, changes, password); setEditing(null) }} />
               ) : <Contact profile={teacher} />}
               {editing === teacher.id ? null : open ? (
                 <div className="admin-choose">
@@ -327,17 +328,21 @@ function NewAccount({ onCancel, onCreated }: { onCancel(): void; onCreated(name:
   )
 }
 
-/** The administrator corrects name, surnames and phone, or turns a student into a teacher (or back). */
-function EditPerson({ profile, onCancel, onSave }: { profile: Profile; onCancel(): void; onSave(changes: ProfileChanges): void }) {
+/**
+ * The administrator corrects name, surnames and phone, turns a student into a teacher
+ * (or back), or gives a new password (the current one is stored hashed and can't be shown).
+ */
+function EditPerson({ profile, onCancel, onSave }: { profile: Profile; onCancel(): void; onSave(changes: ProfileChanges, password: string): void }) {
   const [form, setForm] = useState<ProfileChanges>({ nombre: profile.nombre, apellidos: profile.apellidos, telefono: profile.telefono, role: profile.role })
+  const [password, setPassword] = useState('')
   const [problem, setProblem] = useState<string | null>(null)
   const set = (field: 'nombre' | 'apellidos' | 'telefono') => (event: React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [field]: event.target.value })
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault()
-    const formProblem = changesProblem(form)
+    const formProblem = changesProblem(form) ?? newPasswordProblem(password)
     setProblem(formProblem)
-    if (!formProblem) onSave(form)
+    if (!formProblem) onSave(form, password)
   }
 
   return (
@@ -350,6 +355,11 @@ function EditPerson({ profile, onCancel, onSave }: { profile: Profile; onCancel(
         <label>Teléfono<input type="tel" value={form.telefono} onChange={set('telefono')} /></label>
         <label>Email<input value={profile.email} disabled title="El email no se puede cambiar desde aquí" /></label>
       </div>
+      <div className="account-row">
+        <label>Nueva contraseña<PasswordInput autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)}
+          placeholder="Déjalo vacío para no cambiarla" /></label>
+      </div>
+      <p className="edit-person-note">La contraseña actual no se puede ver: se guarda cifrada. Si la ha olvidado, escribe una nueva y pásasela.</p>
       {profile.role !== 'admin' && (
         <div className="account-roles" role="radiogroup" aria-label="Es">
           <span>Es</span>
