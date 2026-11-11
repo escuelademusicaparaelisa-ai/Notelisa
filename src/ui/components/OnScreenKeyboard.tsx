@@ -28,13 +28,13 @@ export function OnScreenKeyboard({ low = 48, high = 84, hints = [], pressed }: P
   const whites: number[] = []
   for (let m = low; m <= high; m++) if (!isBlack(m)) whites.push(m)
 
-  // Keep the hinted keys in view on narrow screens.
-  const firstHint = hints.length ? Math.min(...hints) : null
+  // Keep the hinted keys (or Do4 when there is nothing to play yet) in view on narrow screens.
+  const focus = hints.length ? Math.min(...hints) : 60
   useEffect(() => {
-    if (firstHint === null || !scrollRef.current) return
-    const key = scrollRef.current.querySelector<HTMLElement>(`[data-midi="${firstHint}"]`)
+    if (!scrollRef.current) return
+    const key = scrollRef.current.querySelector<HTMLElement>(`[data-midi="${focus}"]`)
     key?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' })
-  }, [firstHint])
+  }, [focus, low, high])
 
   const keyProps = (midi: number) => ({
     'data-midi': midi,
