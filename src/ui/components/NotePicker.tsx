@@ -5,9 +5,9 @@ import { ChevronLeft, ChevronRight } from '../icons'
 
 interface Props {
   notes: SelectableNote[]
-  /** Staff positions of the chosen notes. */
+  /** Ids of the chosen notes. */
   chosen: number[]
-  onToggle(position: number): void
+  onToggle(id: number): void
 }
 
 const BLACK = new Set([1, 3, 6, 8, 10])
@@ -30,7 +30,7 @@ function useNarrow(): boolean {
 }
 
 /**
- * A piano keyboard to choose the notes of an exercise. Only the notes of the key can be tapped;
+ * A piano keyboard to choose the notes of an exercise. Only the notes it is given can be tapped;
  * the arrows move it an octave lower or higher.
  */
 export function NotePicker({ notes, chosen, onToggle }: Props) {
@@ -47,7 +47,7 @@ export function NotePicker({ notes, chosen, onToggle }: Props) {
 
   // Start a little below the lowest chosen note (or the first default one), at a Do when it fits.
   const [start, setStart] = useState(() => {
-    const chosenMidis = notes.filter(n => chosen.includes(n.position)).map(n => n.midi)
+    const chosenMidis = notes.filter(n => chosen.includes(n.id)).map(n => n.midi)
     const anchor = chosenMidis.length ? Math.min(...chosenMidis) : notes[Math.floor(notes.length / 2)].midi
     let i = whites.findIndex(w => w >= anchor - (isBlack(anchor) ? 1 : 0))
     while (i > 0 && whites[i] % 12 !== 0 && whites[i] > anchor - 12) i--
@@ -57,19 +57,19 @@ export function NotePicker({ notes, chosen, onToggle }: Props) {
   const visible = whites.slice(first, first + count)
   const shift = (by: number) => setStart(Math.max(0, Math.min(first + by, maxStart)))
 
-  const hidden = notes.filter(n => chosen.includes(n.position) && (n.midi < visible[0] || n.midi > visible[visible.length - 1])).length
+  const hidden = notes.filter(n => chosen.includes(n.id) && (n.midi < visible[0] || n.midi > visible[visible.length - 1])).length
   const width = 100 / count
 
   const keyButton = (midi: number, left: number, black: boolean) => {
     const note = byMidi.get(midi)
-    const active = !!note && chosen.includes(note.position)
+    const active = !!note && chosen.includes(note.id)
     return (
       <button key={midi} type="button" disabled={!note}
         className={`pick-key ${black ? 'black' : 'white'} ${active ? 'active' : ''}`}
         style={{ left: `${left}%`, width: `${black ? width * 0.62 : width}%` }}
         aria-pressed={note ? active : undefined}
         aria-label={note ? note.name : `${midiToSolfege(midi)} (no es de la tonalidad)`}
-        onClick={() => note && onToggle(note.position)}>
+        onClick={() => note && onToggle(note.id)}>
         {active ? <span className="pick-label">{note.name}</span>
           : !black && midi % 12 === 0 && <span className="pick-label faint">Do{Math.floor(midi / 12) - 1}</span>}
       </button>

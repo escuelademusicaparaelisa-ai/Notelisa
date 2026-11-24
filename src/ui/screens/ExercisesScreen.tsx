@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
-  CHROMATIC_STARTS, defaultChosenNotes, INTERVALS, MAJOR_KEYS, MINOR_KEYS, MINOR_SCALE_NAMES, RANGE_NOTES, selectableNotes,
-  type ExerciseOptions, type MinorScale,
+  CHROMATIC_STARTS, defaultChosenNotes, INTERVALS, MAJOR_KEYS, MINOR_KEYS, MINOR_SCALE_NAMES, RANGE_NOTES, chosenNotes, pickerNotes, selectableNotes,
+  type ExerciseOptions, type MinorScale, type NoteScope,
 } from '../../core/exercises/generator'
 import { ACCOMPANIMENT_NAMES, resolveStyle, stylesForTime, type AccompanimentStyle } from '../../core/exercises/accompaniment'
 import { saveExerciseOptions } from '../../core/exercises/savedOptions'
@@ -30,21 +30,43 @@ function KeyChips({ keys, value, onChange }: { keys: typeof MAJOR_KEYS; value: s
   )
 }
 
-/** A keyboard to tap the notes of the key one by one; it can move lower or higher. */
-function NoteChooser({ options, onChange }: { options: ExerciseOptions; onChange(notes: number[]): void }) {
-  const toggle = (position: number) =>
-    onChange(options.notes.includes(position) ? options.notes.filter(p => p !== position) : [...options.notes, position])
-  const notes = selectableNotes(options)
-  const chosen = notes.filter(n => options.notes.includes(n.position)).length
+/**
+ * A keyboard to tap the notes one by one; it can move lower or higher. It offers the notes of the
+ * key or, with "Todo el teclado", every white and black key.
+ */
+function NoteChooser({ options, onChange }: { options: ExerciseOptions; onChange(options: ExerciseOptions): void }) {
+  const all = options.noteScope === 'all'
+  const chosenIds = (all ? options.freeNotes : options.notes) ?? []
+  const toggle = (id: number) => {
+    const next = chosenIds.includes(id) ? chosenIds.filter(p => p !== id) : [...chosenIds, id]
+    onChange(all ? { ...options, freeNotes: next } : { ...options, notes: next })
+  }
+  // Switching keeps the notes already chosen that are on both keyboards.
+  const setScope = (scope: NoteScope) => {
+    if (scope === options.noteScope || (scope === 'key' && !all)) return
+    const current = chosenNotes(options)
+    if (scope === 'all') return onChange({ ...options, noteScope: 'all', freeNotes: current.map(n => n.midi) })
+    const keyNotes = selectableNotes(options).filter(n => current.some(c => c.midi === n.midi)).map(n => n.position)
+    onChange({ ...options, noteScope: 'key', notes: keyNotes.length ? keyNotes : options.notes })
+  }
+  const notes = pickerNotes(options)
+  const chosen = chosenNotes(options).length
   return (
     <fieldset className="exercise-option">
       <legend>Elige las notas</legend>
-      {/* A new key, clef or instrument opens the keyboard again around the chosen notes. */}
-      <NotePicker key={`${options.key}-${options.minor}-${options.clef}-${options.instrument}`}
-        notes={notes} chosen={options.notes} onToggle={toggle} />
+      <div className="segmented note-scope" role="group" aria-label="Qué teclas se pueden elegir">
+        {([['key', 'Tonalidad elegida'], ['all', 'Todo el teclado']] as [NoteScope, string][]).map(([scope, label]) => {
+          const active = (options.noteScope ?? 'key') === scope
+          return <button key={scope} type="button" className={active ? 'active' : ''} aria-pressed={active} onClick={() => setScope(scope)}>{label}</button>
+        })}
+      </div>
+      {/* A new key, clef, instrument or scope opens the keyboard again around the chosen notes. */}
+      <NotePicker key={`${options.key}-${options.minor}-${options.clef}-${options.instrument}-${options.noteScope ?? 'key'}`}
+        notes={notes} chosen={chosenIds} onToggle={toggle} />
       <p className="exercise-hint">
         {chosen < 2 ? 'Elige al menos dos notas; mientras tanto se usarán 5 notas.'
-          : 'Toca una tecla para añadirla o quitarla. Las teclas apagadas no son de la tonalidad.'}
+          : all ? 'Toca cualquier tecla, blanca o negra, para añadirla o quitarla.'
+            : 'Toca una tecla para añadirla o quitarla. Las teclas apagadas no son de la tonalidad: para usarlas, elige «Todo el teclado».'}
       </p>
     </fieldset>
   )
@@ -53,7 +75,7 @@ function NoteChooser({ options, onChange }: { options: ExerciseOptions; onChange
 /** Notes the melody spans, counted like an interval, to grey out wider intervals. */
 function rangeNotes(options: ExerciseOptions): number {
   if (options.range !== 5) return RANGE_NOTES[options.range]
-  const chosen = selectableNotes(options).map(n => n.position).filter(p => options.notes.includes(p))
+  const chosen = chosenNotes(options).map(n => n.position)
   return chosen.length >= 2 ? Math.max(...chosen) - Math.min(...chosen) + 1 : RANGE_NOTES[1]
 }
 
@@ -166,7 +188,7 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
           { value: 4, label: 'Dos octavas' },
           { value: 5, label: 'Elegir notas' },
         ]} />
-        {!scale && options.range === 5 && <NoteChooser options={options} onChange={set('notes')} />}
+        {!scale && options.range === 5 && <NoteChooser options={options} onChange={setOptions} />}
         {!scale && (
           // Intervals wider than the chosen notes cannot come up, so they are greyed out.
           <Choices label="Intervalo máximo" value={Math.min(options.maxInterval, rangeNotes(options)) as ExerciseOptions['maxInterval']}

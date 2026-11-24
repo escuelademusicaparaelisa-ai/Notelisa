@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  defaultChosenNotes, exerciseToMusicXml, selectableNotes, generateExercise, KEYS, measureLength, rhythmForMeasure, seededRandom,
+  defaultChosenNotes, keyboardNotes, exerciseToMusicXml, selectableNotes, generateExercise, KEYS, measureLength, rhythmForMeasure, seededRandom,
   type ExerciseOptions, type RhythmLevel, type TimeSignature,
 } from './generator'
 
@@ -337,5 +337,43 @@ describe('chromatic scale', () => {
     }
     const right = generateExercise({ ...BASE, kind: 'chromatic', chromaticStart: 0 }, 1).staves[0].measures.flat().map(e => e.finger)
     expect(right.slice(0, 13)).toEqual([1, 3, 1, 3, 1, 2, 3, 1, 3, 1, 3, 1, 2])
+  })
+})
+
+describe('notes chosen on the whole keyboard', () => {
+  const BASE: ExerciseOptions = {
+    kind: 'reading', instrument: 'piano', clef: 'treble', key: 'C', time: '4/4', rhythm: 2, rests: false,
+    range: 5, notes: [], maxInterval: 3, measures: 8, minor: 'harmonic', noteScope: 'all',
+  }
+  const pitchesOf = (xml: string) => [...xml.matchAll(/<step>(\w)<\/step>(?:<alter>(-?\d)<\/alter>)?<octave>(\d)<\/octave>/g)]
+    .map(([, step, alter, octave]) => step + (alter === '1' ? '#' : alter === '-1' ? 'b' : '') + octave)
+
+  it('offers every key, white and black', () => {
+    const notes = keyboardNotes(BASE)
+    expect(notes.map(n => n.midi)).toEqual(Array.from({ length: 88 - 53 + 1 }, (_, i) => 53 + i))
+    expect(notes.find(n => n.midi === 66)?.name).toBe('Fa♯4')
+    expect(keyboardNotes({ ...BASE, key: 'F' }).find(n => n.midi === 63)?.name).toBe('Mi♭4')
+    // Notes of the key keep their spelling, and a white key outside it is a natural.
+    expect(keyboardNotes({ ...BASE, key: 'F' }).find(n => n.midi === 70)?.name).toBe('Si♭4')
+    expect(keyboardNotes({ ...BASE, key: 'F' }).find(n => n.midi === 71)?.name).toBe('Si4')
+  })
+
+  it('uses only the chosen keys, black ones included', () => {
+    for (let seed = 1; seed < 20; seed++) {
+      const xml = exerciseToMusicXml(generateExercise({ ...BASE, freeNotes: [60, 61, 63, 66] }, seed))
+      for (const p of pitchesOf(xml)) expect(['C4', 'C#4', 'D#4', 'F#4']).toContain(p)
+    }
+    const xml = exerciseToMusicXml(generateExercise({ ...BASE, freeNotes: [61, 66] }, 3))
+    expect(new Set(pitchesOf(xml))).toEqual(new Set(['C#4', 'F#4']))
+  })
+
+  it('works in keys with flats, spelling notes outside the key with flats', () => {
+    const xml = exerciseToMusicXml(generateExercise({ ...BASE, key: 'F', freeNotes: [63, 65, 71] }, 5))
+    expect(new Set(pitchesOf(xml))).toEqual(new Set(['Eb4', 'F4', 'B4']))
+  })
+
+  it('falls back to five notes with fewer than two notes', () => {
+    const notes = (o: ExerciseOptions) => pitchesOf(exerciseToMusicXml(generateExercise(o, 7)))
+    expect(notes({ ...BASE, freeNotes: [61] })).toEqual(notes({ ...BASE, noteScope: 'key', range: 1 }))
   })
 })

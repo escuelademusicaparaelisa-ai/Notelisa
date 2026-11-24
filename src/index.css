@@ -355,6 +355,7 @@ h1, h2, .modal h2 { font-family: var(--font-display); font-weight: 600; letter-s
 .key-row-label { font-weight: 800; color: var(--muted); }
 .minor-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
 .exercise-choices .key-chip { min-width: 52px; padding: 8px 12px; justify-content: center; }
+.note-scope { margin-bottom: 12px; width: fit-content; max-width: 100%; }
 .note-picker { clear: both; }
 .note-picker-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
 .note-picker-nav .chip { font-size: 1rem; padding: 8px 14px; }

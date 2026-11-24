@@ -34,6 +34,10 @@ export interface ExerciseOptions {
   range: RangeLevel
   /** Notes chosen one by one (range 5), as staff positions: 7 × octave + letter (C4 is 28). */
   notes: number[]
+  /** Which keys "Elegir notas" lets you tap: only the notes of the key, or every key of the keyboard. */
+  noteScope?: NoteScope
+  /** Notes chosen anywhere on the keyboard (noteScope "all"), as MIDI numbers (C4 is 60). */
+  freeNotes?: number[]
   /** Widest interval between two notes of a reading exercise. */
   maxInterval: Interval
   measures: number
@@ -46,6 +50,7 @@ export interface ExerciseOptions {
 }
 
 export type MinorScale = 'natural' | 'harmonic' | 'melodic'
+export type NoteScope = 'key' | 'all'
 
 export interface KeyDefinition {
   id: string
@@ -401,6 +406,8 @@ function chosenLimits(clef: 'treble' | 'bass', instrument: ExerciseOptions['inst
 }
 
 export interface SelectableNote {
+  /** What is stored when the note is chosen: its staff position for notes of the key, its MIDI number on the whole keyboard. */
+  id: number
   position: number
   /** The key it sounds on the piano. */
   midi: number
@@ -408,9 +415,17 @@ export interface SelectableNote {
   name: string
 }
 
+function melodyClefOf(options: ExerciseOptions): 'treble' | 'bass' {
+  return options.instrument === 'piano' && options.clef === 'bass' ? 'bass' : 'treble'
+}
+
+function noteName(step: string, alter: number, octave: number): string {
+  return LETTER_NAMES_ES[LETTER_NAMES.indexOf(step)] + (alter > 0 ? '♯'.repeat(alter) : '♭'.repeat(-alter)) + octave
+}
+
 /** Notes of the key that fit on the melody's staff with up to three ledger lines (or the flute), low to high, to choose from one by one. */
 export function selectableNotes(options: ExerciseOptions): SelectableNote[] {
-  const clef = options.instrument === 'piano' && options.clef === 'bass' ? 'bass' : 'treble'
+  const clef = melodyClefOf(options)
   const pitches = new Pitches(getKey(options.key), clef, options.minor)
   const { low, high } = chosenLimits(clef, options.instrument)
   const notes: SelectableNote[] = []
@@ -418,15 +433,54 @@ export function selectableNotes(options: ExerciseOptions): SelectableNote[] {
     const midi = pitches.midi(degree)
     if (midi < low || midi > high) continue
     const { step, alter, octave } = pitches.spell(degree, midi)
-    const name = LETTER_NAMES_ES[LETTER_NAMES.indexOf(step)] + (alter > 0 ? '♯'.repeat(alter) : '♭'.repeat(-alter)) + octave
-    notes.push({ position: pitches.position(degree), midi, name })
+    const position = pitches.position(degree)
+    notes.push({ id: position, position, midi, name: noteName(step, alter, octave) })
   }
   return notes
 }
 
+/**
+ * Every key of the keyboard in the same span, black keys included. Notes of the key keep their
+ * spelling; the others are written as naturals, or with sharps (flats in keys with flats).
+ */
+export function keyboardNotes(options: ExerciseOptions): SelectableNote[] {
+  const clef = melodyClefOf(options)
+  const key = getKey(options.key)
+  const pitches = new Pitches(key, clef, options.minor)
+  const inKey = new Map(selectableNotes(options).map(n => [n.midi, n]))
+  const { low, high } = chosenLimits(clef, options.instrument)
+  const useFlats = key.fifths < 0
+  const notes: SelectableNote[] = []
+  for (let midi = low; midi <= high; midi++) {
+    const own = inKey.get(midi)
+    if (own) {
+      notes.push({ ...own, id: midi })
+      continue
+    }
+    const [letter, alter] = (useFlats ? FLAT_SPELLING : SHARP_SPELLING)[midi % 12]
+    const octave = Math.floor((midi - alter) / 12) - 1
+    const position = 7 * octave + letter
+    const degree = pitches.degree(position)
+    const spelled = pitches.spell(degree, midi)
+    notes.push({ id: midi, position, midi, name: noteName(spelled.step, spelled.alter, spelled.octave) })
+  }
+  return notes
+}
+
+/** The notes the "Elegir notas" keyboard offers, depending on its scope. */
+export function pickerNotes(options: ExerciseOptions): SelectableNote[] {
+  return options.noteScope === 'all' ? keyboardNotes(options) : selectableNotes(options)
+}
+
+/** Chosen notes that fit, low to high. */
+export function chosenNotes(options: ExerciseOptions): SelectableNote[] {
+  const chosen = new Set((options.noteScope === 'all' ? options.freeNotes : options.notes) ?? [])
+  return pickerNotes(options).filter(n => chosen.has(n.id))
+}
+
 /** Staff positions of the tonic and the two notes above it: what "Elegir notas" starts with. */
 export function defaultChosenNotes(options: ExerciseOptions): number[] {
-  const clef = options.instrument === 'piano' && options.clef === 'bass' ? 'bass' : 'treble'
+  const clef = melodyClefOf(options)
   const pitches = new Pitches(getKey(options.key), clef, options.minor)
   return [0, 1, 2].map(d => pitches.position(d))
 }
@@ -444,6 +498,10 @@ function melodyPool(options: ExerciseOptions, clef: 'treble' | 'bass', pitches: 
 }
 
 function readingMelody(options: ExerciseOptions, clef: 'treble' | 'bass', pitches: Pitches, random: () => number): ExerciseEvent[][] {
+  if (options.range === 5 && options.noteScope === 'all') {
+    const free = chosenNotes(options)
+    if (free.length >= 2) return freeMelody(options, free.map(n => ({ degree: pitches.degree(n.position), midi: n.midi })), pitches, random)
+  }
   const pool = melodyPool(options, clef, pitches)
   const length = measureLength(options.time)
   let degree = pool.includes(0) ? 0 : closestTonic(0, pool)
@@ -461,6 +519,56 @@ function readingMelody(options: ExerciseOptions, clef: 'treble' | 'bass', pitche
       const previous = degree
       if (!first) degree = last ? closestTonic(degree, pool) : nextDegree(degree, pool, options.maxInterval, random)
       events.push({ duration, degree, midi: pitches.midi(degree, degree >= previous) })
+    })
+    measures.push(mergeRests(events))
+  }
+  return measures
+}
+
+interface PoolNote {
+  degree: number
+  midi: number
+}
+
+/** Index of the next note among notes chosen anywhere on the keyboard (two may share a letter, like Fa and Fa♯). */
+function nextFreeNote(current: number, pool: PoolNote[], maxInterval: Interval, random: () => number): number {
+  const moves = [{ value: current, weight: 1 }]
+  pool.forEach((note, i) => {
+    if (i === current) return
+    // A semitone on the same letter (Fa–Fa♯) counts as a step.
+    const interval = Math.max(2, Math.abs(note.degree - pool[current].degree) + 1) as Interval
+    if (interval <= maxInterval) moves.push({ value: i, weight: INTERVAL_WEIGHTS[interval] })
+  })
+  // Chosen notes further apart than the widest interval are still reached from the next one up or down, so every chosen note comes up.
+  for (const i of [current - 1, current + 1]) {
+    if (pool[i] && !moves.some(m => m.value === i)) moves.push({ value: i, weight: moves.length === 1 ? 5 : 2 })
+  }
+  return pick(random, moves)
+}
+
+/** A reading melody on notes chosen anywhere on the keyboard, starting and ending on the tonic when it is among them. */
+function freeMelody(options: ExerciseOptions, pool: PoolNote[], pitches: Pitches, random: () => number): ExerciseEvent[][] {
+  const tonicClass = pitches.tonicMidi % 12
+  const closestTonic = (midi: number) => {
+    const tonics = pool.map((n, i) => ({ n, i })).filter(({ n }) => n.midi % 12 === tonicClass)
+    if (tonics.length === 0) return 0
+    return tonics.reduce((best, t) => (Math.abs(t.n.midi - midi) < Math.abs(best.n.midi - midi) ? t : best)).i
+  }
+  const length = measureLength(options.time)
+  let index = closestTonic(pitches.tonicMidi)
+  const measures: ExerciseEvent[][] = []
+  for (let m = 0; m < options.measures; m++) {
+    const last = m === options.measures - 1
+    const durations = last ? [length] : rhythmForMeasure(options.time, options.rhythm, random)
+    const events: ExerciseEvent[] = []
+    durations.forEach((duration, i) => {
+      const first = m === 0 && i === 0
+      if (options.rests && !first && !last && duration <= 8 && random() < 0.18) {
+        events.push({ duration, degree: null, midi: null })
+        return
+      }
+      if (!first) index = last ? closestTonic(pool[index].midi) : nextFreeNote(index, pool, options.maxInterval, random)
+      events.push({ duration, degree: pool[index].degree, midi: pool[index].midi })
     })
     measures.push(mergeRests(events))
   }
