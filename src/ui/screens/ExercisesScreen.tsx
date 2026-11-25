@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import {
-  CHROMATIC_STARTS, defaultChosenNotes, INTERVALS, MAJOR_KEYS, MINOR_KEYS, MINOR_SCALE_NAMES, RANGE_NOTES, selectableNotes,
-  type ExerciseOptions, type MinorScale,
+  CHROMATIC_STARTS, cornetNotes, defaultChosenNotes, INTERVALS, MAJOR_KEYS, MINOR_KEYS, MINOR_SCALE_NAMES, RANGE_NOTES, selectableNotes,
+  type CornetPosition, type ExerciseOptions, type MinorScale,
 } from '../../core/exercises/generator'
 import { ACCOMPANIMENT_NAMES, resolveStyle, stylesForTime, type AccompanimentStyle } from '../../core/exercises/accompaniment'
 import { saveExerciseOptions } from '../../core/exercises/savedOptions'
 import { Choices } from '../components/Choices'
 import { NotePicker } from '../components/NotePicker'
 import { PracticeTools } from '../components/PracticeTools'
-import { Arpeggio, ArrowLeft, Chromatic, FileMusic, Flute, Piano, Scale, ScaleArpeggio, Sparkles } from '../icons'
+import { Arpeggio, ArrowLeft, Chromatic, Cornet, FileMusic, Flute, Piano, Scale, ScaleArpeggio, Sparkles } from '../icons'
 
 interface Props {
   options: ExerciseOptions
@@ -52,6 +52,10 @@ function NoteChooser({ options, onChange }: { options: ExerciseOptions; onChange
 
 /** Notes the melody spans, counted like an interval, to grey out wider intervals. */
 function rangeNotes(options: ExerciseOptions): number {
+  if (options.instrument === 'cornet') {
+    const written = cornetNotes(options.cornetPosition).map(n => 7 * n.pitch.octave + 'CDEFGAB'.indexOf(n.pitch.step))
+    return Math.max(...written) - Math.min(...written) + 1
+  }
   if (options.range !== 5) return RANGE_NOTES[options.range]
   const chosen = selectableNotes(options).map(n => n.position).filter(p => options.notes.includes(p))
   return chosen.length >= 2 ? Math.max(...chosen) - Math.min(...chosen) + 1 : RANGE_NOTES[1]
@@ -65,6 +69,14 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
   const scale = options.kind !== 'reading'
   const chromatic = options.kind === 'chromatic'
   const piano = options.instrument === 'piano'
+  // The cornet plays only its natural notes, in the Do position, the Re♭ position or both: no keys to choose.
+  const cornet = options.instrument === 'cornet'
+  const position = options.cornetPosition ?? 'do'
+  const chooseInstrument = (instrument: ExerciseOptions['instrument']) =>
+    setOptions(o => ({ ...o, instrument, kind: instrument === 'cornet' && o.kind !== 'reading' ? 'scale' : o.kind }))
+  const chooseCornetKind = (value: string) => setOptions(o => value === 'reading'
+    ? { ...o, kind: 'reading' }
+    : { ...o, kind: 'scale', cornetPosition: value.replace('scale-', '') as CornetPosition })
   // "Elegir notas" starts from the tonic and the two notes above it.
   const chooseRange = (range: ExerciseOptions['range']) =>
     setOptions(o => ({ ...o, range, notes: range === 5 && !o.notes?.length ? defaultChosenNotes(o) : o.notes }))
@@ -86,17 +98,42 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
       </section>
       <PracticeTools />
       <div className="exercise-options">
-        <Choices label="Tipo" value={options.kind} onChange={set('kind')} choices={[
+        {cornet ? (
+          <Choices label="Tipo" value={scale ? `scale-${position}` : 'reading'} onChange={chooseCornetKind} choices={[
+            { value: 'reading', label: 'Lectura', icon: <FileMusic /> },
+            { value: 'scale-do', label: 'Escala en Do', icon: <Scale /> },
+            { value: 'scale-reb', label: 'Escala en Re♭', icon: <Scale /> },
+            { value: 'scale-both', label: 'Escala completa', icon: <Chromatic /> },
+          ]} hint={scale && position === 'both' ? 'Todas las notas de las dos posiciones, ordenadas de grave a agudo.' : undefined} />
+        ) : <Choices label="Tipo" value={options.kind} onChange={set('kind')} choices={[
           { value: 'reading', label: 'Lectura', icon: <FileMusic /> },
           { value: 'scale', label: 'Escala', icon: <Scale /> },
           { value: 'arpeggio', label: 'Arpegio', icon: <Arpeggio /> },
           { value: 'scale-arpeggio', label: 'Escala + arpegio', icon: <ScaleArpeggio /> },
           { value: 'chromatic', label: 'Cromática', icon: <Chromatic /> },
-        ]} />
-        <Choices label="Instrumento" value={options.instrument} onChange={set('instrument')} choices={[
+        ]} />}
+        <Choices label="Instrumento" value={options.instrument} onChange={chooseInstrument} choices={[
           { value: 'piano', label: 'Piano', icon: <Piano /> },
           { value: 'flute', label: 'Flauta', icon: <Flute /> },
+          { value: 'cornet', label: 'Corneta Do/Re♭', icon: <Cornet /> },
         ]} />
+        {cornet && !scale && (
+          <Choices<CornetPosition> label="Escala" value={position} onChange={set('cornetPosition')}
+            hint="El ejercicio solo usa las notas de esa posición."
+            choices={[
+              { value: 'do', label: 'En Do' },
+              { value: 'reb', label: 'En Re♭' },
+              { value: 'both', label: 'Las dos' },
+            ]} />
+        )}
+        {cornet && (
+          <Choices<boolean> label="Color de las notas" value={!!options.cornetColors} onChange={set('cornetColors')}
+            hint={position === 'both' ? 'En color: azul las de la posición de Do y rojo las de Re♭.' : undefined}
+            choices={[
+              { value: false, label: 'Negro' },
+              { value: true, label: position === 'do' ? 'Azul' : position === 'reb' ? 'Rojo' : 'Azul y rojo' },
+            ]} />
+        )}
         {piano && (
           <Choices label="Clave" value={options.clef} onChange={set('clef')} choices={[
             { value: 'treble', label: '𝄞 Sol' },
@@ -104,7 +141,7 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
             { value: 'grand', label: '𝄞+𝄢 Dos pentagramas' },
           ]} />
         )}
-        {chromatic ? (
+        {cornet ? null : chromatic ? (
           <Choices<number> label="Empieza en" value={options.chromaticStart ?? 0} onChange={set('chromaticStart')}
             hint="Sube con sostenidos y baja con bemoles, de semitono en semitono."
             choices={CHROMATIC_STARTS.map(s => ({ value: s.pitchClass, label: s.name }))} />
@@ -135,7 +172,7 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
           { value: '6/8', label: '6/8' },
         ]} />
         {/* No chords fit every semitone, so the chromatic scale goes without accompaniment. */}
-        {!chromatic && <Choices<AccompanimentStyle> label="Acompañamiento" value={resolveStyle(options.accompaniment, options.time)} onChange={set('accompaniment')}
+        {!chromatic && !(cornet && position === 'both') && <Choices<AccompanimentStyle> label="Acompañamiento" value={resolveStyle(options.accompaniment, options.time)} onChange={set('accompaniment')}
           hint="Una base de piano que va con la melodía. Suena al escuchar y al tocar con tempo."
           choices={(['off', ...stylesForTime(options.time)] as AccompanimentStyle[]).map(style => ({ value: style, label: ACCOMPANIMENT_NAMES[style] }))} />}
         <Choices label={scale ? 'Figura' : 'Figuras'} value={options.rhythm} onChange={set('rhythm')} choices={scale ? [
@@ -155,7 +192,7 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
             { value: true, label: 'Con silencios' },
           ]} />
         )}
-        <Choices label={scale ? 'Octavas' : 'Notas'} value={scale ? (options.range === 3 || options.range === 4 ? 4 : 1) : options.range} onChange={chooseRange} choices={scale ? [
+        {!cornet && <Choices label={scale ? 'Octavas' : 'Notas'} value={scale ? (options.range === 3 || options.range === 4 ? 4 : 1) : options.range} onChange={chooseRange} choices={scale ? [
           { value: 1, label: 'Una octava' },
           { value: 4, label: 'Dos octavas' },
         ] : [
@@ -165,8 +202,8 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
           { value: 3, label: 'Con saltos' },
           { value: 4, label: 'Dos octavas' },
           { value: 5, label: 'Elegir notas' },
-        ]} />
-        {!scale && options.range === 5 && <NoteChooser options={options} onChange={set('notes')} />}
+        ]} />}
+        {!cornet && !scale && options.range === 5 && <NoteChooser options={options} onChange={set('notes')} />}
         {!scale && (
           // Intervals wider than the chosen notes cannot come up, so they are greyed out.
           <Choices label="Intervalo máximo" value={Math.min(options.maxInterval, rangeNotes(options)) as ExerciseOptions['maxInterval']}

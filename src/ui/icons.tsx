@@ -30,6 +30,18 @@ export function Flute(props: LucideProps) {
   )
 }
 
+/** Cornet: a coiled brass tube with its bell and mouthpiece. */
+export function Cornet(props: LucideProps) {
+  return (
+    <LineIcon {...props}>
+      <path d="M2.5 9.5h2" />
+      <path d="M4.5 9.5h9.5a3 3 0 0 1 0 6H8a2.5 2.5 0 0 1 0-5" />
+      <path d="M14 9.5 21.5 5v12l-7.5-4.5" />
+      <circle cx="10.5" cy="12.5" r="1.2" />
+    </LineIcon>
+  )
+}
+
 /** A scale: three notes going up step by step. */
 export function Scale(props: LucideProps) {
   return (
@@ -78,7 +90,7 @@ export function ScaleArpeggio(props: LucideProps) {
   )
 }
 
-const INSTRUMENT_ICONS: Record<string, (props: LucideProps) => React.ReactNode> = { piano: Piano, flute: Flute }
+const INSTRUMENT_ICONS: Record<string, (props: LucideProps) => React.ReactNode> = { piano: Piano, flute: Flute, cornet: Cornet }
 
 /** The icon of an instrument by its id (piano, flute…). */
 export function InstrumentIcon({ id, ...props }: LucideProps & { id: string }) {
@@ -106,5 +118,6 @@ export function StarFilled(props: LucideProps) {
 /** What each staff is played with: right or left hand on the piano, the flute for flute parts. */
 export function StaffIcon({ instrument, staff }: { instrument: string; staff: number }) {
   if (instrument === 'flute') return <Flute />
+  if (instrument === 'cornet') return <Cornet />
   return <Hand className={staff === 1 ? 'mirrored' : ''} />
 }
