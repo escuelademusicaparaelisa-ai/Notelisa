@@ -724,3 +724,13 @@ button.pick-box { padding: 0; cursor: pointer; }
   .tool-actions .big-button.primary { flex: 1; min-width: 0; }
   .tool-option .exercise-choices .chip { padding: 8px 13px; }
 }
+
+/* Pull down from the top to reload */
+html, body { overscroll-behavior-y: contain; }
+.pull-refresh { position: fixed; top: calc(env(safe-area-inset-top) - 36px); left: 50%; z-index: 1000; pointer-events: none;
+  width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--surface); color: var(--muted); box-shadow: 0 4px 14px rgba(46, 20, 64, 0.22); }
+.pull-refresh .lucide { width: 24px; height: 24px; }
+.pull-refresh.ready { color: var(--lila); }
+.pull-refresh.reloading .lucide { animation: pull-refresh-spin 0.8s linear infinite; }
+@keyframes pull-refresh-spin { to { transform: rotate(360deg); } }
