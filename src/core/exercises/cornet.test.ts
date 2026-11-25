@@ -44,6 +44,14 @@ describe('cornet exercises', () => {
     }
   })
 
+  it('reading keeps the "Notas" choice, counted on each position\'s notes', () => {
+    const used = (o: Partial<ExerciseOptions>) => new Set(sounding({ ...BASE, maxInterval: 8, measures: 12, ...o }, 7).map(e => e.midi))
+    for (const e of used({ range: 0 })) expect([67, 72, 76]).toContain(e)
+    for (const e of used({ range: 2, cornetPosition: 'reb' })) expect([68, 73, 77, 80]).toContain(e)
+    for (const e of used({ range: 1, cornetPosition: 'both' })) expect(cornetNotes('both').slice(0, 10).map(n => n.midi)).toContain(e)
+    for (const e of used({ range: 5, cornetChosen: [79, 84, 88] })) expect([79, 84, 88]).toContain(e)
+  })
+
   it('is written without key signature, with each note\'s accidental', () => {
     const xml = exerciseToMusicXml(generateExercise({ ...BASE, kind: 'scale', cornetPosition: 'reb' }, 1))
     expect(xml).toContain('<fifths>0</fifths>')

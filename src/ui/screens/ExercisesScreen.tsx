@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  CHROMATIC_STARTS, cornetNotes, defaultChosenNotes, INTERVALS, MAJOR_KEYS, MINOR_KEYS, MINOR_SCALE_NAMES, RANGE_NOTES, selectableNotes,
+  CHROMATIC_STARTS, cornetNotes, cornetReadingNotes, cornetStaffPosition, defaultChosenNotes, defaultCornetChosen, INTERVALS, MAJOR_KEYS, MINOR_KEYS, MINOR_SCALE_NAMES, RANGE_NOTES, selectableNotes,
   type CornetPosition, type ExerciseOptions, type MinorScale,
 } from '../../core/exercises/generator'
 import { ACCOMPANIMENT_NAMES, resolveStyle, stylesForTime, type AccompanimentStyle } from '../../core/exercises/accompaniment'
@@ -50,10 +50,29 @@ function NoteChooser({ options, onChange }: { options: ExerciseOptions; onChange
   )
 }
 
+/** The cornet's natural notes of the chosen position(s), to tap one by one. */
+function CornetNoteChooser({ options, onChange }: { options: ExerciseOptions; onChange(notes: number[]): void }) {
+  const chosenMidis = options.cornetChosen ?? []
+  const toggle = (midi: number) => onChange(chosenMidis.includes(midi) ? chosenMidis.filter(m => m !== midi) : [...chosenMidis, midi])
+  // The picker tells notes apart by `position`; on the cornet the MIDI number does it.
+  const notes = cornetNotes(options.cornetPosition).map(n => ({ position: n.midi, midi: n.midi, name: n.name }))
+  const chosen = notes.filter(n => chosenMidis.includes(n.midi)).length
+  return (
+    <fieldset className="exercise-option">
+      <legend>Elige las notas</legend>
+      <NotePicker key={`cornet-${options.cornetPosition}`} notes={notes} chosen={chosenMidis} onToggle={toggle} />
+      <p className="exercise-hint">
+        {chosen < 2 ? 'Elige al menos dos notas; mientras tanto se usarán 5 notas.'
+          : 'Toca una tecla para añadirla o quitarla. Solo se encienden las notas de la corneta en esta escala.'}
+      </p>
+    </fieldset>
+  )
+}
+
 /** Notes the melody spans, counted like an interval, to grey out wider intervals. */
 function rangeNotes(options: ExerciseOptions): number {
   if (options.instrument === 'cornet') {
-    const written = cornetNotes(options.cornetPosition).map(n => 7 * n.pitch.octave + 'CDEFGAB'.indexOf(n.pitch.step))
+    const written = cornetReadingNotes(options).map(cornetStaffPosition)
     return Math.max(...written) - Math.min(...written) + 1
   }
   if (options.range !== 5) return RANGE_NOTES[options.range]
@@ -79,7 +98,9 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
     : { ...o, kind: 'scale', cornetPosition: value.replace('scale-', '') as CornetPosition })
   // "Elegir notas" starts from the tonic and the two notes above it.
   const chooseRange = (range: ExerciseOptions['range']) =>
-    setOptions(o => ({ ...o, range, notes: range === 5 && !o.notes?.length ? defaultChosenNotes(o) : o.notes }))
+    setOptions(o => o.instrument === 'cornet'
+      ? { ...o, range, cornetChosen: range === 5 && !o.cornetChosen?.length ? defaultCornetChosen(o) : o.cornetChosen }
+      : { ...o, range, notes: range === 5 && !o.notes?.length ? defaultChosenNotes(o) : o.notes })
 
   const create = () => {
     saveExerciseOptions(options)
@@ -192,7 +213,7 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
             { value: true, label: 'Con silencios' },
           ]} />
         )}
-        {!cornet && <Choices label={scale ? 'Octavas' : 'Notas'} value={scale ? (options.range === 3 || options.range === 4 ? 4 : 1) : options.range} onChange={chooseRange} choices={scale ? [
+        {!(cornet && scale) && <Choices label={scale ? 'Octavas' : 'Notas'} value={scale ? (options.range === 3 || options.range === 4 ? 4 : 1) : options.range} onChange={chooseRange} choices={scale ? [
           { value: 1, label: 'Una octava' },
           { value: 4, label: 'Dos octavas' },
         ] : [
@@ -203,6 +224,7 @@ export function ExercisesScreen({ options: initial, onCreate, onBack }: Props) {
           { value: 4, label: 'Dos octavas' },
           { value: 5, label: 'Elegir notas' },
         ]} />}
+        {cornet && !scale && options.range === 5 && <CornetNoteChooser options={options} onChange={set('cornetChosen')} />}
         {!cornet && !scale && options.range === 5 && <NoteChooser options={options} onChange={set('notes')} />}
         {!scale && (
           // Intervals wider than the chosen notes cannot come up, so they are greyed out.

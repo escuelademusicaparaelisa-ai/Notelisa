@@ -52,6 +52,8 @@ export interface ExerciseOptions {
   cornetPosition?: CornetPosition
   /** Cornet: Do-position notes in blue and Re♭-position notes in red. */
   cornetColors?: boolean
+  /** Cornet notes chosen one by one (range 5), as MIDI numbers. */
+  cornetChosen?: number[]
 }
 
 export type MinorScale = 'natural' | 'harmonic' | 'melodic'
@@ -721,15 +723,41 @@ function cornetEvent(note: CornetNote, index: number, colors: boolean): Omit<Exe
   return { degree: index, midi: note.midi, pitch: note.pitch, ...(colors ? { color: CORNET_COLORS[note.position] } : {}) }
 }
 
+/**
+ * The notes a cornet reading line may use: like the other instruments' "Notas", counted on each
+ * position's natural notes from the lowest: 3 notes, 5 notes, an octave (Sol4–Sol5, La♭4–La♭5),
+ * all of them (with leaps, two octaves) or notes chosen one by one.
+ */
+export function cornetReadingNotes(options: ExerciseOptions): CornetNote[] {
+  const all = cornetNotes(options.cornetPosition)
+  if (options.range === 5) {
+    const chosen = all.filter(n => options.cornetChosen?.includes(n.midi))
+    if (chosen.length >= 2) return chosen
+  }
+  const range = options.range === 5 ? 1 : options.range
+  const lowest = (n: CornetNote) => cornetNotes(n.position)[0].midi
+  return all.filter(n => {
+    const index = cornetNotes(n.position).indexOf(n)
+    return range === 0 ? index < 3 : range === 1 ? index < 5 : range === 2 ? n.midi <= lowest(n) + 12 : true
+  })
+}
+
+/** What "Elegir notas" starts with on the cornet: the three lowest notes of the position(s). */
+export function defaultCornetChosen(options: ExerciseOptions): number[] {
+  return cornetNotes(options.cornetPosition).slice(0, 3).map(n => n.midi)
+}
+
 /** Staff position (7 × octave + letter) of a cornet note, to measure intervals as written. */
-function cornetStaffPosition(note: CornetNote): number {
+export function cornetStaffPosition(note: CornetNote): number {
   return 7 * note.pitch.octave + LETTER_NAMES.indexOf(note.pitch.step)
 }
 
 /** A reading line on the position's notes: starts on Do (or Re♭), moves mostly to near notes and ends on the closest Do or Re♭. */
 function cornetMelody(options: ExerciseOptions, pool: CornetNote[], random: () => number): ExerciseEvent[][] {
   const colors = !!options.cornetColors
-  const tonics = pool.map((n, i) => (n.pitch.step === 'C' || (n.pitch.step === 'D' && n.pitch.alter === -1) ? i : -1)).filter(i => i >= 0)
+  const found = pool.map((n, i) => (n.pitch.step === 'C' || (n.pitch.step === 'D' && n.pitch.alter === -1) ? i : -1)).filter(i => i >= 0)
+  // Chosen notes without Do or Re♭: start and end on the lowest one.
+  const tonics = found.length ? found : [0]
   const closestTonic = (i: number) => tonics.reduce((best, t) => (Math.abs(t - i) < Math.abs(best - i) ? t : best))
   const length = measureLength(options.time)
   let index = tonics[0]
@@ -780,7 +808,7 @@ function generateCornetExercise(options: ExerciseOptions, seed: number): Exercis
     const up = pool.map((n, i) => cornetEvent(n, i, !!opts.cornetColors))
     measures = evenLine(opts, [...up, ...up.slice(0, -1).reverse()])
   } else {
-    measures = cornetMelody(opts, pool, random)
+    measures = cornetMelody(opts, cornetReadingNotes(opts), random)
   }
   const staves: ExerciseStaff[] = [{ clef: 'treble', measures }]
   const harmony = harmonyFor(opts, key, measures, opts.time === '4/4')
