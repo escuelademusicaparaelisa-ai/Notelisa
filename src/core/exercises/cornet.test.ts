@@ -52,6 +52,18 @@ describe('cornet exercises', () => {
     for (const e of used({ range: 5, cornetChosen: [79, 84, 88] })) expect([79, 84, 88]).toContain(e)
   })
 
+  it('reaches every chosen note even when two neighbours are further apart than the widest interval', () => {
+    // Sol5–Do6 is a 4ª: with a 3ª as the widest interval the line must still cross it.
+    const chosen = [72, 76, 79, 84, 86]
+    for (let seed = 1; seed <= 10; seed++) {
+      const midis = new Set(sounding({ ...BASE, range: 5, cornetChosen: chosen, maxInterval: 3, measures: 12 }, seed).map(e => e.midi))
+      expect(midis.has(84) || midis.has(86)).toBe(true)
+    }
+    const all = new Set<number | null>()
+    for (let seed = 1; seed <= 10; seed++) for (const e of sounding({ ...BASE, range: 5, cornetChosen: chosen, maxInterval: 3 }, seed)) all.add(e.midi)
+    for (const m of chosen) expect(all).toContain(m)
+  })
+
   it('is written without key signature, with each note\'s accidental', () => {
     const xml = exerciseToMusicXml(generateExercise({ ...BASE, kind: 'scale', cornetPosition: 'reb' }, 1))
     expect(xml).toContain('<fifths>0</fifths>')
