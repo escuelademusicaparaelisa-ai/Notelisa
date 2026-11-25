@@ -9,7 +9,8 @@ export const CHORD_LYRICS = 'acordes'
 export class ScoreController {
   private osmd: OpenSheetMusicDisplay
   private position = 0
-  private colored: SVGElement[] = []
+  /** Painted elements with the fill they had before (notes coloured in the score itself keep their colour). */
+  private colored: { el: SVGElement; fill: string | null; style: string }[] = []
   // Drawn notes of every step, so any step can be painted (not only the one under the cursor).
   private stepNotes: GraphicalNote[][] = []
   timeline: Timeline | null = null
@@ -124,18 +125,20 @@ export class ScoreController {
       const heads = (gNote as unknown as { getNoteheadSVGs?: () => HTMLElement[] }).getNoteheadSVGs?.() ?? []
       for (const head of heads) {
         for (const el of [head, ...head.querySelectorAll<SVGElement>('path')]) {
+          this.colored.push({ el: el as SVGElement, fill: el.getAttribute('fill'), style: el.style.fill })
           el.setAttribute('fill', color)
           el.style.fill = color
-          this.colored.push(el as SVGElement)
         }
       }
     }
   }
 
   clearColors(): void {
-    for (const el of this.colored) {
-      el.removeAttribute('fill')
-      el.style.fill = ''
+    // Last painted first, so an element painted twice gets its first fill back.
+    for (const { el, fill, style } of [...this.colored].reverse()) {
+      if (fill === null) el.removeAttribute('fill')
+      else el.setAttribute('fill', fill)
+      el.style.fill = style
     }
     this.colored = []
   }

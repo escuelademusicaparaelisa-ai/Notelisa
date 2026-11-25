@@ -1,3 +1,4 @@
+import { cornet } from './cornet'
 import { flute } from './flute'
 import { piano } from './piano'
 import type { InstrumentDefinition } from './types'
@@ -5,6 +6,7 @@ import type { InstrumentDefinition } from './types'
 export const instruments: Record<string, InstrumentDefinition> = {
   [piano.id]: piano,
   [flute.id]: flute,
+  [cornet.id]: cornet,
 }
 
 export function getInstrument(id: string | undefined): InstrumentDefinition {
