@@ -868,7 +868,8 @@ function cornetMelody(options: ExerciseOptions, pool: CornetNote[], random: () =
   const tonics = found.length ? found : [0]
   const closestTonic = (i: number) => tonics.reduce((best, t) => (Math.abs(t - i) < Math.abs(best - i) ? t : best))
   const length = measureLength(options.time)
-  let index = tonics[0]
+  // Starting on any of the Do (or Re♭) in use, so the line does not always begin at the bottom.
+  let index = tonics[Math.floor(random() * tonics.length)]
   const measures: ExerciseEvent[][] = []
   for (let m = 0; m < options.measures; m++) {
     const last = m === options.measures - 1
@@ -882,15 +883,17 @@ function cornetMelody(options: ExerciseOptions, pool: CornetNote[], random: () =
       }
       if (last) index = closestTonic(index)
       else if (!first) {
-        // Neighbouring notes are the most common; leaps wider than the chosen interval only when no note is near enough.
+        // On the cornet the next note up or down is always a step, even when the gap between two natural notes
+        // is wider than the chosen interval (Sol5–Do6 is a 4ª): otherwise the line could never cross it.
+        // The interval limits only the leaps over other notes. Neighbouring notes are the most common.
         const here = cornetStaffPosition(pool[index])
         const moves = [{ value: 0, weight: 1 }]
         for (let j = 0; j < pool.length; j++) {
           const span = Math.abs(cornetStaffPosition(pool[j]) - here) + 1
           const steps = Math.abs(j - index)
-          if (j !== index && span <= options.maxInterval) moves.push({ value: j - index, weight: steps === 1 ? 5 : steps === 2 ? 2 : 1 })
+          if (steps === 1) moves.push({ value: j - index, weight: 5 })
+          else if (j !== index && span <= options.maxInterval) moves.push({ value: j - index, weight: steps === 2 ? 2 : 1 })
         }
-        if (moves.length === 1) for (const j of [index - 1, index + 1]) if (pool[j]) moves.push({ value: j - index, weight: 5 })
         index += pick(random, moves)
       }
       events.push({ ...cornetEvent(pool[index], index, colors), duration })
