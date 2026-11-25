@@ -1,23 +1,24 @@
 // Piano accompaniment for generated exercises. It works in two layers:
 //  1. Harmony: for each measure (or half measure in 4/4) the chord of the key that fits the
 //     melody best, preferring I, IV and V, starting on I and closing with V–I.
-//  2. Style: the same chords played with a different pattern (Alberti bass, waltz, march, ballad).
+//  2. Style: the same chords played with a different pattern (Alberti bass, waltz, march, ballad,
+//     processional march).
 // The accompaniment is only heard: it is not written on the score and is not checked.
 
 import type { ExerciseEvent, TimeSignature } from './generator'
 
-export type AccompanimentStyle = 'off' | 'classical' | 'waltz' | 'ballad' | 'march' | 'rock'
+export type AccompanimentStyle = 'off' | 'classical' | 'waltz' | 'ballad' | 'march' | 'rock' | 'procession'
 type Style = Exclude<AccompanimentStyle, 'off'>
 
 export const ACCOMPANIMENT_NAMES: Record<AccompanimentStyle, string> = {
-  off: 'Sin acompañamiento', classical: 'Clásico', waltz: 'Vals', ballad: 'Balada', march: 'Marcha', rock: 'Rock',
+  off: 'Sin acompañamiento', classical: 'Clásico', waltz: 'Vals', ballad: 'Balada', march: 'Marcha', rock: 'Rock', procession: 'Marcha procesional',
 }
 
 /** Styles that make sense in each time signature, the most natural first. */
 const STYLES_BY_TIME: Record<TimeSignature, Style[]> = {
-  '2/4': ['march', 'classical', 'ballad', 'rock'],
+  '2/4': ['march', 'classical', 'ballad', 'rock', 'procession'],
   '3/4': ['waltz', 'classical', 'ballad', 'rock'],
-  '4/4': ['classical', 'ballad', 'march', 'rock'],
+  '4/4': ['classical', 'ballad', 'march', 'rock', 'procession'],
   '6/8': ['ballad', 'march', 'rock'],
 }
 
@@ -304,6 +305,26 @@ export function accompanimentNotes(harmony: Harmony, style: AccompanimentStyle):
         for (let p = 0; p < length; p += beat) {
           const k = (slot.start + p) / beat
           if (k % 2 === 1) addChord(p, 2, 0.34)
+        }
+        break
+      }
+      case 'procession': {
+        // Processional march (Semana Santa): slow and solemn. A deep octave bass on the strong beats like the
+        // bass drum and tubas, the chord held over it, and the dotted "tam, ta-tam" of the brass on the weak
+        // beats; the fourth beat answers with the fifth, low in the bass.
+        for (let p = 0; p < length; p += beat) {
+          const k = ((slot.start + p) / beat) % 4
+          if (k % 2 === 0) {
+            add(p, beat, bass, 0.52)
+            add(p, beat, bass + 12, 0.4)
+            addChord(p, Math.min(2 * beat, length - p), 0.3)
+          } else if (k === 1) {
+            addChord(p, 3, 0.34)
+            addChord(p + 3, 1, 0.26)
+          } else {
+            add(p, 3, bassFifth, 0.42)
+            add(p + 3, 1, bassFifth, 0.34)
+          }
         }
         break
       }

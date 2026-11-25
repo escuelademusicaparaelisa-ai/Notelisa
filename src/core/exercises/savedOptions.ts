@@ -6,6 +6,7 @@ const OPTIONS_KEY = 'notelisa.exerciseOptions'
 
 export const DEFAULT_EXERCISE: ExerciseOptions = {
   kind: 'reading', instrument: 'piano', clef: 'treble', key: 'C', time: '4/4', rhythm: 2, rests: false, range: 1, notes: [], maxInterval: 3, measures: 8, minor: 'harmonic', accompaniment: 'off',
+  cornetPosition: 'do', cornetColors: false,
 }
 
 export function savedExerciseOptions(): ExerciseOptions {

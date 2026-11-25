@@ -23,9 +23,14 @@ export function defaultMaxInterval(range: RangeLevel): Interval {
 /** Notes each range spans, counted like intervals (5 notes span a fifth). */
 export const RANGE_NOTES: Record<Exclude<RangeLevel, 5>, number> = { 0: 3, 1: 5, 2: 8, 3: 13, 4: 15 }
 
+export type Instrument = 'piano' | 'flute' | 'cornet'
+
+/** Cornet notes: the Do position (rotor off), the Re♭ position (rotor on) or both. */
+export type CornetPosition = 'do' | 'reb' | 'both'
+
 export interface ExerciseOptions {
   kind: ExerciseKind
-  instrument: 'piano' | 'flute'
+  instrument: Instrument
   clef: Clef
   key: string
   time: TimeSignature
@@ -43,6 +48,12 @@ export interface ExerciseOptions {
   accompaniment?: AccompanimentStyle
   /** Starting note of the chromatic scale, as a pitch class (0 = Do … 11 = Si); Do when omitted. */
   chromaticStart?: number
+  /** Cornet: which position's notes the scale or reading uses ('both' is the complete scale). */
+  cornetPosition?: CornetPosition
+  /** Cornet: Do-position notes in blue and Re♭-position notes in red. */
+  cornetColors?: boolean
+  /** Cornet notes chosen one by one (range 5), as MIDI numbers. */
+  cornetChosen?: number[]
 }
 
 export type MinorScale = 'natural' | 'harmonic' | 'melodic'
@@ -118,6 +129,7 @@ function chromaticStart(options: ExerciseOptions) {
 
 /** The key an exercise is written in. The chromatic scale has no key signature: every note carries its own accidental. */
 export function exerciseKey(options: ExerciseOptions): KeyDefinition {
+  if (options.instrument === 'cornet') return cornetKey(options)
   if (options.kind !== 'chromatic') return getKey(options.key)
   const start = chromaticStart(options)
   return { id: 'chromatic', name: start.name, letter: start.letter, alter: start.alter, fifths: 0, mode: 'major' }
@@ -132,6 +144,10 @@ export interface ExerciseEvent {
   midi: number | null
   /** Piano finger, 1 = thumb … 5 = little finger. */
   finger?: number
+  /** Written note, when it does not follow the key (cornet notes). */
+  pitch?: { step: string; alter: number; octave: number }
+  /** Notehead colour, e.g. the cornet position. */
+  color?: string
 }
 
 export interface ExerciseStaff {
@@ -392,12 +408,12 @@ function closestTonic(degree: number, pool: number[]): number {
 
 /** Lowest and highest notes the melody may use. */
 function melodyLimits(clef: 'treble' | 'bass', instrument: ExerciseOptions['instrument']): { low: number; high: number } {
-  return instrument === 'flute' ? FLUTE_RANGE : CLEF_RANGE[clef]
+  return instrument === 'flute' || instrument === 'cornet' ? FLUTE_RANGE : CLEF_RANGE[clef]
 }
 
 /** Lowest and highest notes that may be chosen one by one. */
 function chosenLimits(clef: 'treble' | 'bass', instrument: ExerciseOptions['instrument']): { low: number; high: number } {
-  return instrument === 'flute' ? FLUTE_RANGE : CHOSEN_CLEF_RANGE[clef]
+  return instrument === 'flute' || instrument === 'cornet' ? FLUTE_RANGE : CHOSEN_CLEF_RANGE[clef]
 }
 
 export interface SelectableNote {
@@ -588,7 +604,7 @@ function chromaticLine(options: ExerciseOptions, pitches: Pitches, clef: 'treble
 }
 
 /** Lays out notes of the same length in measures; the last one lasts until the end of its measure. */
-function evenLine(options: ExerciseOptions, notes: { degree: number; midi: number; finger?: number }[]): ExerciseEvent[][] {
+function evenLine(options: ExerciseOptions, notes: Omit<ExerciseEvent, 'duration'>[]): ExerciseEvent[][] {
   const noteLength = scaleNoteLength(options.time, options.rhythm)
   const length = measureLength(options.time)
   const measures: ExerciseEvent[][] = []
@@ -604,11 +620,11 @@ function evenLine(options: ExerciseOptions, notes: { degree: number; midi: numbe
     }
   }
   notes.forEach((note, i) => {
-    if (i < notes.length - 1) return push({ duration: noteLength, ...note })
+    if (i < notes.length - 1) return push({ ...note, duration: noteLength })
     // The last tonic lasts until the end of the measure (or a whole measure on the downbeat).
     const remaining = position === 0 ? length : length - position
     const [first, ...rest] = writableDurations(remaining)
-    push({ duration: first, ...note })
+    push({ ...note, duration: first })
     for (const d of rest) push({ duration: d, degree: null, midi: null })
   })
   return measures
@@ -619,9 +635,10 @@ const LINE_TITLES: Record<Exclude<ExerciseKind, 'reading'>, string> = {
 }
 
 export function generateExercise(options: ExerciseOptions, seed: number): Exercise {
+  if (options.instrument === 'cornet') return generateCornetExercise(options, seed)
   const random = seededRandom(seed)
   const key = exerciseKey(options)
-  const clef: Clef = options.instrument === 'flute' ? 'treble' : options.clef
+  const clef: Clef = options.instrument !== 'piano' ? 'treble' : options.clef
   const opts = { ...options, clef, minor: options.minor ?? 'harmonic', maxInterval: options.maxInterval ?? defaultMaxInterval(options.range) }
   const name = key.mode === 'minor' ? `${key.name} ${MINOR_SCALE_NAMES[opts.minor]}` : key.name
   const staves: ExerciseStaff[] = []
@@ -651,6 +668,156 @@ export function generateExercise(options: ExerciseOptions, seed: number): Exerci
   const harmony = harmonyFor(opts, key, staves[0].measures, clef !== 'grand' && opts.time === '4/4')
   if (clef === 'grand') staves.push({ clef: 'bass', measures: bassLine(opts, new Pitches(key, 'bass', opts.minor), harmony) })
   return { title: `Lectura · ${name}`, options: opts, staves, tempo, harmony }
+}
+
+// --- Cornet -----------------------------------------------------------------
+
+/**
+ * The natural notes of the cornet in Do with a rotor to Re♭, written as the teacher wrote them:
+ * Do position (rotor off) Sol4 Do5 Mi5 Sol5 Do6 Re6 Mi6, Re♭ position (rotor on) the same a semitone up.
+ */
+export interface CornetNote {
+  midi: number
+  pitch: { step: string; alter: number; octave: number }
+  position: Exclude<CornetPosition, 'both'>
+  /** Spanish name with its octave, e.g. "Re♭5". */
+  name: string
+}
+
+const CORNET_DO: [string, number][] = [['G', 4], ['C', 5], ['E', 5], ['G', 5], ['C', 6], ['D', 6], ['E', 6]]
+const CORNET_REB: [string, number, number][] = [['A', -1, 4], ['D', -1, 5], ['F', 0, 5], ['A', -1, 5], ['D', -1, 6], ['E', -1, 6], ['F', 0, 6]]
+
+function cornetNote(step: string, alter: number, octave: number, position: CornetNote['position']): CornetNote {
+  const letter = LETTER_NAMES.indexOf(step)
+  return {
+    midi: 12 * (octave + 1) + LETTER_SEMITONES[letter] + alter, pitch: { step, alter, octave }, position,
+    name: LETTER_NAMES_ES[letter] + (alter < 0 ? '♭' : '') + octave,
+  }
+}
+
+/** All cornet notes, low to high. */
+export const CORNET_NOTES: CornetNote[] = [
+  ...CORNET_DO.map(([step, octave]) => cornetNote(step, 0, octave, 'do')),
+  ...CORNET_REB.map(([step, alter, octave]) => cornetNote(step, alter, octave, 'reb')),
+].sort((a, b) => a.midi - b.midi)
+
+export const CORNET_COLORS: Record<CornetNote['position'], string> = { do: '#1d5fd1', reb: '#d42a2a' }
+
+export const CORNET_POSITION_NAMES: Record<CornetPosition, string> = { do: 'Do', reb: 'Re♭', both: 'Do y Re♭' }
+
+/** The notes of one position, or of both. */
+export function cornetNotes(position: CornetPosition = 'do'): CornetNote[] {
+  return CORNET_NOTES.filter(n => position === 'both' || n.position === position)
+}
+
+/**
+ * Cornet exercises are written without key signature, each note with its accidental, as on the
+ * teacher's sheet. The accompaniment plays in Do or Re♭ major; both positions together have no key.
+ */
+function cornetKey(options: ExerciseOptions): KeyDefinition {
+  const reb = options.cornetPosition === 'reb'
+  return { id: reb ? 'cornet-reb' : 'cornet-do', name: reb ? 'Re♭' : 'Do', letter: reb ? 1 : 0, alter: reb ? -1 : 0, fifths: 0, mode: 'major' }
+}
+
+function cornetEvent(note: CornetNote, index: number, colors: boolean): Omit<ExerciseEvent, 'duration'> {
+  return { degree: index, midi: note.midi, pitch: note.pitch, ...(colors ? { color: CORNET_COLORS[note.position] } : {}) }
+}
+
+/**
+ * The notes a cornet reading line may use: like the other instruments' "Notas", counted on each
+ * position's natural notes from the lowest: 3 notes, 5 notes, an octave (Sol4–Sol5, La♭4–La♭5),
+ * all of them (with leaps, two octaves) or notes chosen one by one.
+ */
+export function cornetReadingNotes(options: ExerciseOptions): CornetNote[] {
+  const all = cornetNotes(options.cornetPosition)
+  if (options.range === 5) {
+    const chosen = all.filter(n => options.cornetChosen?.includes(n.midi))
+    if (chosen.length >= 2) return chosen
+  }
+  const range = options.range === 5 ? 1 : options.range
+  const lowest = (n: CornetNote) => cornetNotes(n.position)[0].midi
+  return all.filter(n => {
+    const index = cornetNotes(n.position).indexOf(n)
+    return range === 0 ? index < 3 : range === 1 ? index < 5 : range === 2 ? n.midi <= lowest(n) + 12 : true
+  })
+}
+
+/** What "Elegir notas" starts with on the cornet: the three lowest notes of the position(s). */
+export function defaultCornetChosen(options: ExerciseOptions): number[] {
+  return cornetNotes(options.cornetPosition).slice(0, 3).map(n => n.midi)
+}
+
+/** Staff position (7 × octave + letter) of a cornet note, to measure intervals as written. */
+export function cornetStaffPosition(note: CornetNote): number {
+  return 7 * note.pitch.octave + LETTER_NAMES.indexOf(note.pitch.step)
+}
+
+/** A reading line on the position's notes: starts on Do (or Re♭), moves mostly to near notes and ends on the closest Do or Re♭. */
+function cornetMelody(options: ExerciseOptions, pool: CornetNote[], random: () => number): ExerciseEvent[][] {
+  const colors = !!options.cornetColors
+  const found = pool.map((n, i) => (n.pitch.step === 'C' || (n.pitch.step === 'D' && n.pitch.alter === -1) ? i : -1)).filter(i => i >= 0)
+  // Chosen notes without Do or Re♭: start and end on the lowest one.
+  const tonics = found.length ? found : [0]
+  const closestTonic = (i: number) => tonics.reduce((best, t) => (Math.abs(t - i) < Math.abs(best - i) ? t : best))
+  const length = measureLength(options.time)
+  let index = tonics[0]
+  const measures: ExerciseEvent[][] = []
+  for (let m = 0; m < options.measures; m++) {
+    const last = m === options.measures - 1
+    const durations = last ? [length] : rhythmForMeasure(options.time, options.rhythm, random)
+    const events: ExerciseEvent[] = []
+    durations.forEach((duration, i) => {
+      const first = m === 0 && i === 0
+      if (options.rests && !first && !last && duration <= 8 && random() < 0.18) {
+        events.push({ duration, degree: null, midi: null })
+        return
+      }
+      if (last) index = closestTonic(index)
+      else if (!first) {
+        // Neighbouring notes are the most common; leaps wider than the chosen interval only when no note is near enough.
+        const here = cornetStaffPosition(pool[index])
+        const moves = [{ value: 0, weight: 1 }]
+        for (let j = 0; j < pool.length; j++) {
+          const span = Math.abs(cornetStaffPosition(pool[j]) - here) + 1
+          const steps = Math.abs(j - index)
+          if (j !== index && span <= options.maxInterval) moves.push({ value: j - index, weight: steps === 1 ? 5 : steps === 2 ? 2 : 1 })
+        }
+        if (moves.length === 1) for (const j of [index - 1, index + 1]) if (pool[j]) moves.push({ value: j - index, weight: 5 })
+        index += pick(random, moves)
+      }
+      events.push({ ...cornetEvent(pool[index], index, colors), duration })
+    })
+    measures.push(mergeRests(events))
+  }
+  return measures
+}
+
+function generateCornetExercise(options: ExerciseOptions, seed: number): Exercise {
+  const random = seededRandom(seed)
+  const position = options.cornetPosition ?? 'do'
+  const kind = options.kind === 'reading' ? 'reading' : 'scale'
+  const opts: ExerciseOptions = {
+    ...options, kind, clef: 'treble', cornetPosition: position, minor: options.minor ?? 'harmonic',
+    maxInterval: options.maxInterval ?? defaultMaxInterval(options.range),
+  }
+  const key = cornetKey(opts)
+  const pool = cornetNotes(position)
+  const tempo = opts.time === '6/8' ? 90 : kind === 'reading' ? 80 : 72
+  let measures: ExerciseEvent[][]
+  if (kind === 'scale') {
+    const up = pool.map((n, i) => cornetEvent(n, i, !!opts.cornetColors))
+    measures = evenLine(opts, [...up, ...up.slice(0, -1).reverse()])
+  } else {
+    measures = cornetMelody(opts, cornetReadingNotes(opts), random)
+  }
+  const staves: ExerciseStaff[] = [{ clef: 'treble', measures }]
+  const harmony = harmonyFor(opts, key, measures, opts.time === '4/4')
+  const title = kind === 'scale'
+    ? (position === 'both' ? 'Corneta · Escala completa' : `Corneta · Escala en ${CORNET_POSITION_NAMES[position]}`)
+    : `Corneta · Lectura en ${CORNET_POSITION_NAMES[position]}`
+  // Both positions together have no key, so no chords fit them.
+  if (position === 'both') return { title, options: { ...opts, accompaniment: 'off' }, staves, tempo, harmony: { ...harmony, slots: [] } }
+  return { title, options: opts, staves, tempo, harmony }
 }
 
 // --- MusicXML ---------------------------------------------------------------
@@ -696,18 +863,21 @@ function noteXml(event: ExerciseEvent, pitches: Pitches, staff: number, beamTags
   if (event.degree === null) {
     head = wholeMeasure ? '<rest measure="yes"/>' : '<rest/>'
   } else {
-    const { step, alter, octave } = pitches.spell(event.degree, event.midi!)
+    const { step, alter, octave } = event.pitch ?? pitches.spell(event.degree, event.midi!)
     head = `<pitch><step>${step}</step>${alter ? `<alter>${alter}</alter>` : ''}<octave>${octave}</octave></pitch>`
   }
   const fingering = event.finger
     ? `<notations><technical><fingering placement="${staff === 1 ? 'above' : 'below'}">${event.finger}</fingering></technical></notations>`
     : ''
-  return `<note>${head}<duration>${event.duration}</duration><voice>${voice}</voice><type>${type}</type>${dot ? '<dot/>' : ''}`
+  const color = event.color && event.midi !== null ? ` color="${event.color}"` : ''
+  return `<note${color}>${head}<duration>${event.duration}</duration><voice>${voice}</voice><type>${type}</type>${dot ? '<dot/>' : ''}`
     + `<staff>${staff}</staff>${beamTags.join('')}${fingering}`
     // Chord names go as lyrics: the score lines them all up on one row under the staff.
     + (chord ? `<lyric number="1" name="acordes" placement="below"><syllabic>single</syllabic><text>${chord}</text></lyric>` : '')
     + '</note>'
 }
+
+const PART_NAMES: Record<Instrument, string> = { piano: 'Piano', flute: 'Flauta', cornet: 'Corneta' }
 
 export interface MusicXmlOptions {
   /** Writes the name of each accompaniment chord (C, Am, G…) under the first staff. */
@@ -719,7 +889,7 @@ export function exerciseToMusicXml(exercise: Exercise, { chords: withChords = fa
   const key = exerciseKey(options)
   const [beats, beatType] = options.time.split('/')
   const length = measureLength(options.time)
-  const partName = options.instrument === 'flute' ? 'Flauta' : 'Piano'
+  const partName = PART_NAMES[options.instrument] ?? 'Piano'
   const clefXml = (clef: 'treble' | 'bass', n: number) =>
     `<clef number="${n}">${clef === 'treble' ? '<sign>G</sign><line>2</line>' : '<sign>F</sign><line>4</line>'}</clef>`
   const metronome = options.time === '6/8'
